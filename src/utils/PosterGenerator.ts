@@ -43,6 +43,23 @@ export interface LocandinaFonts {
   inter700: string;
 }
 
+/** Una fascia oraria con la forza media delle termiche e la quota raggiungibile. */
+export interface FasciaTermica {
+  label: string;
+  orario: string;
+  lift: string;
+  quota: string;
+  vento: string;
+  level: "good" | "mid" | "weak";
+}
+
+/** Valutazione delle possibilità di cross-country della giornata. */
+export interface CrossVerdict {
+  verdict: string;
+  km: string;
+  note: string;
+}
+
 /* A4 esatto: 1080 × 1527.43 px (210 × 297 mm) */
 const PAGE_W = 1080;
 const PAGE_H = 1527.43;
@@ -191,6 +208,8 @@ export interface LocandinaData {
   inVolo: string[];
   notaPilota: string;
   bestBars: Array<{ ora: string; rateo: number }>;
+  fasceTermiche: FasciaTermica[];
+  cross: CrossVerdict;
 }
 
 export function computeLocandinaData(input: LocandinaInput): LocandinaData {
@@ -364,6 +383,52 @@ export function computeLocandinaData(input: LocandinaInput): LocandinaData {
 
   const bestBars = bars.slice(0, 10).map((b) => ({ ora: hh(b.ora), rateo: Math.round(b.rateo * 10) / 10 }));
 
+  /* --- termiche nelle fasce orarie (mattina / mezzogiorno / pomeriggio / sera) --- */
+  const fasceDef: Array<[string, number, number]> = [
+    ["Mattina", 9, 11],
+    ["Mezzogiorno", 11, 14],
+    ["Pomeriggio", 14, 17],
+    ["Sera", 17, 19],
+  ];
+  const fasceTermiche: FasciaTermica[] = fasceDef.map(([label, from, to]) => {
+    const fb = batch.filter((b) => b.ora >= from && b.ora < to);
+    const liftF = avg(fb.map((b) => (b.termiche ? b.termiche.rateo : null)));
+    const topF = nmax(fb.map((b) => b.termiche?.top ?? null));
+    const vh = hours.filter((h) => h.time.getHours() >= from && h.time.getHours() < to);
+    const windF = avg(vh.map((h) => h.windSpeed));
+    const quota = topF != null ? `${Math.round(topF / 50) * 50 > 999 ? (Math.round(topF / 50) * 50).toLocaleString("it-IT") : Math.round(topF / 50) * 50} m` : "—";
+    return {
+      label,
+      orario: `${hh(from)}–${hh(to)}`,
+      lift: liftF != null ? `${itNum(liftF)} m/s` : "—",
+      quota,
+      vento: windF != null ? `${Math.round(windF)} km/h` : "—",
+      level: liftF == null ? "weak" : liftF >= 1.4 ? "good" : liftF >= 0.8 ? "mid" : "weak",
+    };
+  });
+
+  /* --- possibilità di cross-country --- */
+  const windUpMax = nmax(windRows.filter((r) => r.quota >= 2000).map((r) => r.speedMax)) ?? 0;
+  let cross: CrossVerdict;
+  if (forzaMedia >= 1.5 && (topRealistico ?? 0) >= 2400 && stormP < 15 && windUpMax <= 35) {
+    cross = { verdict: "XC BUONO", km: "30–60 km", note: "Termiche fitte e ben organizzate: cross realistico lungo le creste sottovento." };
+  } else if (forzaMedia >= 1.0 && (topRealistico ?? 0) >= 1800 && stormP < 30 && windUpMax <= 45) {
+    cross = { verdict: "XC LOCALE", km: "15–35 km", note: "Ascendenze utilizzabili a rotazione: traiettorie corte intorno al decollo." };
+  } else if (forzaMedia >= 0.6) {
+    cross = { verdict: "XC DIFFICILE", km: "5–15 km", note: "Termiche deboli o caotiche: realistico solo un volo locale allungato." };
+  } else {
+    cross = { verdict: "NO XC", km: "—", note: "Energia insufficiente per allontanarsi dal decollo." };
+  }
+  /* la voce cross sostituisce l'ultimo consiglio (informazione più utile) */
+  inVolo[inVolo.length - 1] =
+    cross.verdict === "XC BUONO"
+      ? "Cross consigliato: traiettorie lungo le creste sottovento"
+      : cross.verdict === "XC LOCALE"
+        ? "Cross di portata locale: traiettorie corte verso le creste vicine"
+        : cross.verdict === "XC DIFFICILE"
+          ? "Cross difficile: volo locale allungato lungo i versanti"
+          : "Volo locale consigliato: energia insufficiente per il cross";
+
   return {
     siteName,
     province,
@@ -398,6 +463,8 @@ export function computeLocandinaData(input: LocandinaInput): LocandinaData {
     inVolo,
     notaPilota: input.report,
     bestBars,
+    fasceTermiche,
+    cross,
   };
 }
 
@@ -409,10 +476,11 @@ interface PageAssets {
   fonts: LocandinaFonts | null;
   bg: string;
   decollo: string;
+  pilota: string;
 }
 
-const ASSET_CACHE: { fonts: LocandinaFonts | null; bg: string | null; decollo: string | null } = {
-  fonts: null, bg: null, decollo: null,
+const ASSET_CACHE: { fonts: LocandinaFonts | null; bg: string | null; decollo: string | null; pilota: string | null } = {
+  fonts: null, bg: null, decollo: null, pilota: null,
 };
 
 function fontFaceCss(fonts: LocandinaFonts | null): string {
@@ -469,9 +537,9 @@ async function fetchWoff2Base64(url: string): Promise<string> {
   return btoa(bin);
 }
 
-export async function loadLocandinaAssets(): Promise<{ fonts: LocandinaFonts | null; bg: string; decollo: string }> {
-  if (ASSET_CACHE.fonts && ASSET_CACHE.bg && ASSET_CACHE.decollo) {
-    return { fonts: ASSET_CACHE.fonts, bg: ASSET_CACHE.bg, decollo: ASSET_CACHE.decollo };
+export async function loadLocandinaAssets(): Promise<{ fonts: LocandinaFonts | null; bg: string; decollo: string; pilota: string }> {
+  if (ASSET_CACHE.fonts && ASSET_CACHE.bg && ASSET_CACHE.decollo && ASSET_CACHE.pilota) {
+    return { fonts: ASSET_CACHE.fonts, bg: ASSET_CACHE.bg, decollo: ASSET_CACHE.decollo, pilota: ASSET_CACHE.pilota };
   }
   const fontsSpec: Array<[keyof LocandinaFonts, string]> = [
     ["montserrat700", "/fonts/locandina/montserrat-700-subset.woff2"],
@@ -506,13 +574,15 @@ export async function loadLocandinaAssets(): Promise<{ fonts: LocandinaFonts | n
   } catch {
     ASSET_CACHE.fonts = null;
   }
-  const [bg, decollo] = await Promise.all([
+  const [bg, decollo, pilota] = await Promise.all([
     imageToJpegDataUrl("/locandine/foto/alpine-bg.jpg", 1080, 0.84),
     imageToJpegDataUrl("/locandine/foto/decollo-parapendio.jpg", 900, 0.82),
+    imageToJpegDataUrl("/locandine/foto/parapendio-in-volo.jpg", 560, 0.84),
   ]);
   ASSET_CACHE.bg = bg;
   ASSET_CACHE.decollo = decollo;
-  return { fonts: ASSET_CACHE.fonts, bg: ASSET_CACHE.bg, decollo: ASSET_CACHE.decollo };
+  ASSET_CACHE.pilota = pilota;
+  return { fonts: ASSET_CACHE.fonts, bg: ASSET_CACHE.bg, decollo: ASSET_CACHE.decollo, pilota: ASSET_CACHE.pilota };
 }
 
 /* ------------------------------------------------------------------ */
@@ -521,15 +591,16 @@ export async function loadLocandinaAssets(): Promise<{ fonts: LocandinaFonts | n
 const SHADOW = "url(#dropShadow)";
 const TXT_SHADOW = "url(#txtShadow)";
 
-/** Parapendio stilizzato (ala arancione, pilota in volo). */
-function paraglider(x: number, y: number, scale: number, wing = "#F2622E"): string {
-  return `<g transform="translate(${x},${y}) scale(${scale})">
-    <path d="M8 64 Q100 -26 196 58 Q100 18 8 64 Z" fill="${wing}"/>
-    <path d="M8 64 Q100 -26 196 58 Q100 18 8 64 Z" fill="none" stroke="rgba(120,30,0,0.35)" stroke-width="3"/>
-    <path d="M58 38 L62 60 M100 22 L100 52 M142 34 L138 58" stroke="rgba(120,30,0,0.4)" stroke-width="3" fill="none"/>
-    <path d="M24 62 L92 118 M180 56 L106 118" stroke="#5B3A1E" stroke-width="2.4" fill="none"/>
-    <circle cx="99" cy="124" r="7" fill="#3B2B1A"/>
-    <path d="M92 130 Q99 126 106 130 L104 148 Q99 152 94 148 Z" fill="#2E4C6B"/>
+/** Polaroid con la fotografia reale del parapendio (in alto a sinistra). */
+function photoBadge(pilota: string): string {
+  const pw = 176;
+  const ph = 124;
+  const px = 42;
+  const py = 30;
+  return `<g transform="rotate(-4 ${px + pw / 2} ${py + ph / 2})">
+    <rect x="${px - 8}" y="${py - 8}" width="${pw + 16}" height="${ph + 16}" rx="8" fill="#FFFFFF" filter="${SHADOW}"/>
+    <g clip-path="url(#pilotaClip)"><image href="${pilota}" x="${px}" y="${py}" width="${pw}" height="${ph}" preserveAspectRatio="xMidYMid slice"/></g>
+    <text x="${px + pw / 2}" y="${py + ph + 11}" text-anchor="middle" font-family="${INTER}" font-weight="600" font-size="13" letter-spacing="1" fill="#5A6B7E">PARAPENDIO IN VOLO</text>
   </g>`;
 }
 
@@ -634,11 +705,11 @@ function madeWithAI(): string {
 }
 
 /** Intestazione comune alle due pagine. */
-function header(top1: string, top2: string, dateLine: string, siteTag: string): string {
+function header(top1: string, top2: string, dateLine: string, siteTag: string, pilota: string): string {
   const s1 = fitSize(top1, 900, MONT, 66, 44, 900);
-  const s2 = fitSize(top2, 900, MONT, 96, 40, 980);
+  const s2 = fitSize(top2, 900, MONT, 96, 40, 600);
   const out: string[] = [];
-  out.push(paraglider(34, 18, 0.86));
+  out.push(photoBadge(pilota));
   out.push(`<text x="540" y="${18 + s1}" text-anchor="middle" font-family="${MONT}" font-weight="900" font-size="${s1}" letter-spacing="2" fill="#FFFFFF" filter="${TXT_SHADOW}">${esc(top1)}</text>`);
   out.push(`<text x="540" y="${18 + s1 + 10 + s2}" text-anchor="middle" font-family="${MONT}" font-weight="900" font-size="${s2}" letter-spacing="1" fill="url(#goldGrad)" filter="${TXT_SHADOW}">${esc(top2)}</text>`);
   out.push(`<text x="540" y="${18 + s1 + 10 + s2 + 46}" text-anchor="middle" font-family="${MONT}" font-weight="800" font-size="30" letter-spacing="3" fill="#FFFFFF" filter="${TXT_SHADOW}">${esc(dateLine)}</text>`);
@@ -681,10 +752,12 @@ function kv(x: number, y: number, k: string, v: string, vSize = 23): string {
 
 /** Piccola card statistiche (valutazione pagina 2). */
 function statChip(x: number, y: number, w: number, label: string, value: string, color: string): string {
+  const lSize = fitSize(label.toUpperCase(), 600, INTER, 14, 10, w - 16);
+  const vSize = fitSize(value, 900, MONT, value.length > 10 ? 23 : 30, 15, w - 14);
   return `<g>
     <rect x="${x}" y="${y}" width="${w}" height="86" rx="14" fill="#F2F6FB" stroke="rgba(18,59,109,0.12)"/>
-    <text x="${x + w / 2}" y="${y + 30}" text-anchor="middle" font-family="${INTER}" font-weight="600" font-size="14" letter-spacing="1" fill="${K.muted}">${esc(label.toUpperCase())}</text>
-    <text x="${x + w / 2}" y="${y + 66}" text-anchor="middle" font-family="${MONT}" font-weight="900" font-size="30" fill="${color}">${esc(value)}</text>
+    <text x="${x + w / 2}" y="${y + 30}" text-anchor="middle" font-family="${INTER}" font-weight="600" font-size="${lSize}" letter-spacing="1" fill="${K.muted}">${esc(label.toUpperCase())}</text>
+    <text x="${x + w / 2}" y="${y + 66}" text-anchor="middle" font-family="${MONT}" font-weight="900" font-size="${vSize}" fill="${color}">${esc(value)}</text>
   </g>`;
 }
 
@@ -703,7 +776,7 @@ export function buildLocandinaSVG(a: PageAssets): { svg: string; width: number; 
 
   /* intestazione */
   const siteTag = d.province ? `${d.province.toUpperCase()} · DECOLLO ${d.elevation} M S.L.M.` : `DECOLLO ${d.elevation} M S.L.M.`;
-  out.push(header("REPORT METEO", d.siteName.toUpperCase(), d.dateShort, siteTag));
+  out.push(header("REPORT METEO", d.siteName.toUpperCase(), d.dateShort, siteTag, a.pilota));
 
   /* ---- riga 1: visibilità · zero termico · base cumuli ---- */
   const r1y = 342;
@@ -783,7 +856,12 @@ export function buildLocandinaSVG(a: PageAssets): { svg: string; width: number; 
   out.push(clock(rx + rw / 2, fy + 112, 44, -60, 15));
   out.push(`<rect x="${rx + 28}" y="${fy + 176}" width="${rw - 56}" height="58" rx="12" fill="#FFFFFF" filter="${SHADOW}"/>`);
   out.push(`<text x="${rx + rw / 2}" y="${fy + 216}" text-anchor="middle" font-family="${MONT}" font-weight="900" font-size="36" fill="${K.red}">${esc(d.finestra)}</text>`);
-  out.push(`<text x="${rx + rw / 2}" y="${fy + fh - 18}" text-anchor="middle" font-family="${MONT}" font-weight="800" font-size="25" fill="#FFFFFF">${esc(d.finestraQuota)}</text>`);
+  out.push(`<text x="${rx + rw / 2}" y="${fy + fh - 56}" text-anchor="middle" font-family="${MONT}" font-weight="800" font-size="25" fill="#FFFFFF">${esc(d.finestraQuota)}</text>`);
+  /* possibilità di cross-country nella finestra di volo */
+  const xcLabel = `Cross ${d.cross.verdict} · ${d.cross.km}`;
+  const xcSize = fitSize(xcLabel, 800, MONT, 21, 15, rw - 40);
+  out.push(`<rect x="${rx + 20}" y="${fy + fh - 42}" width="${rw - 40}" height="34" rx="10" fill="rgba(10,42,86,0.6)"/>`);
+  out.push(`<text x="${rx + rw / 2}" y="${fy + fh - 18}" text-anchor="middle" font-family="${MONT}" font-weight="800" font-size="${xcSize}" fill="${K.gold}">${esc(xcLabel)}</text>`);
 
   /* ---- turbolenza ---- */
   const ty = wy + fh + 22;
@@ -795,6 +873,24 @@ export function buildLocandinaSVG(a: PageAssets): { svg: string; width: number; 
     if (i > 0) out.push(`<line x1="${PAD + 18}" y1="${ry - 10}" x2="${PAD + tw - 18}" y2="${ry - 10}" stroke="${K.line}" stroke-width="1.4"/>`);
     out.push(`<text x="${PAD + 22}" y="${ry + 20}" font-family="${MONT}" font-weight="800" font-size="23" fill="${K.navy}">${esc(t.range)}</text>`);
     out.push(`<text x="${PAD + tw - 22}" y="${ry + 20}" text-anchor="end" font-family="${MONT}" font-weight="800" font-size="23" fill="${K.navy}">${esc(t.name)}</text>`);
+  });
+
+  /* ---- termiche nelle fasce orarie (colonna destra, sotto la finestra) ---- */
+  const fy2 = wy + fh + 22;
+  out.push(sectionBand(rx, fy2, rw, "Termiche per fasce orarie"));
+  const fRowH = 44;
+  const fPanelH = 16 + fRowH * d.fasceTermiche.length;
+  out.push(whitePanel(rx, fy2 + 56, rw, fPanelH));
+  const fasceColor: Record<FasciaTermica["level"], string> = { good: "#2E7D32", mid: "#B97A12", weak: "#A34E44" };
+  d.fasceTermiche.forEach((f, i) => {
+    const ry = fy2 + 56 + 16 + i * fRowH;
+    if (i > 0) out.push(`<line x1="${rx + 18}" y1="${ry - 8}" x2="${rx + rw - 18}" y2="${ry - 8}" stroke="${K.line}" stroke-width="1.4"/>`);
+    out.push(`<circle cx="${rx + 28}" cy="${ry + 14}" r="7" fill="${fasceColor[f.level]}"/>`);
+    out.push(`<text x="${rx + 44}" y="${ry + 20}" font-family="${MONT}" font-weight="800" font-size="19" fill="${K.navy}">${esc(f.orario)}</text>`);
+    out.push(`<text x="${rx + 44}" y="${ry + 38}" font-family="${INTER}" font-weight="600" font-size="13" fill="${K.muted}">${esc(f.label.toUpperCase())}</text>`);
+    out.push(`<text x="${rx + 170}" y="${ry + 20}" font-family="${MONT}" font-weight="800" font-size="19" fill="${fasceColor[f.level]}">${esc(f.lift)}</text>`);
+    out.push(`<text x="${rx + 170}" y="${ry + 38}" font-family="${INTER}" font-weight="600" font-size="13" fill="${K.muted}">QUOTA ${esc(f.quota.toUpperCase())}</text>`);
+    out.push(`<text x="${rx + rw - 22}" y="${ry + 26}" text-anchor="end" font-family="${MONT}" font-weight="700" font-size="17" fill="${K.ink}">${esc(f.vento)}</text>`);
   });
 
   /* ---- banda finale: sintesi + affidabilità ---- */
@@ -824,7 +920,7 @@ export function buildFlightInfoSVG(a: PageAssets): { svg: string; width: number;
   </g>`);
 
   const siteTag = d.province ? `${d.province.toUpperCase()} · DECOLLO ${d.elevation} M S.L.M.` : `DECOLLO ${d.elevation} M S.L.M.`;
-  out.push(header("INFORMAZIONI", "DEL VOLO", d.dateShort, siteTag));
+  out.push(header("INFORMAZIONI", "DEL VOLO", d.dateShort, siteTag, a.pilota));
 
   /* grande pannello contenuto */
   const py = 290;
@@ -908,8 +1004,9 @@ export function buildFlightInfoSVG(a: PageAssets): { svg: string; width: number;
     ["Termiche", `${d.probabilities.thermal}%`, "#B97A12"],
     ["Vento favorevole", `${d.probabilities.wind}%`, K.blueSolid],
     ["Temporali", `${d.probabilities.storm}%`, semColor],
+    ["Possibilità cross", d.cross.km === "—" ? d.cross.verdict : `${d.cross.km}`, semColor],
   ];
-  const chipW = (iw - 60) / 4;
+  const chipW = (iw - 80) / 5;
   chips.forEach(([label, value, color], i) => {
     out.push(statChip(ix + i * (chipW + 20), y + 78, chipW, label, value, color));
   });
@@ -974,6 +1071,7 @@ function pageSvg(body: string): string {
     </filter>
     <clipPath id="pageClip"><rect x="0" y="0" width="${PAGE_W}" height="${PAGE_H}"/></clipPath>
     <clipPath id="fotoClip"><rect x="${PAD + 28}" y="${290 + 28}" width="330" height="216" rx="16"/></clipPath>
+    <clipPath id="pilotaClip"><rect x="42" y="30" width="176" height="124" rx="4"/></clipPath>
   </defs>
   <rect width="${PAGE_W}" height="${PAGE_H}" fill="#0E2A52"/>
   ${body}
@@ -1041,7 +1139,7 @@ type PageBuilder = (a: PageAssets) => { svg: string; width: number; height: numb
 async function prepare(input: LocandinaInput): Promise<PageAssets> {
   const assets = await loadLocandinaAssets();
   const data = computeLocandinaData(input);
-  return { data, fonts: assets.fonts, bg: assets.bg, decollo: assets.decollo };
+  return { data, fonts: assets.fonts, bg: assets.bg, decollo: assets.decollo, pilota: assets.pilota };
 }
 
 async function renderPage(ctx: PageAssets, builder: PageBuilder, type: "png" | "jpg", outWidth: number): Promise<{ blob: Blob; width: number; height: number }> {

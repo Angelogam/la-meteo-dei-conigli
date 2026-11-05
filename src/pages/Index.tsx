@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Activity, CloudSun, Home, Mountain, Thermometer, Wind } from "lucide-react";
+import { Activity, CloudSun, FileDown, Home, Mountain, Thermometer, Wind } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import DecolliCard from "@/components/DecolliCard";
@@ -101,6 +101,18 @@ export default function Index() {
             </button>
             <button type="button" className={"flight-nav-item " + (activeTab === "analisi" ? "is-active" : "")} aria-pressed={activeTab === "analisi"} onClick={() => { setActiveTab("analisi"); document.getElementById("details-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}>
               <Activity aria-hidden="true" /><span>Analisi</span>
+            </button>
+            <button
+              type="button"
+              className="flight-nav-item flight-nav-report"
+              title="Genera un report esportabile in PDF A4 per il decollo selezionato"
+              onClick={() => {
+                setActiveTab("analisi");
+                document.getElementById("details-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                window.setTimeout(() => window.dispatchEvent(new CustomEvent("meteo-dei-conigli:export-report")), 650);
+              }}
+            >
+              <FileDown aria-hidden="true" /><span>Genera report esportabile</span>
             </button>
           </nav>
           <div className="flight-nav-divider" />
@@ -246,6 +258,15 @@ export default function Index() {
                             <div className="analisi-side-heading">
                               <h3>Analisi</h3>
                               <p>Scarica un report per i decolli</p>
+                              <button
+                                type="button"
+                                className="analisi-export-btn"
+                                title="Esporta il report in PDF A4: locandina + informazioni del volo"
+                                onClick={() => window.dispatchEvent(new CustomEvent("meteo-dei-conigli:export-report"))}
+                              >
+                                <FileDown size={16} aria-hidden="true" />
+                                Genera un report esportabile
+                              </button>
                             </div>
                             {site && (
                               <ReportAICard

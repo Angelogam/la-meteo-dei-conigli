@@ -117,6 +117,15 @@ export default function ReportAICard({ siteName, elevation, province, current, h
     }
   };
 
+  /* «Genera un report esportabile» dalla paletta a sinistra: esporta il PDF A4. */
+  const downloadRef = useRef(handleDownload);
+  downloadRef.current = handleDownload;
+  useEffect(() => {
+    const handler = () => { void downloadRef.current("pdf"); };
+    window.addEventListener("meteo-dei-conigli:export-report", handler);
+    return () => window.removeEventListener("meteo-dei-conigli:export-report", handler);
+  }, []);
+
   /* Condivisione WhatsApp: su mobile usa la Web Share API nativa con il file
      (WhatsApp compare tra i target); su desktop scarica il JPG e apre
      WhatsApp Web con il testo già pronto da incollare. */

@@ -4270,6 +4270,37 @@ body {
   color: #9bb0c7;
 }
 
+/* Pulsante «Genera un report esportabile» nella paletta di sinistra */
+.analisi-export-btn {
+  margin-top: .8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .6rem .85rem;
+  border-radius: 12px;
+  border: 1px solid rgba(103, 216, 238, .4);
+  background: linear-gradient(135deg, rgba(28, 88, 165, .45), rgba(11, 48, 99, .55));
+  color: #eaf4ff;
+  font-weight: 700;
+  font-size: .84rem;
+  cursor: pointer;
+  transition: border-color .16s ease, box-shadow .16s ease, transform .16s ease;
+}
+.analisi-export-btn:hover {
+  border-color: rgba(255, 211, 77, .65);
+  box-shadow: 0 6px 18px rgba(28, 88, 165, .35);
+}
+.analisi-export-btn:active { transform: translateY(1px); }
+
+/* Voce «Genera report esportabile» nella paletta di navigazione */
+.flight-nav-report {
+  border: 1px dashed rgba(103, 216, 238, .35);
+}
+.flight-nav-report span {
+  font-size: .78em;
+  line-height: 1.25;
+}
+
 @media (min-width: 1200px) {
   .analisi-tab-layout {
     grid-template-columns: minmax(300px, 380px) minmax(0, 1fr);
