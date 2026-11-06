@@ -96,6 +96,18 @@ const INPUT = {
   report:
     "Condizione molto tranquilla e sicura. Le termiche saranno presenti ma poco efficaci e consentiranno solo modesti guadagni di quota. Giornata ideale per scuola, voli locali, allenamento e perfezionamento del pilotaggio. Non adatta a cross o voli di distanza.",
   probabilities: { flyable: 78, thermal: 55, wind: 70, rain: 6, storm: 8 },
+  analisiReport: {
+    quadroTermico:
+      "Il quadro termico mostra un riscaldamento regolare dalle prime ore del mattino, con gradienti vicini all'adiabatica secca tra collina e quota: ascendenze organizzate ma non violente, base dei cumuli attorno ai 2500 m e moderati guadagni previsti fino a metà pomeriggio.",
+    ventoQuota:
+      "In quota il vento resta del settore nord-ovest con intensità crescente tra 2000 e 3000 m, senza gradini di scudo marcati: possibili derive importanti sui crinali esposti e brezza di valle che ruota nel pomeriggio.",
+    strategia:
+      "Conviene decollare nella finestra centrale, sfruttando i trigger dei versanti soleggiati e tenendosi pronti a gestire l'aumento del vento in quota dopo le 14: meglio pianificare traiettorie corte verso le creste vicine, con atterraggi alternativi sempre in vista.",
+    giudizioFinale:
+      "Giornata volabile con margini di sicurezza adeguati: adatta a voli locali e allenamento, senza ambizioni di cross data la moderata energia disponibile.",
+    segnaliPericolo:
+      "Nessun segnale temporalesco rilevante; da monitorare il rafforzamento del vento in quota e le raffiche da cumuli nelle ore più calde.",
+  },
 };
 
 (async () => {
@@ -133,8 +145,8 @@ const INPUT = {
     };
     const { blob, width, height } = (await LocandinaGen.generateLocandinaRender(input, "png", 1080));
     const pngB64 = await toB64(blob);
-    const jpgFronte = await LocandinaGen.generateLocandinaRender(input, "jpg", 1620);
-    const pages = await LocandinaGen.generateLocandinaPages(input, 1620);
+    const jpgFronte = await LocandinaGen.generateLocandinaRender(input, "jpg", 2160);
+    const pages = await LocandinaGen.generateLocandinaPages(input, 2160);
     const retroB64 = await toB64(pages.informazioni);
     const pdf = await PdfGen.jpegsToPdfBlob([jpgFronte.blob, pages.informazioni], 595.28);
     const pdfB64 = await toB64(pdf);

@@ -34,6 +34,44 @@
     linear-gradient(102deg, rgba(4, 11, 22, .72) 0%, rgba(4, 11, 22, .42) 34%, rgba(4, 11, 22, .08) 62%, rgba(4, 11, 22, 0) 78%);
 }
 
+/* ---------- stormo di parapendii (SVG, solo keyframes CSS) ----------
+   Livelli: foto (z -2) < scrim (z -1) < stormo (z 0) < contenuto/testo (z 1).
+   Il gruppo esterno (track) fa la traversata orizzontale, quello interno (bob)
+   aggiunge ondulazione verticale ±13px e rollio ±3deg. Niente pointer events. */
+
+.hero-foto__flock {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* durata/ritardo per velivolo: traversate 39–64s con delay negativi così il
+   cielo è già popolato al primo paint; bob 3.6–5.1s in alternate */
+.hero-foto__glider--1 { --fly-t: 58s; --fly-d: -12s; --bob-t: 4.2s; --bob-d: -.6s; }
+.hero-foto__glider--2 { --fly-t: 46s; --fly-d: -31s; --bob-t: 3.6s; --bob-d: -1.4s; }
+.hero-foto__glider--3 { --fly-t: 64s; --fly-d: -38s; --bob-t: 5.1s; --bob-d: -2.2s; }
+.hero-foto__glider--4 { --fly-t: 39s; --fly-d: -9s;  --bob-t: 3.8s; --bob-d: -.9s; }
+.hero-foto__glider--5 { --fly-t: 52s; --fly-d: -24s; --bob-t: 4.8s; --bob-d: -1.8s; }
+
+.hero-foto__glider-track {
+  animation: hero-foto-fly-ltr var(--fly-t, 52s) linear infinite;
+  animation-delay: var(--fly-d, 0s);
+  will-change: transform;
+}
+
+.hero-foto__glider-track--rtl { animation-name: hero-foto-fly-rtl; }
+
+.hero-foto__glider-bob {
+  animation: hero-foto-bob var(--bob-t, 4.6s) ease-in-out infinite alternate;
+  animation-delay: var(--bob-d, 0s);
+  transform-box: fill-box;
+  transform-origin: center;
+  will-change: transform;
+}
+
 /* ---------- contenuto ---------- */
 
 .hero-foto__content {
@@ -199,6 +237,23 @@
   to { transform: rotate(360deg); }
 }
 
+/* traversata completa (unità = viewBox 1440×560, margini per entrare/uscire) */
+@keyframes hero-foto-fly-ltr {
+  from { transform: translate3d(-340px, 0, 0); }
+  to   { transform: translate3d(1800px, 0, 0); }
+}
+
+@keyframes hero-foto-fly-rtl {
+  from { transform: translate3d(1800px, 0, 0); }
+  to   { transform: translate3d(-340px, 0, 0); }
+}
+
+/* ondulazione + rollio delicato (pivot al centro del velivolo) */
+@keyframes hero-foto-bob {
+  from { transform: translate3d(0, -13px, 0) rotate(-3deg); }
+  to   { transform: translate3d(0, 13px, 0) rotate(3deg); }
+}
+
 /* ---------- responsive ---------- */
 
 @media (max-width: 640px) {
@@ -211,7 +266,15 @@
 @media (prefers-reduced-motion: reduce) {
   .hero-foto__img,
   .hero-foto__live-dot,
-  .hero-foto__chip-spinner {
+  .hero-foto__chip-spinner,
+  .hero-foto__glider-track,
+  .hero-foto__glider-bob {
     animation: none;
+  }
+
+  /* lo stormo si congela in cielo (posizioni statice sparse), senza layer GPU */
+  .hero-foto__glider-track,
+  .hero-foto__glider-bob {
+    will-change: auto;
   }
 }

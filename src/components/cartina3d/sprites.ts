@@ -1,7 +1,9 @@
 /**
  * SPRITES disegnati su canvas per la vista 3D (nessuna immagine esterna).
  *  - pinImage:       pin da avvicinamento dei decolli
- *  - gliderImage:    PARAPENDIO in volo che fluttua sopra ogni decollo
+ *  - gliderImage:    PARAPENDIO 3/4 in volo sopra ogni decollo: vela ad arco
+ *                    con 8 celle gonfie a due toni, punte curve, cimini A/B,
+ *                    pilota (casco, selletta, gambe) e ombra a terra
  *  - dartSprite:     FRECCIA VERA (asta dritta + punta a barbe nette) delle
  *                    brezze di pendio e dei venti meteo in quota
  *  - rotorSprite:    ROTORE di sottovento: freccia curva ad arco che gira
@@ -120,80 +122,314 @@ export function pinImage(Cesium: CesiumNs, color: string, active: boolean): stri
   return url;
 }
 
-let gliderImg: string | null = null;
+const gliderCache = new Map<string, string>();
 
-/** Parapendio con pilota, visto di 3/4 dal basso: vela a 4 celle + cimini. */
-export function gliderImage(): string {
-  if (gliderImg) return gliderImg;
-  const c = document.createElement("canvas");
-  c.width = 128;
-  c.height = 100;
-  const g = c.getContext("2d")!;
+/** mix di due colori hex (k = 0 → a, k = 1 → b). */
+function mixHex(a: string, b: string, k: number): string {
+  const na = parseInt(a.slice(1), 16);
+  const nb = parseInt(b.slice(1), 16);
+  const ch = (u: number, v: number): number =>
+    Math.max(0, Math.min(255, Math.round(u + (v - u) * k)));
+  const r = ch((na >> 16) & 255, (nb >> 16) & 255);
+  const gg = ch((na >> 8) & 255, (nb >> 8) & 255);
+  const bb = ch(na & 255, nb & 255);
+  return `#${((r << 16) | (gg << 8) | bb).toString(16).padStart(6, "0")}`;
+}
 
-  /* velatura: crescente con gradiente caldo (giallo → arancio) */
-  const grd = g.createLinearGradient(8, 4, 122, 44);
-  grd.addColorStop(0, "#ffe08a");
-  grd.addColorStop(0.55, "#ffb347");
-  grd.addColorStop(1, "#ff9f43");
-  g.beginPath();
-  g.moveTo(10, 40);
-  g.quadraticCurveTo(64, -8, 118, 40); // bordo d'attacco
-  g.quadraticCurveTo(114, 54, 64, 48); // estremità destra → centro (uscita)
-  g.quadraticCurveTo(14, 54, 10, 40);
-  g.closePath();
-  g.fillStyle = grd;
-  g.fill();
-  g.lineWidth = 2;
-  g.strokeStyle = "rgba(6,14,26,0.88)";
+/* ---------- GEOMETRIA del parapendio (pixel su canvas logico 256×256) ----------
+   Proporzioni reali: pilota ≈ 55 px → velatura = 3.2 × pilota ≈ 172 px di
+   apertura, cimini ≈ 0.9 × apertura. Vista di 3/4 da DIETRO-SOTTO: si vede
+   l'intradosso delle celle, l'estremità vicina (sx) è più bassa e più larga,
+   quella lontana (dx) più alta e rastremata (prospettiva). */
+const G_CX = 128; // asse orizzontale del pilota
+const G_SPAN = 172; // apertura velatura (≈ 3.2 × altezza pilota)
+const G_APEX_Y = 20; // chioma dell'arco al centro
+const G_TIP_L_Y = 54; // estremità VICINA (sx), più bassa
+const G_TIP_R_Y = 48; // estremità LONTANA (dx), più alta
+const G_RISER_A = { x: G_CX - 6, y: 195 }; // gruppetto riser A (bordo d'attacco)
+const G_RISER_B = { x: G_CX + 6, y: 195 }; // gruppetto riser B (bordo d'uscita)
+/* bordo superiore: parabola per le 3 note (punta sx, chioma, punta dx) */
+const G_ARC_A = (G_TIP_L_Y + G_TIP_R_Y - 2 * G_APEX_Y) / (2 * (G_SPAN / 2) ** 2);
+const G_ARC_B = (G_TIP_R_Y - G_TIP_L_Y) / (2 * (G_SPAN / 2));
+const topY = (x: number): number => {
+  const dx = x - G_CX;
+  return G_APEX_Y + G_ARC_A * dx * dx + G_ARC_B * dx;
+};
+/* spessore visibile dell'intradosso: massimo al centro, quasi nullo alle punte */
+const G_THICK = (x: number): number =>
+  4.5 + 10 * Math.max(0, 1 - ((x - G_CX) / (G_SPAN / 2)) ** 2);
+const botY = (x: number): number => topY(x) + G_THICK(x);
+/* bordi delle 8 celle (larghezza decrescente verso la punta lontana: 3/4) */
+const G_CELLS = [42, 68, 92, 114, 136, 157, 177, 196, 214];
+/* punti d'attacco delle cimini (7 costine + le 2 punte) */
+const G_ATTACH = [44, 68, 92, 114, 136, 157, 177, 196, 212];
+
+/** PARAPENDIO IN VOLO, dettagliato e visto di 3/4 da dietro-sotto:
+    velatura ad arco con 8 celle gonfie (due toni alternati del colore sito
+    + celle chiare, gradienti e costine sottili), punte curve, cimini sottili
+    che convergono nei gruppetti riser A/B sui moschettoni, pilota con casco,
+    selletta e gambe in avanti, ombra morbida a terra. Il disegno è fatto a
+    512×512 e ridotto a 256×256: linee da 0.5 px senza aliasing.
+    `color` = colore del sito (celle a tono, default il caldo storico);
+    `flip` = specchia la direzione di volo. */
+export function gliderImage(color = "#ff9f43", flip = false): string {
+  const key = `${color}|${flip ? "f" : "n"}`;
+  const hit = gliderCache.get(key);
+  if (hit) return hit;
+
+  /* canvas 2× (512) poi ridotto: le linee sottili restano nitide */
+  const hi = document.createElement("canvas");
+  hi.width = 512;
+  hi.height = 512;
+  const g = hi.getContext("2d")!;
+  g.scale(2, 2);
+  if (flip) {
+    g.translate(256, 0);
+    g.scale(-1, 1);
+  }
+
+  const tipL = G_CX - G_SPAN / 2;
+  const tipR = G_CX + G_SPAN / 2;
+
+  /* percorso della velatura: bordo sup. (parabola) + bordo inf. (spessore) */
+  const canopyPath = (): void => {
+    g.beginPath();
+    g.moveTo(tipL, topY(tipL));
+    for (let x = tipL + 6; x < tipR; x += 6) g.lineTo(x, topY(x));
+    g.lineTo(tipR, topY(tipR));
+    g.lineTo(tipR, botY(tipR));
+    for (let x = tipR - 6; x > tipL; x -= 6) g.lineTo(x, botY(x));
+    g.lineTo(tipL, botY(tipL));
+    g.closePath();
+  };
+
+  /* 1 — OMBRA morbida a terra sotto il pilota (doppia ellisse sfumata) */
+  const shadow = (rx: number, ry: number, a: number): void => {
+    g.save();
+    g.translate(G_CX, 237);
+    g.scale(1, ry / rx);
+    const rg = g.createRadialGradient(0, 0, rx * 0.12, 0, 0, rx);
+    rg.addColorStop(0, `rgba(6,12,20,${a})`);
+    rg.addColorStop(1, "rgba(6,12,20,0)");
+    g.fillStyle = rg;
+    g.beginPath();
+    g.arc(0, 0, rx, 0, Math.PI * 2);
+    g.fill();
+    g.restore();
+  };
+  shadow(30, 4.6, 0.3);
+  shadow(15, 2.3, 0.34);
+
+  /* 2 — CIMINI: 9 linee dai punti d'attacco sulle costine ai 2 gruppetti
+        A/B, con leggera pancia (sag) come le linee vere. Sotto un velo scuro
+        per il contrasto sul satellite, sopra la linea chiara da 0.5 px. */
+  const drawLines = (): void => {
+    g.beginPath();
+    for (const ax of G_ATTACH) {
+      const ay = botY(Math.max(tipL, Math.min(tipR, ax))) + 2.5;
+      const r = ax < G_CX ? G_RISER_A : G_RISER_B;
+      g.moveTo(ax, ay);
+      g.quadraticCurveTo((ax + r.x) / 2, (ay + r.y) / 2 + 7, r.x, r.y);
+    }
+  };
+  drawLines();
+  g.lineWidth = 1.7;
+  g.strokeStyle = "rgba(6,14,26,0.4)";
+  g.stroke();
+  drawLines();
+  g.lineCap = "round";
+  g.lineWidth = 0.7;
+  g.strokeStyle = "rgba(243,248,253,0.95)";
   g.stroke();
 
-  /* separatori delle celle */
-  g.strokeStyle = "rgba(6,14,26,0.42)";
-  g.lineWidth = 1.4;
-  for (const t of [0.22, 0.42, 0.58, 0.78]) {
-    const xT = 10 + 108 * t;
-    const yT = 40 - 30 * Math.sin(Math.PI * t);
-    const xB = 64 + (xT - 64) * 0.5;
+  /* 3 — FUSTELLE + moschettoni ai gruppetti riser */
+  g.lineCap = "round";
+  g.lineWidth = 2.1;
+  g.strokeStyle = "#33506e";
+  g.beginPath();
+  g.moveTo(G_RISER_A.x, G_RISER_A.y);
+  g.lineTo(G_RISER_A.x, 187.5);
+  g.moveTo(G_RISER_B.x, G_RISER_B.y);
+  g.lineTo(G_RISER_B.x, 187.5);
+  g.stroke();
+  for (const kx of [G_RISER_A.x, G_RISER_B.x]) {
     g.beginPath();
-    g.moveTo(xT, yT + 3);
-    g.quadraticCurveTo(xT, yT + 14, xB, 48);
+    g.arc(kx, 186.2, 1.7, 0, Math.PI * 2);
+    g.fillStyle = "#d8e0ea";
+    g.fill();
+    g.lineWidth = 0.6;
+    g.strokeStyle = "rgba(8,14,24,0.7)";
     g.stroke();
   }
 
-  /* cimini fino al pilota */
-  g.strokeStyle = "rgba(226,240,252,0.92)";
-  g.lineWidth = 1.2;
+  /* 4 — PILOTA visto da dietro: gambe in avanti → selletta → busto → casco */
+  g.lineWidth = 4.6;
+  g.lineCap = "round";
+  g.strokeStyle = "#22364c";
   g.beginPath();
-  g.moveTo(12, 42);
-  g.lineTo(57, 70);
-  g.moveTo(40, 50);
-  g.lineTo(58, 71);
-  g.moveTo(64, 50);
-  g.lineTo(64, 71);
-  g.moveTo(88, 50);
-  g.lineTo(70, 71);
-  g.moveTo(116, 42);
-  g.lineTo(71, 70);
+  g.moveTo(124, 210);
+  g.quadraticCurveTo(116.5, 217, 120, 224.5);
+  g.moveTo(132, 210);
+  g.quadraticCurveTo(139.5, 217, 136, 224.5);
+  g.stroke();
+  g.fillStyle = "#0d1926"; // scarpe
+  g.beginPath();
+  g.ellipse(119.6, 226.4, 3.1, 1.9, 0.12, 0, Math.PI * 2);
+  g.fill();
+  g.beginPath();
+  g.ellipse(136.4, 226.4, 3.1, 1.9, -0.12, 0, Math.PI * 2);
+  g.fill();
+
+  const rrect = (x: number, y: number, w: number, h: number, r: number): void => {
+    g.beginPath();
+    g.moveTo(x + r, y);
+    g.arcTo(x + w, y, x + w, y + h, r);
+    g.arcTo(x + w, y + h, x, y + h, r);
+    g.arcTo(x, y + h, x, y, r);
+    g.arcTo(x, y, x + w, y, r);
+    g.closePath();
+  };
+
+  /* busto (la schiena del pilota) */
+  const torso = g.createLinearGradient(0, 183, 0, 198);
+  torso.addColorStop(0, "#3f5c7d");
+  torso.addColorStop(1, "#2a4058");
+  rrect(120.5, 183.5, 15, 13.5, 5.5);
+  g.fillStyle = torso;
+  g.fill();
+  g.lineWidth = 0.8;
+  g.strokeStyle = "rgba(8,14,24,0.55)";
   g.stroke();
 
-  /* pilota: casco + corpo in seduta nel selletta */
-  g.fillStyle = "#ffd76a";
-  g.beginPath();
-  g.arc(64, 61, 5.2, 0, Math.PI * 2);
+  /* selletta / container di riserva con bordo luce e bretelle */
+  const harness = g.createLinearGradient(0, 192, 0, 214);
+  harness.addColorStop(0, "#2f4a66");
+  harness.addColorStop(1, "#16283c");
+  rrect(119, 192.5, 18, 20.5, 6.5);
+  g.fillStyle = harness;
   g.fill();
-  g.fillStyle = "#16283c";
-  g.beginPath();
-  g.ellipse(64, 78, 6.4, 9.5, 0, 0, Math.PI * 2);
-  g.fill();
-  g.strokeStyle = "rgba(226,240,252,0.55)";
+  g.lineWidth = 1;
+  g.strokeStyle = "rgba(8,14,24,0.8)";
+  g.stroke();
   g.lineWidth = 1.4;
+  g.strokeStyle = "rgba(226,238,250,0.28)";
   g.beginPath();
-  g.moveTo(58, 74);
-  g.lineTo(70, 74);
+  g.moveTo(121.5, 195);
+  g.quadraticCurveTo(128, 192.6, 134.5, 195);
+  g.stroke();
+  g.lineWidth = 1;
+  g.strokeStyle = "rgba(224,236,248,0.3)";
+  g.beginPath();
+  g.moveTo(123.5, 187);
+  g.lineTo(123.5, 196.5);
+  g.moveTo(132.5, 187);
+  g.lineTo(132.5, 196.5);
   g.stroke();
 
-  gliderImg = c.toDataURL();
-  return gliderImg;
+  /* casco con gradiente sferico, fascia e riflesso */
+  const helmet = g.createRadialGradient(126.2, 178.4, 1.2, 128, 181, 8.8);
+  helmet.addColorStop(0, "#ffffff");
+  helmet.addColorStop(0.62, "#dfe7ef");
+  helmet.addColorStop(1, "#b0bfce");
+  g.beginPath();
+  g.arc(128, 181, 7.8, 0, Math.PI * 2);
+  g.fillStyle = helmet;
+  g.fill();
+  g.lineWidth = 0.9;
+  g.strokeStyle = "rgba(8,14,24,0.8)";
+  g.stroke();
+  g.beginPath(); // fascia della visiera vista da dietro
+  g.arc(128, 181, 6.4, Math.PI * 0.18, Math.PI * 0.82);
+  g.lineWidth = 1.3;
+  g.strokeStyle = "rgba(30,44,62,0.55)";
+  g.stroke();
+  g.beginPath(); // riflesso
+  g.ellipse(125.2, 178.2, 2.7, 1.6, -0.6, 0, Math.PI * 2);
+  g.fillStyle = "rgba(255,255,255,0.7)";
+  g.fill();
+
+  /* 5 — VELATURA: archetto con 8 celle gonfie, due toni alternati */
+  g.save();
+  canopyPath();
+  g.clip();
+  for (let i = 0; i < 8; i++) {
+    const x0 = G_CELLS[i];
+    const x1 = G_CELLS[i + 1];
+    const xm = (x0 + x1) / 2;
+    const grad = g.createLinearGradient(0, topY(xm) - 2, 0, botY(xm));
+    if (i % 2 === 0) {
+      /* cella a tono sito: luce sopra → ombra sotto (effetto gonfio) */
+      grad.addColorStop(0, shade(color, 1.38));
+      grad.addColorStop(0.55, color);
+      grad.addColorStop(1, shade(color, 0.72));
+    } else {
+      /* cella chiara: bianco → tinta del sito verso l'intradosso */
+      grad.addColorStop(0, "#ffffff");
+      grad.addColorStop(0.6, mixHex("#ffffff", color, 0.3));
+      grad.addColorStop(1, mixHex("#ffffff", color, 0.55));
+    }
+    g.fillStyle = grad;
+    g.fillRect(x0 - 0.5, 14, x1 - x0 + 1, 76);
+    /* rigonfiamento: luce radiale a inizio cella */
+    const cy = topY(xm) + 4.5;
+    const hg = g.createRadialGradient(xm, cy, 0.5, xm, cy, (x1 - x0) * 0.75);
+    hg.addColorStop(0, "rgba(255,255,255,0.3)");
+    hg.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = hg;
+    g.fillRect(x0, 14, x1 - x0, 76);
+  }
+  /* costine sottili tra le celle, lievemente convergenti (prospettiva) */
+  g.strokeStyle = "rgba(10,16,24,0.5)";
+  g.lineWidth = 0.8;
+  g.beginPath();
+  for (let i = 1; i < 8; i++) {
+    const x = G_CELLS[i];
+    g.moveTo(x, topY(x) + 1.2);
+    g.lineTo(x - 2.2, botY(x) - 0.8);
+  }
+  g.stroke();
+  g.restore();
+
+  /* 6 — BORDI: luce sul bordo d'attacco, ombra sul bordo d'uscita,
+        contorno netto e punte che si arricciano (estremità curve) */
+  g.beginPath();
+  g.moveTo(tipL, topY(tipL) + 1.1);
+  for (let x = tipL + 6; x < tipR; x += 6) g.lineTo(x, topY(x) + 1.1);
+  g.lineTo(tipR, topY(tipR) + 1.1);
+  g.strokeStyle = "rgba(255,255,255,0.34)";
+  g.lineWidth = 0.9;
+  g.stroke();
+  g.beginPath();
+  g.moveTo(tipL, botY(tipL));
+  for (let x = tipL + 6; x < tipR; x += 6) g.lineTo(x, botY(x));
+  g.lineTo(tipR, botY(tipR));
+  g.strokeStyle = "rgba(6,14,26,0.62)";
+  g.lineWidth = 1.1;
+  g.stroke();
+  canopyPath();
+  g.strokeStyle = "rgba(8,14,24,0.9)";
+  g.lineWidth = 1.3;
+  g.stroke();
+  g.lineCap = "round";
+  g.strokeStyle = "rgba(10,16,26,0.8)";
+  g.lineWidth = 2.4;
+  g.beginPath();
+  g.moveTo(45, 56.5);
+  g.quadraticCurveTo(38.5, 59.5, 39.5, 65.5);
+  g.stroke();
+  g.beginPath();
+  g.moveTo(211, 50.5);
+  g.quadraticCurveTo(217.5, 52.5, 216.5, 58.5);
+  g.stroke();
+
+  /* riduzione 512 → 256 e cache */
+  const out = document.createElement("canvas");
+  out.width = 256;
+  out.height = 256;
+  out.getContext("2d")!.drawImage(hi, 0, 0, 256, 256);
+  const url = out.toDataURL();
+  gliderCache.set(key, url);
+  return url;
 }
 
 let bubbleImg: string | null = null;

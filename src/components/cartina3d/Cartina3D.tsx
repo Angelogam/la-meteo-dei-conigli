@@ -729,7 +729,9 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
     const viewer = viewerRef.current;
     if (status !== "ready" || !Cesium || !viewer || !active) return;
     markersRef.current.forEach((e) => viewer.entities.remove(e));
-    const glider = gliderImage();
+    /* vela a tono SITO: stesso rosso dei pin (celle alternate bianche per
+       staccare dal satellite) */
+    const glider = gliderImage("#e02b2b");
 
     markersRef.current = good.flatMap((d) => {
       const isActive = d.id === active.id;
@@ -783,7 +785,10 @@ export default function Cartina3D({ decolli, selectedId, hour, onSelect }: Carti
         }, false),
         billboard: {
           image: glider,
-          scale: 0.66,
+          /* canvas 256 px con velatura di 172 px: scala 0.4 ⇒ apertura ~52 px
+             a distanza tipica (il pin è 56 px). scaleByDistance MOLTIPLICA
+             la scala nel vertex shader (scale *= distanceScale). */
+          scale: 0.4,
           scaleByDistance: new Cesium.NearFarScalar(2500, 0.75, 45000, 0.5),
           distanceDisplayCondition: new Cesium.DistanceDisplayCondition(0, 52000),
           verticalOrigin: Cesium.VerticalOrigin.CENTER,

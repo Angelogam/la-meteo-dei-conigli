@@ -276,6 +276,7 @@ export default function Index() {
                                 lon={site.lon}
                                 current={currentData}
                                 hourly={hourlyData}
+                                rawData={rawApiResponse}
                                 daily={enrichedDaily}
                               />
                             )}

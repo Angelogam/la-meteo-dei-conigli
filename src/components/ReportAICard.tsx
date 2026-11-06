@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Download, FileImage, FileText, Sparkles, Wind, CloudSun, ShieldAlert, ArrowRight, MessageCircle, Loader2, Check } from "lucide-react";
+import { Download, FileImage, FileText, Sparkles, Wind, CloudSun, ShieldAlert, ArrowRight, MessageCircle, Loader2, Check, CalendarDays } from "lucide-react";
 import { generateForecast, type ForecastAnalysis } from "@/utils/ForecastAnalyzer";
+import { generateReportMeteo } from "@/utils/generateReportMeteo";
 import {
   computeLocandinaData,
   generateLocandinaImageBlob,
@@ -11,10 +12,12 @@ import {
   type LocandinaInput,
   type LocandinaSounding,
   type SoundingHour,
+  type AnalisiReport,
 } from "@/utils/PosterGenerator";
 import { jpegsToPdfBlob } from "@/utils/PdfGenerator";
 import { fetchHourly } from "@/lib/openMeteoClient";
 import type { MeteoCurrent, MeteoHourly } from "@/services/openMeteoService";
+import type { OpenMeteoRawResponse } from "@/types/meteo";
 
 interface ReportAICardProps {
   siteName: string;
@@ -24,6 +27,8 @@ interface ReportAICardProps {
   lon?: number;
   current: MeteoCurrent | null;
   hourly: MeteoHourly[];
+  /** JSON grezzo Open-Meteo condiviso (serve per il report dell'analisi sul retro). */
+  rawData?: OpenMeteoRawResponse | null;
   daily?: Array<{
     tempMax?: number | null;
     tempMin?: number | null;
@@ -49,7 +54,7 @@ const num = (v: unknown): number | null => {
 };
 
 /** Sounding reale (temperature + geopotenziali + venti ai livelli hPa) per il windgram. */
-async function fetchSounding(lat: number, lon: number, siteAlt: number): Promise<LocandinaSounding> {
+async function fetchSounding(lat: number, lon: number, siteAlt: number, dayOffset = 0): Promise<LocandinaSounding> {
   const params = [
     ...SOUNDING_HPA.flatMap((p) => [
       `temperature_${p}hPa`,
@@ -62,7 +67,13 @@ async function fetchSounding(lat: number, lon: number, siteAlt: number): Promise
     "wind_speed_10m",
     "wind_direction_10m",
   ].join(",");
-  const dayStr = new Date().toISOString().split("T")[0];
+  const day = new Date();
+  day.setDate(day.getDate() + dayOffset);
+  const dayStr = [
+    day.getFullYear(),
+    String(day.getMonth() + 1).padStart(2, "0"),
+    String(day.getDate()).padStart(2, "0"),
+  ].join("-");
   const j = await fetchHourly(lat, lon, params, dayStr, dayStr);
   const H = (j as { hourly?: Record<string, unknown> }).hourly ?? {};
   const timeArr = (H.time as string[] | undefined) ?? [];
@@ -98,7 +109,7 @@ async function fetchSounding(lat: number, lon: number, siteAlt: number): Promise
   return { siteAlt, hours, source: "modello" };
 }
 
-export default function ReportAICard({ siteName, elevation, province, lat, lon, current, hourly, daily = [], onGenerate }: ReportAICardProps) {
+export default function ReportAICard({ siteName, elevation, province, lat, lon, current, hourly, rawData, daily = [], onGenerate }: ReportAICardProps) {
   const [analysis, setAnalysis] = useState<ForecastAnalysis | null>(null);
   const [generated, setGenerated] = useState(false);
   const [busy, setBusy] = useState<BusyKind>(null);
@@ -106,9 +117,29 @@ export default function ReportAICard({ siteName, elevation, province, lat, lon, 
   const [previewFront, setPreviewFront] = useState<{ url: string; blob: Blob } | null>(null);
   const [previewBack, setPreviewBack] = useState<{ url: string; blob: Blob } | null>(null);
   const [previewKind, setPreviewKind] = useState<"fronte" | "retro">("fronte");
-  const [sounding, setSounding] = useState<LocandinaSounding | null>(null);
+  /** 0 = oggi · 1 = domani · 2 = dopodomani (i pulsanti della paletta). */
+  const [giorno, setGiorno] = useState(0);
+  const [soundings, setSoundings] = useState<Record<number, LocandinaSounding | null>>({});
 
-  const computed = useMemo(() => generateForecast(siteName, current, hourly, daily), [siteName, current, hourly, daily]);
+  /* --- giorno scelto: data e ore del giorno (la previsione deve parlare di QUEL giorno) --- */
+  const dayDate = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + giorno);
+    d.setHours(12, 0, 0, 0);
+    return d;
+  }, [giorno]);
+
+  const dayHourly = useMemo(() => {
+    const key = dayDate.toDateString();
+    const rows = hourly.filter((h) => h.time instanceof Date && h.time.toDateString() === key);
+    return rows.length ? rows : giorno === 0 ? hourly : [];
+  }, [hourly, dayDate, giorno]);
+
+  /* valutazione e probabilità calcolate SOLO sulle ore del giorno scelto */
+  const computed = useMemo(
+    () => generateForecast(siteName, current, dayHourly.length ? dayHourly : hourly, daily[giorno] ? [daily[giorno]] : daily),
+    [siteName, current, dayHourly, hourly, daily, giorno],
+  );
   const active = analysis ?? computed;
 
   useEffect(() => {
@@ -116,25 +147,79 @@ export default function ReportAICard({ siteName, elevation, province, lat, lon, 
     setGenerated(false);
     setBusy(null);
     setShareHint(null);
-  }, [siteName, current, hourly, daily]);
+  }, [siteName, current, dayHourly, daily, giorno]);
 
-  /* Sounding per il windgram: una sola chiamata per decollo/giorno, con timeout
-     e fallback silenzioso (il poster stima il profilo dai dati base). */
+  /* --- report dell'analisi meteo (generateReportMeteo, le stesse parole della scheda Analisi) --- */
+  const analisiReport = useMemo<AnalisiReport | null>(() => {
+    const rawHourly = (rawData?.hourly ?? null) as Record<string, unknown> | null;
+    const times = (rawHourly?.time as string[] | undefined) ?? [];
+    if (!times.length) return null;
+    const key = dayDate.toDateString();
+    const keep: number[] = [];
+    times.forEach((t, i) => {
+      if (new Date(t).toDateString() === key) keep.push(i);
+    });
+    if (!keep.length) return null;
+    const series = (name: string): Array<number | null> => {
+      const arr = rawHourly?.[name];
+      if (!Array.isArray(arr)) return [];
+      return keep.map((i) => (typeof arr[i] === "number" ? (arr[i] as number) : null));
+    };
+    const strings = (name: string): string[] => {
+      const arr = rawHourly?.[name];
+      return Array.isArray(arr) ? keep.map((i) => (arr[i] != null ? String(arr[i]) : "")) : [];
+    };
+    const gusts = series("wind_gusts_10m");
+    const r = generateReportMeteo({
+      siteName,
+      altitude: elevation ?? 1500,
+      dateObj: dayDate,
+      hourlyData: {
+        time: keep.map((i) => times[i]),
+        temperature_2m: series("temperature_2m"),
+        dew_point_2m: series("dew_point_2m"),
+        precipitation: series("precipitation"),
+        cloud_cover: series("cloud_cover"),
+        wind_speed_10m: series("wind_speed_10m"),
+        wind_direction_10m: series("wind_direction_10m"),
+        wind_gusts_10m: gusts.length ? gusts : keep.map(() => 0),
+        weather_code: strings("weather_code").map((c) => (c ? Number(c) : 0)),
+        cape: series("cape").length ? series("cape") : keep.map(() => 0),
+        freezing_level_height: series("freezing_level_height").length ? series("freezing_level_height") : keep.map(() => 3600),
+        shortwave_radiation: series("shortwave_radiation").length ? series("shortwave_radiation") : keep.map(() => 400),
+        lifted_index: series("lifted_index"),
+        convective_inhibition: series("convective_inhibition"),
+        boundary_layer_height: series("boundary_layer_height"),
+      },
+    });
+    if (!r) return null;
+    return {
+      quadroTermico: r.paragrafoTermico,
+      ventoQuota: r.paragrafoVento,
+      strategia: r.paragrafoStrategia,
+      giudizioFinale: r.giudizioFinale,
+      segnaliPericolo: r.segnaliPericolo,
+    };
+  }, [rawData, siteName, elevation, dayDate]);
+
+  /* Sounding per il windgram: una chiamata per decollo/giorno scelto (cache per giorno),
+     con timeout e fallback silenzioso (il poster stima il profilo dai dati base). */
   useEffect(() => {
     if (lat == null || lon == null) return;
+    if (soundings[giorno] !== undefined) return;
     let cancelled = false;
     const timeout = new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 9000));
-    Promise.race([fetchSounding(lat, lon, elevation ?? 1500), timeout])
+    Promise.race([fetchSounding(lat, lon, elevation ?? 1500, giorno), timeout])
       .then((s) => {
-        if (!cancelled) setSounding(s);
+        if (!cancelled) setSoundings((old) => ({ ...old, [giorno]: s }));
       })
       .catch(() => {
-        if (!cancelled) setSounding(null);
+        if (!cancelled) setSoundings((old) => ({ ...old, [giorno]: null }));
       });
     return () => {
       cancelled = true;
     };
-  }, [lat, lon, elevation]);
+  }, [lat, lon, elevation, giorno, soundings]);
 
   useEffect(
     () => () => {
@@ -154,24 +239,25 @@ export default function ReportAICard({ siteName, elevation, province, lat, lon, 
   const buildInput = (): LocandinaInput => ({
     siteName,
     province,
-    date: new Date(),
+    date: dayDate,
     elevation: elevation ?? 1500,
     current,
-    hourly,
-    daily: daily[0] ?? null,
+    hourly: dayHourly.length ? dayHourly : hourly,
+    daily: daily[giorno] ?? null,
     report: active.report,
     probabilities: active.probabilities,
-    sounding,
+    sounding: soundings[giorno] ?? null,
+    analisiReport,
   });
 
   const makeJpeg = async (): Promise<{ blob: Blob; filename: string }> => {
-    const blob = await generateLocandinaImageBlob(buildInput(), "jpg", { outWidth: 1620 });
-    return { blob, filename: locandinaFilename(siteName, new Date(), "jpg") };
+    const blob = await generateLocandinaImageBlob(buildInput(), "jpg", { outWidth: 2160 });
+    return { blob, filename: locandinaFilename(siteName, dayDate, "jpg") };
   };
 
   const makeRetroJpeg = async (): Promise<{ blob: Blob; filename: string }> => {
-    const pages = await generateLocandinaPages(buildInput(), 1620);
-    return { blob: pages.informazioni, filename: locandinaFilename(siteName, new Date(), "report.jpg") };
+    const pages = await generateLocandinaPages(buildInput(), 2160);
+    return { blob: pages.informazioni, filename: locandinaFilename(siteName, dayDate, "report.jpg") };
   };
 
   const rememberPreview = (blob: Blob, kind: "fronte" | "retro") => {
@@ -197,12 +283,12 @@ export default function ReportAICard({ siteName, elevation, province, lat, lon, 
     try {
       const input = buildInput();
       if (type === "pdf") {
-        const pages = await generateLocandinaPages(input, 1620);
+        const pages = await generateLocandinaPages(input, 2160);
         rememberPreview(pages.locandina, "fronte");
         rememberPreview(pages.informazioni, "retro");
         setPreviewKind("fronte");
         const pdf = await jpegsToPdfBlob([pages.locandina, pages.informazioni]);
-        triggerDownload(pdf, locandinaFilename(siteName, new Date(), "pdf"));
+        triggerDownload(pdf, locandinaFilename(siteName, dayDate, "pdf"));
       } else if (type === "jpg") {
         const { blob, filename } = await makeJpeg();
         rememberPreview(blob, "fronte");
@@ -212,9 +298,9 @@ export default function ReportAICard({ siteName, elevation, province, lat, lon, 
         rememberPreview(blob, "retro");
         triggerDownload(blob, filename);
       } else {
-        const blob = await generateLocandinaImageBlob(input, "png", { outWidth: 1620 });
+        const blob = await generateLocandinaImageBlob(input, "png", { outWidth: 2160 });
         rememberPreview(blob, "fronte");
-        triggerDownload(blob, locandinaFilename(siteName, new Date(), "png"));
+        triggerDownload(blob, locandinaFilename(siteName, dayDate, "png"));
       }
       setShareHint(
         type === "pdf"
@@ -251,9 +337,10 @@ export default function ReportAICard({ siteName, elevation, province, lat, lon, 
       rememberPreview(blob, "fronte");
       const file = new File([blob], filename, { type: "image/jpeg" });
       const d = active;
+      const dayLabel = dayDate.toLocaleDateString("it-IT", { day: "2-digit", month: "long", year: "numeric" });
       const text =
         `🪂 Locandina meteo volo libero — ${siteName}\n` +
-        `📅 ${new Date().toLocaleDateString("it-IT", { day: "2-digit", month: "long", year: "numeric" })}\n` +
+        `📅 ${dayLabel}\n` +
         `🚦 ${d.semaforo} · Finestra migliore ${d.windows.midday}\n` +
         `💨 Probabilità volabile ${d.probabilities.flyable}%\n` +
         `📍 la-meteo-dei-conigli.vercel.app`;
@@ -326,6 +413,46 @@ export default function ReportAICard({ siteName, elevation, province, lat, lon, 
             <div style={{ fontSize: 11, letterSpacing: 1.2, textTransform: "uppercase", opacity: 0.8 }}>Voto</div>
             <div style={{ borderRadius: 999, padding: "8px 12px", background: theme.color, color: "white", fontWeight: 800, fontSize: 12, letterSpacing: 1 }}>{active.semaforo}</div>
           </div>
+        </div>
+
+        {/* --- pulsanti del giorno: la locandina può parlare di oggi, domani o dopodomani --- */}
+        <div style={{ display: "flex", gap: 6 }}>
+          {([0, 1, 2] as const).map((g) => {
+            const label = g === 0 ? "OGGI" : g === 1 ? "DOMANI" : "DOPODOMANI";
+            const dt = new Date();
+            dt.setDate(dt.getDate() + g);
+            const sub = dt.toLocaleDateString("it-IT", { weekday: "short", day: "numeric" });
+            const sel = giorno === g;
+            return (
+              <button
+                key={g}
+                type="button"
+                data-testid={`locandina-giorno-${g}`}
+                aria-pressed={sel}
+                onClick={() => setGiorno(g)}
+                style={{
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 1,
+                  borderRadius: 10,
+                  border: `1px solid ${sel ? "#193029" : "rgba(25,48,41,0.22)"}`,
+                  background: sel ? "linear-gradient(135deg, #193029 0%, #1D8F5F 100%)" : "white",
+                  color: sel ? "white" : "#193029",
+                  padding: "7px 4px",
+                  cursor: "pointer",
+                  boxShadow: sel ? "0 8px 16px rgba(25,48,41,0.20)" : "none",
+                  transition: "all 0.2s ease",
+                }}
+              >
+                <span style={{ display: "flex", alignItems: "center", gap: 4, fontWeight: 800, fontSize: 11.5, letterSpacing: 0.4 }}>
+                  <CalendarDays size={12} /> {label}
+                </span>
+                <span style={{ fontSize: 10, opacity: 0.8, fontWeight: 600, textTransform: "capitalize" }}>{sub}</span>
+              </button>
+            );
+          })}
         </div>
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "8px 10px", borderRadius: 10, background: generated ? "rgba(29,143,95,0.12)" : "rgba(25,48,41,0.06)", border: "1px solid rgba(25,48,41,0.14)" }}>
