@@ -124,24 +124,27 @@ const INPUT = {
   await page.addScriptTag({ path: PDF_BUNDLE });
 
   const result = await page.evaluate(async (input) => {
+    const toB64 = async (blob) => {
+      const buf = await blob.arrayBuffer();
+      let bin = "";
+      const u8 = new Uint8Array(buf);
+      for (let i = 0; i < u8.length; i += 0x8000) bin += String.fromCharCode(...u8.subarray(i, i + 0x8000));
+      return btoa(bin);
+    };
     const { blob, width, height } = (await LocandinaGen.generateLocandinaRender(input, "png", 1080));
-    const buf = await blob.arrayBuffer();
-    let bin = "";
-    const u8 = new Uint8Array(buf);
-    for (let i = 0; i < u8.length; i += 0x8000) bin += String.fromCharCode(...u8.subarray(i, i + 0x8000));
-    const jpg = await LocandinaGen.generateLocandinaRender(input, "jpg", 1620);
-    const pdf = await PdfGen.jpegToPdfBlob(jpg.blob, 595.28);
-    window.__pdfB64 = null;
-    const pdfBuf = await pdf.arrayBuffer();
-    let pdfBin = "";
-    const pu8 = new Uint8Array(pdfBuf);
-    for (let i = 0; i < pu8.length; i += 0x8000) pdfBin += String.fromCharCode(...pu8.subarray(i, i + 0x8000));
-    return { pngB64: btoa(bin), width, height, jpgKB: Math.round(jpg.blob.size / 1024), pdfKB: Math.round(pdf.size / 1024), pdfB64: btoa(pdfBin) };
+    const pngB64 = await toB64(blob);
+    const jpgFronte = await LocandinaGen.generateLocandinaRender(input, "jpg", 1620);
+    const pages = await LocandinaGen.generateLocandinaPages(input, 1620);
+    const retroB64 = await toB64(pages.informazioni);
+    const pdf = await PdfGen.jpegsToPdfBlob([jpgFronte.blob, pages.informazioni], 595.28);
+    const pdfB64 = await toB64(pdf);
+    return { pngB64, retroB64, width, height, jpgKB: Math.round(jpgFronte.blob.size / 1024), retroKB: Math.round(pages.informazioni.size / 1024), pdfKB: Math.round(pdf.size / 1024), pdfB64 };
   }, INPUT);
 
   fs.writeFileSync(path.join(OUT_DIR, "app-locandina.png"), Buffer.from(result.pngB64, "base64"));
+  fs.writeFileSync(path.join(OUT_DIR, "app-locandina-retro.png"), Buffer.from(result.retroB64, "base64"));
   fs.writeFileSync(path.join(OUT_DIR, "app-locandina.pdf"), Buffer.from(result.pdfB64, "base64"));
-  console.log("PNG:", result.width, "x", result.height, "| JPG:", result.jpgKB, "KB | PDF:", result.pdfKB, "KB");
+  console.log("PNG:", result.width, "x", result.height, "| JPG fronte:", result.jpgKB, "KB | JPG retro:", result.retroKB, "KB | PDF:", result.pdfKB, "KB");
 
   // also verify the WhatsApp share capability detection paths exist
   const shareInfo = await page.evaluate(() => ({
