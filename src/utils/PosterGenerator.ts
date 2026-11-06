@@ -1142,13 +1142,8 @@ function thermalArea(x: number, y: number, w: number, h: number, bars: Array<{ o
   </g>`;
 }
 
-/** Pill «Made with AI» in alto a destra. */
-function madeWithAI(): string {
-  return `<g>
-    <rect x="846" y="26" width="206" height="46" rx="23" fill="#FFFFFF" filter="${SHADOW}"/>
-    <text x="949" y="56" text-anchor="middle" font-family="${INTER}" font-weight="600" font-size="21" fill="#1A1A1A">Made with AI</text>
-  </g>`;
-}
+/** Pill «Made with AI» rimossa: il bollettino è elaborato dai dati reali
+ *  Open-Meteo e lo dichiara in piede — nessuna etichetta «AI» sul prodotto. */
 
 /** Intestazione comune alle due pagine. */
 function header(top1: string, top2: string, dateLine: string, siteTag: string): string {
@@ -1161,7 +1156,6 @@ function header(top1: string, top2: string, dateLine: string, siteTag: string): 
   if (siteTag) {
     out.push(`<text x="540" y="${18 + s1 + 10 + s2 + 74}" text-anchor="middle" font-family="${INTER}" font-weight="600" font-size="19" letter-spacing="2" fill="rgba(255,255,255,0.92)" filter="${TXT_SHADOW}">${esc(siteTag)}</text>`);
   }
-  out.push(madeWithAI());
   return out.join("");
 }
 
@@ -1555,7 +1549,12 @@ export function buildLocandinaSVG(a: PageAssets): { svg: string; width: number; 
   out.push(bluePanel(fX, vY, fW, vH));
   out.push(clock(fX + 64, vY + 74, 40, -60, 15));
   out.push(`<text x="${fX + 122}" y="${vY + 36}" font-family="${MONT}" font-weight="800" font-size="16" letter-spacing="1.4" fill="${K.gold}">FINESTRA DI VOLO</text>`);
-  out.push(`<text x="${fX + 122}" y="${vY + 76}" font-family="${MONT}" font-weight="900" font-size="40" fill="#FFFFFF">OTTIMALE</text>`);
+  /* l'etichetta rispetta il verdetto del giorno: su giornate no/da monitorare
+     la finestra resta «la migliore possibile», non «ottimale» (niente messaggi
+     contraddittori per il pilota) */
+  const windowLabel = d.probabilities.flyable >= 65 ? "OTTIMALE" : "LA MIGLIORE";
+  const wlSize = fitSize(windowLabel, 900, MONT, 40, 26, fW - 150);
+  out.push(`<text x="${fX + 122}" y="${vY + 76}" font-family="${MONT}" font-weight="900" font-size="${wlSize}" fill="#FFFFFF">${windowLabel}</text>`);
   const fwSize = fitSize(d.finestra, 900, MONT, 44, 30, fW - 60);
   out.push(`<text x="${fX + 24}" y="${vY + 136}" font-family="${MONT}" font-weight="900" font-size="${fwSize}" fill="#FFFFFF" filter="${TXT_SHADOW}">${esc(d.finestra)}</text>`);
   out.push(`<text x="${fX + 24}" y="${vY + 162}" font-family="${MONT}" font-weight="800" font-size="19" fill="#FFFFFF">${esc(d.finestraQuota)}</text>`);
