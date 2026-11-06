@@ -16,6 +16,7 @@ import {
 } from "@/utils/PosterGenerator";
 import { jpegsToPdfBlob } from "@/utils/PdfGenerator";
 import { fetchHourly } from "@/lib/openMeteoClient";
+import PosterWindgram from "@/components/PosterWindgram";
 import type { MeteoCurrent, MeteoHourly } from "@/services/openMeteoService";
 import type { OpenMeteoRawResponse } from "@/types/meteo";
 
@@ -120,6 +121,12 @@ export default function ReportAICard({ siteName, elevation, province, lat, lon, 
   /** 0 = oggi · 1 = domani · 2 = dopodomani (i pulsanti della paletta). */
   const [giorno, setGiorno] = useState(0);
   const [soundings, setSoundings] = useState<Record<number, LocandinaSounding | null>>({});
+  /** Immagine del windgram REALE della pagina, catturata dal componente nascosto. */
+  const [windgramImg, setWindgramImg] = useState<string | null>(null);
+
+  useEffect(() => {
+    setWindgramImg(null);
+  }, [giorno, lat, lon, elevation]);
 
   /* --- giorno scelto: data e ore del giorno (la previsione deve parlare di QUEL giorno) --- */
   const dayDate = useMemo(() => {
@@ -248,6 +255,7 @@ export default function ReportAICard({ siteName, elevation, province, lat, lon, 
     probabilities: active.probabilities,
     sounding: soundings[giorno] ?? null,
     analisiReport,
+    windgramImage: windgramImg,
   });
 
   const makeJpeg = async (): Promise<{ blob: Blob; filename: string }> => {
@@ -593,6 +601,19 @@ export default function ReportAICard({ siteName, elevation, province, lat, lon, 
           </div>
         )}
       </div>
+
+      {/* Windgram REALE della pagina (nascosto): il retro della locandina
+          mostra il grafico identico alla scheda Venti. Non occupa spazio. */}
+      {lat != null && lon != null && (
+        <PosterWindgram
+          latitude={lat}
+          longitude={lon}
+          altitude={elevation ?? 1500}
+          siteName={siteName}
+          selectedDay={giorno}
+          onCapture={setWindgramImg}
+        />
+      )}
     </section>
   );
 }

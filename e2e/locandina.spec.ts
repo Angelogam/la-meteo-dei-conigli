@@ -69,4 +69,52 @@ test.describe("Locandina: palette giorni e generazione", () => {
     await page.waitForTimeout(400);
     expect(pageErrors).toEqual([]);
   });
+
+  test("il retro della locandina usa il windgram VERO della pagina (cattura del componente)", async ({ page }) => {
+    const pageErrors: string[] = [];
+    page.on("pageerror", (error) => pageErrors.push(error.message));
+
+    await page.setViewportSize({ width: 1440, height: 1200 });
+    await page.goto("/");
+    await page.getByTestId("tab-analisi").click({ timeout: 30_000 });
+
+    // l'host nascosto monta il VERO ProfessionalWindgram della scheda Venti
+    const host = page.getByTestId("poster-windgram-host");
+    await expect(host).toBeVisible({ timeout: 30_000 });
+    const realChart = host.locator('svg[viewBox="0 0 1200 1040"]');
+    await expect(realChart).toBeAttached({ timeout: 30_000 });
+
+    // la cattura (SVG → PNG) si conclude: data-ready passa a "true"
+    await expect(host).toHaveAttribute("data-ready", "true", { timeout: 45_000 });
+
+    // il retro si scarica e contiene il grafico catturato (peso coerente con l'immagine)
+    const [download] = await Promise.all([
+      page.waitForEvent("download", { timeout: 90_000 }),
+      page.locator(".report-ai-card button", { hasText: "Retro" }).first().click(),
+    ]);
+    expect(download.suggestedFilename()).toMatch(/^locandina-.*\.jpg$/);
+    const path = await download.path();
+    const size = (await import("node:fs")).statSync(path!).size;
+    expect(size).toBeGreaterThan(400_000);
+    expect(pageErrors).toEqual([]);
+  });
+
+  test("cambiare giorno ri-arma la cattura del windgram (nuovo grafico per il nuovo giorno)", async ({ page }) => {
+    test.setTimeout(120_000);
+    const pageErrors: string[] = [];
+    page.on("pageerror", (error) => pageErrors.push(error.message));
+
+    await page.setViewportSize({ width: 1440, height: 1200 });
+    await page.goto("/");
+    await page.getByTestId("tab-analisi").click({ timeout: 30_000 });
+
+    const host = page.getByTestId("poster-windgram-host");
+    await expect(host).toHaveAttribute("data-ready", "true", { timeout: 45_000 });
+
+    // passando a domani la cattura si azzera e riparte per il nuovo giorno
+    await page.getByTestId("locandina-giorno-1").click();
+    await expect(host).toHaveAttribute("data-ready", "false", { timeout: 10_000 });
+    await expect(host).toHaveAttribute("data-ready", "true", { timeout: 45_000 });
+    expect(pageErrors).toEqual([]);
+  });
 });

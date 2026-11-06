@@ -36,6 +36,9 @@ export interface LocandinaInput {
   sounding?: LocandinaSounding | null;
   /** Report approfondito generato dall'analisi meteo (generateReportMeteo) per la pagina retro. */
   analisiReport?: AnalisiReport | null;
+  /** Immagine del windgram REALE della pagina (cattura di ProfessionalWindgram, vedi PosterWindgram.tsx).
+   *  Se presente il retro la usa così com'è: il grafico è identico a quello del sito. */
+  windgramImage?: string | null;
 }
 
 /** Le 5 voci del report dell'analisi meteo, già in italiano semplice. */
@@ -260,6 +263,8 @@ export interface LocandinaData {
   windgram: WindgramData | null;
   /** Report dell'analisi meteo per la pagina retro (se presente). */
   analisiReport: AnalisiReport | null;
+  /** Ora di elaborazione della previsione (onestà sul modello: i piloti vogliono sapere quando è stato fatto). */
+  modelUpdate: string;
 }
 
 /* ------------------------------------------------------------------ */
@@ -460,10 +465,10 @@ export function computeLocandinaData(input: LocandinaInput): LocandinaData {
   const pressure = current?.pressure ?? avg(hours.map((h) => h.pressure));
   const umidita = Math.round(avg(hours.map((h) => h.humidity)) ?? 50);
   const ventoDecollo = current
-    ? `${dirName(current.windDir)} ${Math.round(current.windSpeed)} km/h`
+    ? `${Math.round(current.windSpeed)} km/h da ${dirName(current.windDir)}`
     : (() => {
         const h0 = hours[Math.floor(hours.length / 2)];
-        return h0 ? `${dirName(h0.windDir)} ${Math.round(h0.windSpeed ?? 0)} km/h` : "—";
+        return h0 ? `${Math.round(h0.windSpeed ?? 0)} km/h da ${dirName(h0.windDir)}` : "—";
       })();
   const uvMax = input.daily?.uvIndexMax ?? nmax(hours.map((h) => h.uvIndex));
 
@@ -597,6 +602,7 @@ export function computeLocandinaData(input: LocandinaInput): LocandinaData {
     rainBars,
     windgram,
     analisiReport: input.analisiReport ?? null,
+    modelUpdate: new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }),
   };
 }
 
@@ -896,13 +902,16 @@ function synthesizeLevels(m: MeteoHourly | undefined, elevation: number): Soundi
 interface PageAssets {
   data: LocandinaData;
   fonts: LocandinaFonts | null;
+  /** foto reale di parapendio su montagne verdi (fronte) */
   bg: string;
+  /** foto reale di parapendio in alta quota (retro) */
   valley: string;
-  pilota: string;
+  /** windgram REALE della pagina (cattura del componente), se disponibile */
+  windgramImage: string | null;
 }
 
-const ASSET_CACHE: { fonts: LocandinaFonts | null; bg: string | null; valley: string | null; pilota: string | null } = {
-  fonts: null, bg: null, valley: null, pilota: null,
+const ASSET_CACHE: { fonts: LocandinaFonts | null; bg: string | null; valley: string | null } = {
+  fonts: null, bg: null, valley: null,
 };
 
 function fontFaceCss(fonts: LocandinaFonts | null): string {
@@ -959,9 +968,9 @@ async function fetchWoff2Base64(url: string): Promise<string> {
   return btoa(bin);
 }
 
-export async function loadLocandinaAssets(): Promise<{ fonts: LocandinaFonts | null; bg: string; valley: string; pilota: string }> {
-  if (ASSET_CACHE.fonts && ASSET_CACHE.bg && ASSET_CACHE.valley && ASSET_CACHE.pilota) {
-    return { fonts: ASSET_CACHE.fonts, bg: ASSET_CACHE.bg, valley: ASSET_CACHE.valley, pilota: ASSET_CACHE.pilota };
+export async function loadLocandinaAssets(): Promise<{ fonts: LocandinaFonts | null; bg: string; valley: string }> {
+  if (ASSET_CACHE.fonts && ASSET_CACHE.bg && ASSET_CACHE.valley) {
+    return { fonts: ASSET_CACHE.fonts, bg: ASSET_CACHE.bg, valley: ASSET_CACHE.valley };
   }
   const fontsSpec: Array<[keyof LocandinaFonts, string]> = [
     ["montserrat700", "/fonts/locandina/montserrat-700-subset.woff2"],
@@ -996,17 +1005,15 @@ export async function loadLocandinaAssets(): Promise<{ fonts: LocandinaFonts | n
   } catch {
     ASSET_CACHE.fonts = null;
   }
-  /* Foto reali ad alta risoluzione (sorgenti ≥2400 px per esportare fino a 2400 px:
-     sfondo alpino con parapendio, valle verde per il retro, polaroid del pilota in volo). */
-  const [bg, valley, pilota] = await Promise.all([
-    imageToJpegDataUrl("/locandine/foto/alpine-bg-v3.jpg", 2400, 0.86),
-    imageToJpegDataUrl("/locandine/foto/valley-v3.jpg", 1600, 0.84),
-    imageToJpegDataUrl("/locandine/foto/glider-v3.jpg", 720, 0.86),
+  /* Foto REALI prese online (nessun parapendio disegnato: la foto è protagonista,
+     come sui poster dei siti di volo). Fonti: Unsplash, Explore Savoie. */
+  const [bg, valley] = await Promise.all([
+    imageToJpegDataUrl("/locandine/foto/parapendio-verde.jpg", 2400, 0.86),
+    imageToJpegDataUrl("/locandine/foto/parapendio-quota.jpg", 1600, 0.84),
   ]);
   ASSET_CACHE.bg = bg;
   ASSET_CACHE.valley = valley;
-  ASSET_CACHE.pilota = pilota;
-  return { fonts: ASSET_CACHE.fonts, bg: ASSET_CACHE.bg, valley: ASSET_CACHE.valley, pilota: ASSET_CACHE.pilota };
+  return { fonts: ASSET_CACHE.fonts, bg: ASSET_CACHE.bg, valley: ASSET_CACHE.valley };
 }
 
 /* ------------------------------------------------------------------ */
@@ -1014,19 +1021,6 @@ export async function loadLocandinaAssets(): Promise<{ fonts: LocandinaFonts | n
 /* ------------------------------------------------------------------ */
 const SHADOW = "url(#dropShadow)";
 const TXT_SHADOW = "url(#txtShadow)";
-
-/** Polaroid con la fotografia reale del parapendio (in alto a sinistra). */
-function photoBadge(pilota: string): string {
-  const pw = 176;
-  const ph = 124;
-  const px = 42;
-  const py = 30;
-  return `<g transform="rotate(-4 ${px + pw / 2} ${py + ph / 2})">
-    <rect x="${px - 8}" y="${py - 8}" width="${pw + 16}" height="${ph + 16}" rx="8" fill="#FFFFFF" filter="${SHADOW}"/>
-    <g clip-path="url(#pilotaClip)"><image href="${pilota}" x="${px}" y="${py}" width="${pw}" height="${ph}" preserveAspectRatio="xMidYMid slice"/></g>
-    <text x="${px + pw / 2}" y="${py + ph + 11}" text-anchor="middle" font-family="${INTER}" font-weight="600" font-size="13" letter-spacing="1" fill="#5A6B7E">PARAPENDIO IN VOLO</text>
-  </g>`;
-}
 
 /** Termometro con mercurio rosso. */
 function thermometer(x: number, y: number, h: number): string {
@@ -1068,6 +1062,14 @@ function gaugeIcon(x: number, y: number, s: number): string {
     <circle cx="22" cy="22" r="17" fill="#FFFFFF" stroke="#9AA7B5" stroke-width="2.4"/>
     <path d="M22 22 L22 9 M22 22 L32 28" stroke="#1C58A5" stroke-width="3.4" stroke-linecap="round"/>
     <circle cx="22" cy="22" r="3" fill="#D62828"/>
+  </g>`;
+}
+
+/** Nuvola semplice (base cumuli), senza fulmini. */
+function cloudIcon(x: number, y: number, s: number): string {
+  return `<g transform="translate(${x},${y}) scale(${s})" filter="${TXT_SHADOW}">
+    <path d="M20 34 a11 11 0 0 1 1.6-21.8 A14 14 0 0 1 48 8.6 A10.4 10.4 0 0 1 57 26 a9 9 0 0 1-4 8 Z"
+      fill="#FFFFFF" stroke="#9AA7B5" stroke-width="3" stroke-linejoin="round"/>
   </g>`;
 }
 
@@ -1149,11 +1151,10 @@ function madeWithAI(): string {
 }
 
 /** Intestazione comune alle due pagine. */
-function header(top1: string, top2: string, dateLine: string, siteTag: string, pilota: string): string {
+function header(top1: string, top2: string, dateLine: string, siteTag: string): string {
   const s1 = fitSize(top1, 900, MONT, 66, 44, 900);
   const s2 = fitSize(top2, 900, MONT, 96, 40, 600);
   const out: string[] = [];
-  out.push(photoBadge(pilota));
   out.push(`<text x="540" y="${18 + s1}" text-anchor="middle" font-family="${MONT}" font-weight="900" font-size="${s1}" letter-spacing="2" fill="#FFFFFF" filter="${TXT_SHADOW}">${esc(top1)}</text>`);
   out.push(`<text x="540" y="${18 + s1 + 10 + s2}" text-anchor="middle" font-family="${MONT}" font-weight="900" font-size="${s2}" letter-spacing="1" fill="url(#goldGrad)" filter="${TXT_SHADOW}">${esc(top2)}</text>`);
   out.push(`<text x="540" y="${18 + s1 + 10 + s2 + 46}" text-anchor="middle" font-family="${MONT}" font-weight="800" font-size="30" letter-spacing="3" fill="#FFFFFF" filter="${TXT_SHADOW}">${esc(dateLine)}</text>`);
@@ -1444,7 +1445,7 @@ export function buildLocandinaSVG(a: PageAssets): { svg: string; width: number; 
 
   /* intestazione */
   const siteTag = d.province ? `${d.province.toUpperCase()} · DECOLLO ${d.elevation} M S.L.M.` : `DECOLLO ${d.elevation} M S.L.M.`;
-  out.push(header("REPORT METEO", d.siteName.toUpperCase(), d.dateShort, siteTag, a.pilota));
+  out.push(header("REPORT METEO", d.siteName.toUpperCase(), d.dateShort, siteTag));
 
   /* ============ RIGA VERDETTO: se piove o se dà bello ============ */
   const vy = 306;
@@ -1469,146 +1470,118 @@ export function buildLocandinaSVG(a: PageAssets): { svg: string; width: number; 
 
   out.push(bluePanel(vrx, vy, vrw, vh));
   out.push(`<text x="${vrx + 24}" y="${vy + 36}" font-family="${MONT}" font-weight="800" font-size="17" letter-spacing="2" fill="${K.gold}">GIORNATA DI VOLO</text>`);
-  const semW = textWidth(d.semaforo, 900, 30, MONT) + 46;
+  const semW = Math.min(textWidth(d.semaforo, 900, 30, MONT) + 46, vrw - 48);
   out.push(`<rect x="${vrx + 24}" y="${vy + 52}" width="${semW}" height="48" rx="24" fill="#FFFFFF" filter="${SHADOW}"/>`);
   out.push(`<text x="${vrx + 24 + semW / 2}" y="${vy + 84}" text-anchor="middle" font-family="${MONT}" font-weight="900" font-size="30" fill="${K.navy}">${esc(d.semaforo)}</text>`);
-  out.push(`<text x="${vrx + 24 + semW + 18}" y="${vy + 72}" font-family="${MONT}" font-weight="800" font-size="21" fill="#FFFFFF">Volabile ${d.probabilities.flyable}%</text>`);
-  out.push(`<text x="${vrx + 24 + semW + 18}" y="${vy + 96}" font-family="${MONT}" font-weight="800" font-size="21" fill="#FFFFFF">Temporali ${esc(d.rischioTemporali)}</text>`);
-  out.push(`<text x="${vrx + 24}" y="${vy + 128}" font-family="${INTER}" font-weight="600" font-size="15.5" fill="rgba(255,255,255,0.85)">Termiche ${d.probabilities.thermal}% · Vento favorevole ${d.probabilities.wind}%</text>`);
+  /* le due probabilità sotto il badge: fitSize per non uscire mai dal pannello */
+  const pAvail = vrw - 48;
+  const volSize = fitSize(`Volabile ${d.probabilities.flyable}%`, 800, MONT, 21, 13, pAvail);
+  const temSize = fitSize(`Temporali ${d.rischioTemporali}`, 800, MONT, 21, 13, pAvail);
+  const pSize = Math.min(volSize, temSize);
+  out.push(`<text x="${vrx + 24}" y="${vy + 122}" font-family="${MONT}" font-weight="800" font-size="${pSize}" fill="#FFFFFF">Volabile ${d.probabilities.flyable}%  ·  Temporali ${esc(d.rischioTemporali)}</text>`);
+  out.push(`<text x="${vrx + 24}" y="${vy + 140}" font-family="${INTER}" font-weight="600" font-size="14" fill="rgba(255,255,255,0.85)">Termiche ${d.probabilities.thermal}% · Vento favorevole ${d.probabilities.wind}%</text>`);
 
-  /* ============ TEMPLATE PARAPENDIO ============ */
-  const cx = PAGE_W / 2;
-  const wingApex = 520;
-  const tipDrop = 128;
-  const halfSpan = 418;
-  const wingL = cx - halfSpan;
-  const wingR = cx + halfSpan;
-  const tipY = wingApex + tipDrop;
-  const ctrlY = 2 * wingApex - tipY;
-  const depth = 60;
-
-  const qPoint = (t: number, drop: number): [number, number] => {
-    const x = (1 - t) * (1 - t) * wingL + 2 * (1 - t) * t * cx + t * t * wingR;
-    const c = 2 * (wingApex + drop) - (tipY + drop);
-    const y = (1 - t) * (1 - t) * (tipY + drop) + 2 * (1 - t) * t * c + t * t * (tipY + drop);
-    return [x, y];
+  /* ============ RIGA 4 STATISTICHE DEL PILOTA ============
+     Temperatura · Vento a terra · Zero termico · Base cumuli
+     (stile riferimento: icona, etichetta, valore grande, sottotitolo) */
+  const statY = 470;
+  const statH = 124;
+  const statW = (PAGE_W - PAD * 2 - 3 * 16) / 4;
+  const statPanel = (x: number, icon: string, label: string, value: string, sub: string, isBlue: boolean) => {
+    const p: string[] = [];
+    p.push(isBlue ? bluePanel(x, statY, statW, statH) : whitePanel(x, statY, statW, statH));
+    const labCol = isBlue ? "rgba(255,255,255,0.82)" : K.muted;
+    const valCol = isBlue ? "#FFFFFF" : K.navy;
+    const subCol = isBlue ? "rgba(255,255,255,0.72)" : K.muted;
+    const vSize = fitSize(value, 900, MONT, value.length > 9 ? 26 : 31, 17, statW - 30);
+    p.push(icon);
+    p.push(`<text x="${x + 22}" y="${statY + 62}" font-family="${INTER}" font-weight="700" font-size="12" letter-spacing="1.2" fill="${labCol}">${esc(label.toUpperCase())}</text>`);
+    p.push(`<text x="${x + 22}" y="${statY + 96}" font-family="${MONT}" font-weight="900" font-size="${vSize}" fill="${valCol}">${esc(value)}</text>`);
+    p.push(`<text x="${x + 22}" y="${statY + 114}" font-family="${INTER}" font-weight="600" font-size="11.5" fill="${subCol}">${esc(sub)}</text>`);
+    return p.join("");
   };
-  /* velo (canopy) */
-  out.push(`<path d="M ${wingL} ${tipY} Q ${cx} ${ctrlY} ${wingR} ${tipY} L ${wingR} ${tipY + depth} Q ${cx} ${ctrlY + depth + 30} ${wingL} ${tipY + depth} Z" fill="url(#wingGrad)" filter="${SHADOW}"/>`);
-  /* celle */
-  const RIBS = 26;
-  const ribPts: Array<[number, number]> = [];
-  for (let i = 0; i <= RIBS; i++) {
-    const t = i / RIBS;
-    const [tx, ty] = qPoint(t, 0);
-    const [, by] = qPoint(t, depth);
-    ribPts.push([tx, by]);
-    if (i > 0 && i < RIBS) {
-      out.push(`<line x1="${tx.toFixed(1)}" y1="${ty.toFixed(1)}" x2="${tx.toFixed(1)}" y2="${by.toFixed(1)}" stroke="rgba(255,255,255,0.34)" stroke-width="1.1"/>`);
-    }
-  }
-  /* profilo d'attacco in evidenza */
-  out.push(`<path d="M ${wingL} ${tipY} Q ${cx} ${ctrlY} ${wingR} ${tipY}" fill="none" stroke="#FFFFFF" stroke-width="3" opacity="0.85"/>`);
-  /* punte oro */
-  {
-    const [ltx, lty] = qPoint(0, 0);
-    const [, lby] = qPoint(0, depth);
-    out.push(`<path d="M ${ltx} ${lty} L ${ltx} ${lby} L ${ltx + 62} ${lby - 2} Q ${ltx + 34} ${(lty + lby) / 2} ${ltx} ${lty} Z" fill="${K.goldDeep}" opacity="0.92"/>`);
-    const [rtx, rty] = qPoint(1, 0);
-    const [, rby] = qPoint(1, depth);
-    out.push(`<path d="M ${rtx} ${rty} L ${rtx} ${rby} L ${rtx - 62} ${rby - 2} Q ${rtx - 34} ${(rty + rby) / 2} ${rtx} ${rty} Z" fill="${K.goldDeep}" opacity="0.92"/>`);
-  }
-  /* nome del decollo sul velo */
-  out.push(`<text x="${cx}" y="${wingApex + 40}" text-anchor="middle" font-family="${MONT}" font-weight="900" font-size="38" letter-spacing="4" fill="#FFFFFF" filter="${TXT_SHADOW}">${esc(d.siteName.toUpperCase())}</text>`);
+  const s1x = PAD;
+  const s2x = PAD + statW + 16;
+  const s3x = s2x + statW + 16;
+  const s4x = s3x + statW + 16;
+  out.push(statPanel(s1x, thermometer(s1x + 158, statY + 16, 34), "Temperatura", d.tempRange, `Umido ${d.umidita} · UV ${d.uv}`, false));
+  out.push(statPanel(s2x, gaugeIcon(s2x + 156, statY + 18, 32), "Vento a terra", d.ventoDecollo, `Raffiche max ${d.raffiche}`, false));
+  out.push(statPanel(s3x, snowflake(s3x + 174, statY + 32, 15, "#1C58A5"), "Zero termico", d.zeroTermico, "Iso-zero in quota", false));
+  out.push(statPanel(s4x, cloudIcon(s4x + 152, statY + 18, 0.6), "Base cumuli", d.cumuliBase, d.cumuliPomeriggio, true));
 
-  /* sospensioni: dalle celle ai raggianti */
-  const riserY = 884;
-  const riserLx = cx - 30;
-  const riserRx = cx + 30;
-  for (let i = 3; i <= RIBS - 3; i++) {
-    const [px, py] = ribPts[i];
-    const target = px < cx ? riserLx : riserRx;
-    out.push(`<line x1="${px.toFixed(1)}" y1="${py.toFixed(1)}" x2="${target}" y2="${riserY}" stroke="rgba(255,255,255,0.5)" stroke-width="1"/>`);
-  }
+  /* ============ RIGA TERMICHE + ARIA ============ */
+  const tY = 610;
+  const tH = 180;
+  const tLw = 560;
+  const aX = PAD + tLw + 20;
+  const aW = PAGE_W - PAD - aX;
+  out.push(whitePanel(PAD, tY, tLw, tH));
+  out.push(`<text x="${PAD + 24}" y="${tY + 36}" font-family="${MONT}" font-weight="800" font-size="18" letter-spacing="1.6" fill="${K.blueSolid}">TERMICHE</text>`);
+  out.push(`<text x="${PAD + 24}" y="${tY + 78}" font-family="${MONT}" font-weight="900" font-size="42" fill="${K.navy}">${esc(d.termicheWindow)}</text>`);
+  out.push(`<text x="${PAD + 24}" y="${tY + 104}" font-family="${MONT}" font-weight="800" font-size="19" fill="${K.muted}">${esc(d.termicheQuota.toUpperCase())}</text>`);
+  out.push(thermalArea(PAD + 24, tY + 114, tLw - 48, 50, d.bestBars));
+  out.push(`<text x="${PAD + tLw - 24}" y="${tY + 36}" text-anchor="end" font-family="${INTER}" font-weight="600" font-size="12" letter-spacing="1" fill="${K.muted}">FORZA ${d.fasceTermiche[1]?.lift ?? "—"}</text>`);
 
-  /* tre strumenti «appesi» alle sospensioni */
-  const podY1 = 742;
-  const hangPod = (podX: number, icon: "therm" | "wind" | "term", label: string, value: string) => {
-    out.push(`<rect x="${podX}" y="${podY1}" width="236" height="82" rx="16" fill="rgba(255,255,255,0.97)" filter="${SHADOW}"/>`);
-    if (icon === "therm") out.push(thermometer(podX + 22, podY1 + 14, 40));
-    else if (icon === "wind") out.push(gaugeIcon(podX + 20, podY1 + 18, 40));
-    else out.push(sun(podX + 22, podY1 + 20, 17));
-    out.push(`<text x="${podX + 74}" y="${podY1 + 32}" font-family="${INTER}" font-weight="700" font-size="12.5" letter-spacing="1.4" fill="${K.muted}">${esc(label.toUpperCase())}</text>`);
-    const vsz = fitSize(value, 800, MONT, 27, 17, 236 - 88);
-    out.push(`<text x="${podX + 74}" y="${podY1 + 64}" font-family="${MONT}" font-weight="800" font-size="${vsz}" fill="${K.navy}">${esc(value)}</text>`);
-  };
-  hangPod(cx - 370, "therm", "Temperatura", d.tempRange);
-  hangPod(cx - 118, "wind", "Vento a terra", d.ventoDecollo);
-  hangPod(cx + 134, "term", "Termiche", d.termicheWindow);
-  /* cordini di sospensione dei pod */
-  for (const [px, tPar] of [[cx - 252, 0.2], [cx, 0.5], [cx + 252, 0.8]] as const) {
-    const [, py] = qPoint(tPar, depth);
-    out.push(`<line x1="${px}" y1="${py.toFixed(1)}" x2="${px}" y2="${podY1}" stroke="rgba(255,255,255,0.55)" stroke-width="1.2"/>`);
-  }
-
-  /* pilota in volo */
-  out.push(`<rect x="${riserLx - 5}" y="${riserY}" width="10" height="14" rx="4" fill="#1B2A4A"/>`);
-  out.push(`<rect x="${riserRx - 5}" y="${riserY}" width="10" height="14" rx="4" fill="#1B2A4A"/>`);
-  out.push(`<path d="M ${riserLx - 4} ${riserY + 14} L ${cx - 12} ${riserY + 34}" stroke="#1B2A4A" stroke-width="5" stroke-linecap="round"/>`);
-  out.push(`<path d="M ${riserRx + 4} ${riserY + 14} L ${cx + 12} ${riserY + 34}" stroke="#1B2A4A" stroke-width="5" stroke-linecap="round"/>`);
-  out.push(`<circle cx="${cx}" cy="${riserY + 48}" r="14" fill="#1B2A4A"/>`);
-  out.push(`<path d="M ${cx - 13.5} ${riserY + 43} a 13.5 13.5 0 0 1 27 0 Z" fill="${K.goldDeep}"/>`);
-  out.push(`<path d="M ${cx - 17} ${riserY + 66} Q ${cx - 20} ${riserY + 96} ${cx - 8} ${riserY + 104} L ${cx + 10} ${riserY + 104} Q ${cx + 19} ${riserY + 94} ${cx + 16} ${riserY + 66} Q ${cx} ${riserY + 58} ${cx - 17} ${riserY + 66} Z" fill="#1B2A4A"/>`);
-  out.push(`<path d="M ${cx - 8} ${riserY + 104} L ${cx - 20} ${riserY + 122} L ${cx - 12} ${riserY + 126} L ${cx + 2} ${riserY + 108} Z" fill="#1B2A4A"/>`);
-  out.push(`<path d="M ${cx + 10} ${riserY + 104} L ${cx + 22} ${riserY + 120} L ${cx + 30} ${riserY + 114} L ${cx + 16} ${riserY + 100} Z" fill="#1B2A4A"/>`);
-  out.push(`<ellipse cx="${cx}" cy="${riserY + 142}" rx="86" ry="11" fill="rgba(10,25,55,0.30)"/>`);
-
-  /* ============ RIGA DATI: zero · cumuli · visibilità ============ */
-  const sy2 = 1044;
-  const sh2 = 128;
-  const cw = (PAGE_W - PAD * 2 - 40) / 3;
-  out.push(whitePanel(PAD, sy2, cw, sh2));
-  out.push(thermometer(PAD + 24, sy2 + 22, 36));
-  out.push(`<text x="${PAD + 72}" y="${sy2 + 38}" font-family="${INTER}" font-weight="700" font-size="13.5" letter-spacing="1.4" fill="${K.muted}">ZERO TERMICO</text>`);
-  out.push(`<text x="${PAD + 24}" y="${sy2 + 86}" font-family="${MONT}" font-weight="900" font-size="34" fill="${K.navy}">${esc(d.zeroTermico)}</text>`);
-  out.push(`<text x="${PAD + 24}" y="${sy2 + 112}" font-family="${INTER}" font-weight="600" font-size="13.5" fill="${K.muted}">Temperatura ${esc(d.tempRange)}</text>`);
-
-  const s2x = PAD + cw + 20;
-  out.push(whitePanel(s2x, sy2, cw, sh2));
-  out.push(stormCloud(s2x + 24, sy2 + 18, 0.62));
-  out.push(`<text x="${s2x + 72}" y="${sy2 + 38}" font-family="${INTER}" font-weight="700" font-size="13.5" letter-spacing="1.4" fill="${K.muted}">BASE CUMULI</text>`);
-  const cbSize = fitSize(d.cumuliBase, 900, MONT, 30, 19, cw - 46);
-  out.push(`<text x="${s2x + 24}" y="${sy2 + 84}" font-family="${MONT}" font-weight="900" font-size="${cbSize}" fill="${K.navy}">${esc(d.cumuliBase)}</text>`);
-  out.push(`<text x="${s2x + 24}" y="${sy2 + 110}" font-family="${INTER}" font-weight="600" font-size="13.5" fill="${K.muted}">${esc(d.cumuliPomeriggio)}</text>`);
-
-  const s3x = s2x + cw + 20;
-  const s3w = PAGE_W - PAD - s3x;
-  out.push(bluePanel(s3x, sy2, s3w, sh2));
-  out.push(eyeIcon(s3x + 24, sy2 + 24, 38));
-  out.push(`<text x="${s3x + 74}" y="${sy2 + 38}" font-family="${INTER}" font-weight="700" font-size="13.5" letter-spacing="1.4" fill="rgba(255,255,255,0.8)">VISIBILITÀ</text>`);
-  out.push(`<text x="${s3x + 24}" y="${sy2 + 86}" font-family="${MONT}" font-weight="900" font-size="34" fill="#FFFFFF">${esc(d.visibilita)}</text>`);
-  out.push(`<text x="${s3x + 24}" y="${sy2 + 112}" font-family="${INTER}" font-weight="600" font-size="13.5" fill="rgba(255,255,255,0.85)">Raffiche max ${esc(d.raffiche)}</text>`);
-
-  /* ============ FINESTRA DI VOLO (full width) ============ */
-  const fy = 1192;
-  const fh = 146;
-  out.push(bluePanel(PAD, fy, PAGE_W - PAD * 2, fh));
-  out.push(clock(PAD + 92, fy + 76, 46, -60, 15));
-  out.push(`<text x="${PAD + 178}" y="${fy + 40}" font-family="${MONT}" font-weight="800" font-size="18" letter-spacing="2" fill="${K.gold}">FINESTRA DI VOLO OTTIMALE</text>`);
-  out.push(`<text x="${PAD + 178}" y="${fy + 100}" font-family="${MONT}" font-weight="900" font-size="56" fill="#FFFFFF" filter="${TXT_SHADOW}">${esc(d.finestra)}</text>`);
-  out.push(`<text x="${PAD + 178}" y="${fy + 130}" font-family="${MONT}" font-weight="800" font-size="21" fill="#FFFFFF">${esc(d.finestraQuota)}</text>`);
-  const rx2 = PAGE_W - PAD - 350;
-  out.push(`<line x1="${rx2 - 26}" y1="${fy + 22}" x2="${rx2 - 26}" y2="${fy + fh - 22}" stroke="rgba(255,255,255,0.35)" stroke-width="1.4"/>`);
-  out.push(`<text x="${rx2}" y="${fy + 42}" font-family="${INTER}" font-weight="700" font-size="14.5" fill="rgba(255,255,255,0.9)">${esc(d.ariaPlain)}</text>`);
-  const xcLabel = `Cross: ${d.cross.verdict}${d.cross.km !== "—" ? ` · ${d.cross.km}` : ""}`;
-  const xcW = Math.max(textWidth(xcLabel, 800, 21, MONT) + 30, 250);
-  out.push(`<rect x="${rx2}" y="${fy + 58}" width="${xcW}" height="40" rx="12" fill="rgba(255,211,77,0.95)" filter="${SHADOW}"/>`);
-  out.push(`<text x="${rx2 + 15}" y="${fy + 85}" font-family="${MONT}" font-weight="800" font-size="21" fill="${K.navy}">${esc(xcLabel)}</text>`);
-  const noteLines = wrapText(d.cross.note, 600, 13.5, INTER, 330).slice(0, 2);
-  if (wrapText(d.cross.note, 600, 13.5, INTER, 330).length > 2 && noteLines[1]) noteLines[1] = noteLines[1].replace(/[.,;:]?\s*$/, "…");
-  noteLines.forEach((ln, i) => {
-    out.push(`<text x="${rx2}" y="${fy + 120 + i * 18}" font-family="${INTER}" font-weight="600" font-size="13.5" fill="rgba(255,255,255,0.8)">${esc(ln)}</text>`);
+  out.push(bluePanel(aX, tY, aW, tH));
+  out.push(`<text x="${aX + 24}" y="${tY + 34}" font-family="${MONT}" font-weight="800" font-size="17" letter-spacing="1.6" fill="${K.gold}">L'ARIA DI OGGI</text>`);
+  const ariaLines = wrapText(d.ariaPlain, 600, 17.5, MONT, aW - 120).slice(0, 2);
+  ariaLines.forEach((ln, i) => {
+    out.push(`<text x="${aX + 24}" y="${tY + 64 + i * 24}" font-family="${MONT}" font-weight="800" font-size="17.5" fill="#FFFFFF">${esc(ln)}</text>`);
   });
+  out.push(`<text x="${aX + 24}" y="${tY + (ariaLines.length > 1 ? 122 : 98)}" font-family="${INTER}" font-weight="600" font-size="13" fill="rgba(255,255,255,0.85)">Visibilità ${esc(d.visibilita)} · Raffiche ${esc(d.raffiche)}</text>`);
+  out.push(`<text x="${aX + 24}" y="${tY + (ariaLines.length > 1 ? 144 : 120)}" font-family="${INTER}" font-weight="600" font-size="12.5" fill="rgba(255,255,255,0.72)">CAPE ${esc(d.cape)} · Lifted Index ${esc(d.liftedIndex)}</text>`);
+  out.push(stormCloud(aX + aW - 62, tY + 24, 0.62));
+  out.push(`<text x="${aX + 24}" y="${tY + tH - 14}" font-family="${MONT}" font-weight="800" font-size="17" fill="${K.gold}">Rischio Temporali ${esc(d.rischioTemporali)}</text>`);
+
+  /* ============ RIGA VENTI IN QUOTA + FINESTRA DI VOLO ============ */
+  const vY = 806;
+  const vH = 250;
+  const vLw = 560;
+  const fX = PAD + vLw + 20;
+  const fW = PAGE_W - PAD - fX;
+  out.push(whitePanel(PAD, vY, vLw, vH));
+  out.push(`<text x="${PAD + 24}" y="${vY + 38}" font-family="${MONT}" font-weight="800" font-size="20" letter-spacing="1.6" fill="${K.blueSolid}">VENTI IN QUOTA</text>`);
+  out.push(`<text x="${PAD + vLw - 24}" y="${vY + 38}" text-anchor="end" font-family="${INTER}" font-weight="600" font-size="12.5" fill="${K.muted}">km/h · valore medio della giornata</text>`);
+  d.windRows.forEach((r, i) => {
+    const ry = vY + 72 + i * 34;
+    if (i > 0) out.push(`<line x1="${PAD + 22}" y1="${ry - 9}" x2="${PAD + vLw - 22}" y2="${ry - 9}" stroke="${K.line}" stroke-width="1"/>`);
+    out.push(`<text x="${PAD + 26}" y="${ry + 5}" font-family="${MONT}" font-weight="800" font-size="18" fill="${K.navy}">${r.quota} m</text>`);
+    out.push(`<text x="${PAD + 168}" y="${ry + 5}" font-family="${MONT}" font-weight="800" font-size="18" fill="${K.blueSolid}">${esc(r.dir)}</text>`);
+    const spSize = fitSize(`${r.speedMin}–${r.speedMax} km/h`, 800, MONT, 19, 14, 160);
+    out.push(`<text x="${PAD + 244}" y="${ry + 5}" font-family="${MONT}" font-weight="800" font-size="${spSize}" fill="${K.ink}">${r.speedMin}–${r.speedMax} km/h</text>`);
+    out.push(redArrowLeft(PAD + vLw - 74, ry - 8, 46, 18));
+  });
+
+  out.push(bluePanel(fX, vY, fW, vH));
+  out.push(clock(fX + 64, vY + 74, 40, -60, 15));
+  out.push(`<text x="${fX + 122}" y="${vY + 36}" font-family="${MONT}" font-weight="800" font-size="16" letter-spacing="1.4" fill="${K.gold}">FINESTRA DI VOLO</text>`);
+  out.push(`<text x="${fX + 122}" y="${vY + 76}" font-family="${MONT}" font-weight="900" font-size="40" fill="#FFFFFF">OTTIMALE</text>`);
+  const fwSize = fitSize(d.finestra, 900, MONT, 44, 30, fW - 60);
+  out.push(`<text x="${fX + 24}" y="${vY + 136}" font-family="${MONT}" font-weight="900" font-size="${fwSize}" fill="#FFFFFF" filter="${TXT_SHADOW}">${esc(d.finestra)}</text>`);
+  out.push(`<text x="${fX + 24}" y="${vY + 162}" font-family="${MONT}" font-weight="800" font-size="19" fill="#FFFFFF">${esc(d.finestraQuota)}</text>`);
+  const xcLabel2 = `Cross: ${d.cross.verdict}${d.cross.km !== "—" ? ` · ${d.cross.km}` : ""}`;
+  const xcW2 = Math.min(textWidth(xcLabel2, 800, 18, MONT) + 26, fW - 48);
+  out.push(`<rect x="${fX + 24}" y="${vY + 178}" width="${xcW2}" height="36" rx="10" fill="rgba(255,211,77,0.95)" filter="${SHADOW}"/>`);
+  out.push(`<text x="${fX + 24 + xcW2 / 2}" y="${vY + 202}" text-anchor="middle" font-family="${MONT}" font-weight="800" font-size="17.5" fill="${K.navy}">${esc(xcLabel2)}</text>`);
+  const noteLines2 = wrapText(d.cross.note, 600, 12.5, INTER, fW - 48).slice(0, 2);
+  noteLines2.forEach((ln, i) => {
+    out.push(`<text x="${fX + 24}" y="${vY + 228 + i * 15}" font-family="${INTER}" font-weight="600" font-size="12" fill="rgba(255,255,255,0.85)">${esc(ln)}</text>`);
+  });
+
+  /* ============ TURBOLENZA PER FASCE DI QUOTA ============ */
+  const tbY = 1072;
+  const tbH = 118;
+  out.push(whitePanel(PAD, tbY, PAGE_W - PAD * 2, tbH));
+  out.push(`<text x="${PAD + 24}" y="${tbY + 40}" font-family="${MONT}" font-weight="800" font-size="20" letter-spacing="1.6" fill="${K.blueSolid}">TURBOLENZA</text>`);
+  d.turbolenza.forEach((t, i) => {
+    const colX = PAD + 250 + i * 260;
+    out.push(`<text x="${colX}" y="${tbY + 40}" font-family="${INTER}" font-weight="600" font-size="14.5" fill="${K.muted}">${esc(t.range)}</text>`);
+    out.push(`<text x="${colX}" y="${tbY + 74}" font-family="${MONT}" font-weight="900" font-size="24" fill="${K.navy}">${esc(t.name)}</text>`);
+    if (i < d.turbolenza.length - 1) {
+      out.push(`<line x1="${colX + 220}" y1="${tbY + 20}" x2="${colX + 220}" y2="${tbY + 90}" stroke="${K.line}" stroke-width="1.2"/>`);
+    }
+  });
+  out.push(`<text x="${PAGE_W - PAD - 24}" y="${tbY + tbH - 18}" text-anchor="end" font-family="${INTER}" font-weight="600" font-size="12.5" fill="${K.muted}">${esc(d.notaPilota ? "Previsione Open-Meteo elaborata alle " + d.modelUpdate : "Elaborato alle " + d.modelUpdate)}</text>`);
 
   /* ---- banda finale: sintesi + affidabilità ---- */
   const footY = PAGE_H - 168;
@@ -1617,7 +1590,7 @@ export function buildLocandinaSVG(a: PageAssets): { svg: string; width: number; 
   const sumSize = fitSize(d.summary, 800, MONT, 40, 26, 1000);
   out.push(`<text x="540" y="${footY + 72}" text-anchor="middle" font-family="${MONT}" font-weight="800" font-size="${sumSize}" fill="#FFFFFF" filter="${TXT_SHADOW}">${esc(d.summary)}</text>`);
   out.push(`<text x="540" y="${footY + 122}" text-anchor="middle" font-family="${MONT}" font-weight="800" font-size="29" fill="#FFFFFF" filter="${TXT_SHADOW}">Affidabilità <tspan fill="${K.gold}">${esc(d.affidabilita)}</tspan></text>`);
-  out.push(`<text x="540" y="${PAGE_H - 14}" text-anchor="middle" font-family="${INTER}" font-weight="600" font-size="15" letter-spacing="1" fill="rgba(255,255,255,0.75)">la-meteo-dei-conigli.vercel.app · Retro: report giornaliero + windgram</text>`);
+  out.push(`<text x="540" y="${PAGE_H - 14}" text-anchor="middle" font-family="${INTER}" font-weight="600" font-size="15" letter-spacing="1" fill="rgba(255,255,255,0.75)">la-meteo-dei-conigli.vercel.app · Retro: analisi della giornata + windgram del sito</text>`);
 
   const svg = pageSvg(out.join("\n"));
   return { svg, width: PAGE_W, height: PAGE_H };
@@ -1637,11 +1610,11 @@ export function buildFlightInfoSVG(a: PageAssets): { svg: string; width: number;
   </g>`);
 
   const siteTag = d.province ? `${d.province.toUpperCase()} · DECOLLO ${d.elevation} M S.L.M.` : `DECOLLO ${d.elevation} M S.L.M.`;
-  out.push(header("REPORT", "GIORNALIERO", d.dateShort, siteTag, a.pilota));
+  out.push(header("REPORT", "GIORNALIERO", d.dateShort, siteTag));
 
-  /* ============ REPORT IN TESTO + TERMICHE/TURBOLENZA ============ */
-  const py = 300;
-  const ph = 372;
+  /* ============ ANALISI DELLA GIORNATA + TERMICHE PER FASCIA ============ */
+  const py = 292;
+  const ph = 316;
   const lw = 560;
   const rxc = PAD + lw + 20;
   const rw = PAGE_W - PAD - rxc;
@@ -1684,9 +1657,25 @@ export function buildFlightInfoSVG(a: PageAssets): { svg: string; width: number;
       ry += 25;
     }
   }
-  /* se piove? probabilità per fasce (subito dopo il testo) */
-  const chipY = Math.min(textEndY + 12, py + ph - 34);
-  out.push(`<text x="${PAD + 26}" y="${chipY + 4}" font-family="${MONT}" font-weight="800" font-size="16" fill="${K.muted}">PIOVE?</text>`);
+
+  /* --- termiche per fasce orarie + probabilità di pioggia per fascia --- */
+  out.push(whitePanel(rxc, py, rw, ph, 0.97));
+  out.push(`<text x="${rxc + 24}" y="${py + 40}" font-family="${MONT}" font-weight="800" font-size="19" letter-spacing="1.2" fill="${K.blueSolid}">TERMICHE PER FASCIA</text>`);
+  const fasceColor: Record<FasciaTermica["level"], string> = { good: "#2E7D32", mid: "#B97A12", weak: "#A34E44" };
+  let fy2 = py + 62;
+  d.fasceTermiche.forEach((f, i) => {
+    if (i > 0) out.push(`<line x1="${rxc + 22}" y1="${fy2 - 4}" x2="${rxc + rw - 22}" y2="${fy2 - 4}" stroke="${K.line}" stroke-width="1"/>`);
+    out.push(`<circle cx="${rxc + 30}" cy="${fy2 + 6}" r="6" fill="${fasceColor[f.level]}"/>`);
+    out.push(`<text x="${rxc + 46}" y="${fy2 + 11}" font-family="${MONT}" font-weight="800" font-size="16" fill="${K.navy}">${esc(f.orario)}</text>`);
+    out.push(`<text x="${rxc + 46}" y="${fy2 + 25}" font-family="${INTER}" font-weight="600" font-size="10" fill="${K.muted}">${esc(f.label.toUpperCase())}</text>`);
+    out.push(`<text x="${rxc + 168}" y="${fy2 + 11}" font-family="${MONT}" font-weight="800" font-size="15.5" fill="${fasceColor[f.level]}">${esc(f.lift)}</text>`);
+    out.push(`<text x="${rxc + 168}" y="${fy2 + 25}" font-family="${INTER}" font-weight="600" font-size="10" fill="${K.muted}">QUOTA ${esc(f.quota.toUpperCase())}</text>`);
+    out.push(`<text x="${rxc + rw - 22}" y="${fy2 + 17}" text-anchor="end" font-family="${MONT}" font-weight="700" font-size="14" fill="${K.ink}">${esc(f.vento)}</text>`);
+    fy2 += 40;
+  });
+  /* probabilità di pioggia per fascia (griglia 2×2 compatta) */
+  out.push(`<line x1="${rxc + 22}" y1="${fy2 - 2}" x2="${rxc + rw - 22}" y2="${fy2 - 2}" stroke="${K.line}" stroke-width="1.4"/>`);
+  out.push(`<text x="${rxc + 24}" y="${fy2 + 20}" font-family="${MONT}" font-weight="800" font-size="13" fill="${K.muted}">PIOVE?</text>`);
   const fasciaRain = (from: number, to: number): number => {
     const sel = d.rainBars.filter((b) => {
       const hr = parseInt(b.ora.slice(0, 2), 10);
@@ -1701,51 +1690,43 @@ export function buildFlightInfoSVG(a: PageAssets): { svg: string; width: number;
     ["Pomeriggio", fasciaRain(14, 17)],
     ["Sera", fasciaRain(17, 19)],
   ];
-  let rcx = PAD + 26;
-  for (const [lbl, p] of rainChips) {
+  const chipW = (rw - 52) / 2;
+  rainChips.forEach(([lbl, p], i) => {
     const col = p < 20 ? "#1D8F5F" : p < 45 ? "#B97A12" : "#D64545";
-    const chipW = Math.max(104, textWidth(lbl, 700, 13, INTER) + 60);
-    out.push(`<rect x="${rcx}" y="${chipY - 18}" width="${chipW}" height="30" rx="15" fill="#F2F6FB" stroke="${col}" stroke-width="1.4"/>`);
-    out.push(`<text x="${rcx + 14}" y="${chipY + 2}" font-family="${INTER}" font-weight="700" font-size="13" fill="${K.ink}">${esc(lbl)}</text>`);
-    out.push(`<text x="${rcx + chipW - 14}" y="${chipY + 2}" text-anchor="end" font-family="${MONT}" font-weight="800" font-size="14" fill="${col}">${p}%</text>`);
-    rcx += chipW + 12;
-  }
-
-  /* --- termiche per fasce orarie + turbolenza --- */
-  out.push(whitePanel(rxc, py, rw, ph, 0.97));
-  out.push(`<text x="${rxc + 24}" y="${py + 42}" font-family="${MONT}" font-weight="800" font-size="20" letter-spacing="1.6" fill="${K.blueSolid}">TERMICHE PER FASCIA ORARIA</text>`);
-  const fasceColor: Record<FasciaTermica["level"], string> = { good: "#2E7D32", mid: "#B97A12", weak: "#A34E44" };
-  let fy2 = py + 66;
-  d.fasceTermiche.forEach((f, i) => {
-    if (i > 0) out.push(`<line x1="${rxc + 22}" y1="${fy2 - 6}" x2="${rxc + rw - 22}" y2="${fy2 - 6}" stroke="${K.line}" stroke-width="1.2"/>`);
-    out.push(`<circle cx="${rxc + 30}" cy="${fy2 + 8}" r="6.5" fill="${fasceColor[f.level]}"/>`);
-    out.push(`<text x="${rxc + 46}" y="${fy2 + 13}" font-family="${MONT}" font-weight="800" font-size="17.5" fill="${K.navy}">${esc(f.orario)}</text>`);
-    out.push(`<text x="${rxc + 46}" y="${fy2 + 30}" font-family="${INTER}" font-weight="600" font-size="11.5" fill="${K.muted}">${esc(f.label.toUpperCase())}</text>`);
-    out.push(`<text x="${rxc + 168}" y="${fy2 + 13}" font-family="${MONT}" font-weight="800" font-size="17" fill="${fasceColor[f.level]}">${esc(f.lift)}</text>`);
-    out.push(`<text x="${rxc + 168}" y="${fy2 + 30}" font-family="${INTER}" font-weight="600" font-size="11.5" fill="${K.muted}">QUOTA ${esc(f.quota.toUpperCase())}</text>`);
-    out.push(`<text x="${rxc + rw - 22}" y="${fy2 + 20}" text-anchor="end" font-family="${MONT}" font-weight="700" font-size="15.5" fill="${K.ink}">${esc(f.vento)}</text>`);
-    fy2 += 46;
+    const cxp = rxc + 24 + (i % 2) * (chipW + 6);
+    const cyp = fy2 + 30 + Math.floor(i / 2) * 31;
+    out.push(`<rect x="${cxp.toFixed(1)}" y="${cyp}" width="${chipW.toFixed(1)}" height="26" rx="13" fill="#F2F6FB" stroke="${col}" stroke-width="1.2"/>`);
+    out.push(`<text x="${cxp + 11}" y="${cyp + 17}" font-family="${INTER}" font-weight="700" font-size="11" fill="${K.ink}">${esc(lbl)}</text>`);
+    out.push(`<text x="${cxp + chipW - 11}" y="${cyp + 17}" text-anchor="end" font-family="${MONT}" font-weight="800" font-size="12" fill="${col}">${p}%</text>`);
   });
-  out.push(`<line x1="${rxc + 22}" y1="${fy2 - 2}" x2="${rxc + rw - 22}" y2="${fy2 - 2}" stroke="${K.line}" stroke-width="1.6"/>`);
-  out.push(`<text x="${rxc + 24}" y="${fy2 + 26}" font-family="${MONT}" font-weight="800" font-size="18" letter-spacing="1.6" fill="${K.blueSolid}">TURBOLENZA</text>`);
-  let ty2 = fy2 + 54;
-  for (const t of d.turbolenza) {
-    out.push(`<text x="${rxc + 28}" y="${ty2}" font-family="${INTER}" font-weight="600" font-size="15.5" fill="${K.muted}">${esc(t.range)}</text>`);
-    out.push(`<text x="${rxc + rw - 24}" y="${ty2}" text-anchor="end" font-family="${MONT}" font-weight="800" font-size="16.5" fill="${K.navy}">${esc(t.name)}</text>`);
-    ty2 += 30;
+
+  /* ============ WINDGRAM: il grafico della pagina, identico ============
+     Se ReportAICard ha catturato il ProfessionalWindgram reale (stesso
+     componente della scheda Venti) usiamo quell'immagine: il poster
+     mostra ESATTAMENTE il grafico del sito. In assenza (dati non ancora
+     pronti) si usa il grafico ricostruito dagli stessi dati. */
+  const wgY = 624;
+  const wgH = PAGE_H - wgY - 64;
+  if (a.windgramImage) {
+    out.push(whitePanel(PAD, wgY, PAGE_W - PAD * 2, wgH, 0.97));
+    out.push(`<text x="${PAD + 26}" y="${wgY + 38}" font-family="${MONT}" font-weight="900" font-size="22" fill="${K.navy}">${esc(d.siteName)} · <tspan fill="${K.blueSolid}">${esc(d.dateShort.toLowerCase())}</tspan></text>`);
+    out.push(`<text x="${PAGE_W - PAD - 26}" y="${wgY + 38}" text-anchor="end" font-family="${INTER}" font-weight="700" font-size="12.5" letter-spacing="1" fill="${K.muted}">UGUALE ALLA SCHEDA VENTI DEL SITO</text>`);
+    out.push(`<text x="${PAD + 26}" y="${wgY + 58}" font-family="${INTER}" font-weight="600" font-size="12.5" fill="${K.muted}">Windgram aerologico · Decollo ${Math.round(d.elevation)} m · Profilo previsto Open-Meteo</text>`);
+    const availW = PAGE_W - PAD * 2 - 44;
+    const availH = wgH - 80;
+    const imgW = Math.min(availW, (availH * 1200) / 1040);
+    const imgH = (imgW * 1040) / 1200;
+    out.push(`<image href="${a.windgramImage}" x="${((PAGE_W - imgW) / 2).toFixed(1)}" y="${(wgY + 70).toFixed(1)}" width="${imgW.toFixed(1)}" height="${imgH.toFixed(1)}" preserveAspectRatio="xMidYMid meet"/>`);
+  } else {
+    out.push(windgramPanel(a, PAD, wgY, PAGE_W - PAD * 2, wgH));
   }
 
-  /* ============ WINDGRAM (stile Alpium) ============ */
-  out.push(windgramPanel(a, PAD, 694, PAGE_W - PAD * 2, 688));
-
-  /* ---- banda finale ---- */
-  const footY = PAGE_H - 168;
-  out.push(`<rect x="0" y="${footY}" width="${PAGE_W}" height="168" fill="${K.blueDark}" filter="${SHADOW}"/>`);
+  /* ---- banda finale sottile ---- */
+  const footY = PAGE_H - 64;
+  out.push(`<rect x="0" y="${footY}" width="${PAGE_W}" height="64" fill="${K.blueDark}"/>`);
   out.push(`<rect x="0" y="${footY}" width="${PAGE_W}" height="4" fill="${K.gold}"/>`);
-  const sumSize = fitSize(d.summary, 800, MONT, 40, 26, 1000);
-  out.push(`<text x="540" y="${footY + 72}" text-anchor="middle" font-family="${MONT}" font-weight="800" font-size="${sumSize}" fill="#FFFFFF" filter="${TXT_SHADOW}">${esc(d.summary)}</text>`);
-  out.push(`<text x="540" y="${footY + 122}" text-anchor="middle" font-family="${MONT}" font-weight="800" font-size="29" fill="#FFFFFF" filter="${TXT_SHADOW}">Affidabilità <tspan fill="${K.gold}">${esc(d.affidabilita)}</tspan></text>`);
-  out.push(`<text x="540" y="${PAGE_H - 14}" text-anchor="middle" font-family="${INTER}" font-weight="600" font-size="15" letter-spacing="1" fill="rgba(255,255,255,0.75)">la-meteo-dei-conigli.vercel.app · Windgram: masse d'aria, venti in quota e zero termico · Foto: T. Crauwels, Unsplash, Pexels</text>`);
+  out.push(`<text x="540" y="${footY + 30}" text-anchor="middle" font-family="${MONT}" font-weight="800" font-size="17.5" fill="#FFFFFF">Affidabilità <tspan fill="${K.gold}">${esc(d.affidabilita)}</tspan> · Previsione elaborata alle ${esc(d.modelUpdate)} · la-meteo-dei-conigli.vercel.app</text>`);
+  out.push(`<text x="540" y="${footY + 51}" text-anchor="middle" font-family="${INTER}" font-weight="600" font-size="11.5" letter-spacing="0.6" fill="rgba(255,255,255,0.72)">${a.windgramImage ? "Il grafico del retro è quello della scheda Venti del sito" : "Windgram ricostruito dagli stessi dati della scheda Venti"} · Foto: Unsplash, Explore Savoie</text>`);
 
   const svg = pageSvg(out.join("\n"));
   return { svg, width: PAGE_W, height: PAGE_H };
@@ -1860,7 +1841,7 @@ type PageBuilder = (a: PageAssets) => { svg: string; width: number; height: numb
 async function prepare(input: LocandinaInput): Promise<PageAssets> {
   const assets = await loadLocandinaAssets();
   const data = computeLocandinaData(input);
-  return { data, fonts: assets.fonts, bg: assets.bg, valley: assets.valley, pilota: assets.pilota };
+  return { data, fonts: assets.fonts, bg: assets.bg, valley: assets.valley, windgramImage: input.windgramImage ?? null };
 }
 
 async function renderPage(ctx: PageAssets, builder: PageBuilder, type: "png" | "jpg", outWidth: number): Promise<{ blob: Blob; width: number; height: number }> {
