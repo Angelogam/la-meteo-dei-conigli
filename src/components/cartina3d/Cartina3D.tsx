@@ -1521,6 +1521,25 @@ export default function Cartina3D({ decolli, selectedId, hour, day, onSelect }: 
         </div>
       </div>
 
+      {/* dati aerologici — barra orizzontale sotto la toolbar */}
+      <Hud
+        ready={status === "ready"}
+        surface={surface}
+        anabatic={anabatic}
+        fieldBusy={fieldBusy}
+        fcAt={fcAt}
+        fcSim={fcSim}
+        dayLabel={dayLabel}
+        selHour={selHour}
+        quota={effQuota}
+        therm={therm}
+        nTriggers={triggers.length}
+        nCones={nCones}
+        nPilot={pilot.length}
+        wind={effQuota > 0 ? windAtAltitude(quotaPoint, effQuota, quotaPoint?.wind ?? null, quotaPoint?.dir ?? null) : null}
+        meteo={meteoInfo}
+      />
+
       {/* previsioni del vento per le giornate a venire, a fasce orarie */}
       <Previsioni
         fc={forecast}
@@ -1551,25 +1570,6 @@ export default function Cartina3D({ decolli, selectedId, hour, day, onSelect }: 
             <small>scarica ≈6 MB di mappe solo quando la apri · tasto «Chiudi» per smontarla</small>
           </div>
         )}
-
-        {/* dati aerologici flottanti */}
-        <Hud
-          ready={status === "ready"}
-          surface={surface}
-          anabatic={anabatic}
-          fieldBusy={fieldBusy}
-          fcAt={fcAt}
-          fcSim={fcSim}
-          dayLabel={dayLabel}
-          selHour={selHour}
-          quota={effQuota}
-          therm={therm}
-          nTriggers={triggers.length}
-          nCones={nCones}
-          nPilot={pilot.length}
-          wind={effQuota > 0 ? windAtAltitude(quotaPoint, effQuota, quotaPoint?.wind ?? null, quotaPoint?.dir ?? null) : null}
-          meteo={meteoInfo}
-        />
 
         {/* navigazione stile Google Earth */}
         {status === "ready" && viewerRef.current && cesiumRef.current && (

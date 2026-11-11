@@ -170,6 +170,7 @@
 /* ---------- palco ---------- */
 .c3d-stage {
   position: relative;
+  margin-top: 0.7rem;
   height: clamp(380px, 56vh, 560px);
   background: #0a1626;
 }
@@ -217,30 +218,34 @@
   100% { box-shadow: 0 0 0 0 rgba(61, 220, 132, 0); }
 }
 
-/* HUD flottante */
+/* HUD — barra orizzontale sotto la toolbar, sopra le previsioni */
 .c3d-hud {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  left: auto;
-  z-index: 4;
   display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  max-width: min(78%, 340px);
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.75rem;
+  padding: 0.4rem 0.95rem;
+  border-bottom: 1px solid rgba(125, 211, 252, 0.12);
+  background: rgba(10, 22, 40, 0.6);
 }
 .c3d-hud-k,
 .c3d-hud-v {
-  width: fit-content;
-  padding: 0.3rem 0.6rem;
-  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 0.26rem 0.65rem;
+  border-radius: 999px;
   border: 1px solid rgba(125, 211, 252, 0.18);
   background: rgba(8, 17, 30, 0.82);
   backdrop-filter: blur(6px);
   font-family: var(--font-mono, monospace);
-  font-size: 0.7rem;
+  font-size: 0.68rem;
   color: #cfe6f8;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  white-space: nowrap;
+  max-width: 28ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .c3d-hud-k {
   color: #ffd76a;
@@ -645,8 +650,9 @@
   .c3d-sub { white-space: normal; }
   .c3d-stage { height: clamp(330px, 62vh, 480px); }
   .c3d-site select { max-width: 150px; }
-  .c3d-hud { max-width: 62%; }
-  .c3d-hud-k, .c3d-hud-v { font-size: 0.62rem; }
+  .c3d-hud { gap: 0.3rem 0.5rem; padding: 0.3rem 0.6rem; }
+  .c3d-hud-k, .c3d-hud-v { font-size: 0.58rem; padding: 0.2rem 0.5rem; }
+  .c3d-hud-k, .c3d-hud-v { max-width: none; }
   .c3d-legend { gap: 0.3rem 0.7rem; font-size: 0.6rem; }
   .c3d-nav { right: 8px; bottom: 26px; gap: 0.35rem; }
   .c3d-compass { width: 46px; height: 46px; }
