@@ -1110,6 +1110,16 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect, syncDay, s
               </button>
             ))}
           </div>
+          <CartinaPanel
+            snapshot={panelSite}
+            hours={panelHours}
+            hour={hour}
+            onClose={() => setPanelSiteId(null)}
+            onPickHour={setHour}
+            onUse={() => {
+              if (panelSite && onSelect) onSelect(panelSite.item);
+            }}
+          />
         </div>
       </header>
 
@@ -1207,17 +1217,6 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect, syncDay, s
             </>
           )}
         </div>
-
-        <CartinaPanel
-          snapshot={panelSite}
-          hours={panelHours}
-          hour={hour}
-          onClose={() => setPanelSiteId(null)}
-          onPickHour={setHour}
-          onUse={() => {
-            if (panelSite && onSelect) onSelect(panelSite.item);
-          }}
-        />
       </div>
 
       <div className="cmap-timeline">

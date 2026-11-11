@@ -381,12 +381,9 @@
 /* --------------------------- pannello dettaglio --------------------------- */
 
 .cmap-panelbox {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  left: auto;
-  z-index: 740;
-  width: min(406px, calc(100% - 20px));
+  position: static;
+  width: 100%;
+  max-width: 406px;
   max-height: calc(100% - 24px);
   overflow-y: auto;
   display: flex;
@@ -929,13 +926,10 @@
   .cmap-layers { justify-content: flex-start; }
   .cmap-map { margin: 0 0.5rem; height: 480px; }
   .cmap-panelbox {
-    top: auto;
-    bottom: 0;
-    left: 0;
-    right: 0;
     width: 100%;
-    max-height: 72%;
-    border-radius: 13px 13px 0 0;
+    max-width: none;
+    max-height: none;
+    border-radius: 13px;
     padding: 0.75rem 0.85rem 0.95rem;
   }
   .cmap-alt { right: 8px; top: 8px; }
