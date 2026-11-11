@@ -37,6 +37,7 @@ export function esposizioneToGradi(esposizione: string | undefined | null): numb
     "W": 270, "WNW": 292.5, "NW": 315, "NNW": 337.5,
     "SO": 225, // Sud-Ovest (alias italiano)
     "NO": 315, // Nord-Ovest (alias italiano)
+    "O": 270,  // Ovest (alias italiano)
     "S/SE": 157.5, "S/SW": 202.5, "N/NE": 22.5, "N/NW": 337.5,
     "E/NE": 67.5, "E/SE": 112.5, "W/NW": 292.5, "W/SW": 247.5,
     "SE/S": 157.5, "SW/S": 202.5,
@@ -44,7 +45,25 @@ export function esposizioneToGradi(esposizione: string | undefined | null): numb
   };
   if (!esposizione) return 180; // default: Sud
   const clean = esposizione.trim().toUpperCase().replace(/\s+/g, "").replace(/\//g, "/");
-  return m[clean] ?? 180;
+  // stringhe esatte note (comportamento storico)
+  const exact = m[clean];
+  if (exact !== undefined) return exact;
+  // esposizioni multi-direzione es. "NE/E", "SE/S", "N/NE/E/SE/O/NO":
+  // media circolare dei settori indicati (necessita ≥ 3 punti per essere stabile)
+  const tokens = clean.split("/").filter(Boolean);
+  const gradi = tokens.map((t) => m[t]).filter((v) => v !== undefined);
+  if (gradi.length === 1) return gradi[0];
+  if (gradi.length >= 2) {
+    let x = 0, y = 0;
+    for (const g of gradi) {
+      const rad = (g * Math.PI) / 180;
+      x += Math.sin(rad);
+      y += Math.cos(rad);
+    }
+    if (Math.abs(x) < 1e-9 && Math.abs(y) < 1e-9) return gradi[0];
+    return (((Math.atan2(x, y) * 180) / Math.PI) + 360) % 360;
+  }
+  return 180;
 }
 
 function diffAngolare(a: number, b: number): number {

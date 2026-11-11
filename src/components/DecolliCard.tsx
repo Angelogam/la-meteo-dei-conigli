@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import {
-  AlertTriangle, Clock, Cloud, CloudRain, CloudSnow, Flame, Info, Layers, MapPin, Navigation, Search, Snowflake, Sun, Thermometer, Wind, Zap,
+  AlertTriangle, Camera, Clock, Cloud, CloudRain, CloudSnow, Flame, Info, Layers, MapPin, Navigation, PlaneLanding, Search, Snowflake, Sun, Thermometer, Users, Wind, Zap,
 } from "lucide-react";
 import type { Decollo } from "@/data/decolli";
 import { calcolaIndiceVolabilita, esposizioneToGradi } from "@/utils/indiceVolabilita";
@@ -245,6 +245,28 @@ function HeadBlock({ item, selected, index }: { item: CardItem; selected: boolea
             </span>
           )}
         </span>
+        {((item.club && item.club.name) || item.landing || (item.webcams && item.webcams.length > 0)) && (
+          <span className="dxc-site-facts">
+            {item.club && item.club.name && (
+              <span className="dxc-fact" title={item.club.url || "Club/locale di riferimento"}>
+                <Users size={10} aria-hidden="true" />
+                {item.club.name}
+              </span>
+            )}
+            {item.landing && (
+              <span className="dxc-fact" title={"Atterraggio: " + item.landing.name + " · " + item.landing.quota_m + " m s.l.m."}>
+                <PlaneLanding size={10} aria-hidden="true" />
+                Atterraggio {item.landing.name} · {item.landing.quota_m} m
+              </span>
+            )}
+            {item.webcams && item.webcams.length > 0 && (
+              <span className="dxc-fact dxc-fact-cam" title={"Webcam verificate vicino al decollo: " + item.webcams.map((w) => w.name).join(", ")}>
+                <Camera size={10} aria-hidden="true" />
+                {item.webcams.length} webcam
+              </span>
+            )}
+          </span>
+        )}
       </div>
       <div className="dxc-badges">
         {index !== null && (

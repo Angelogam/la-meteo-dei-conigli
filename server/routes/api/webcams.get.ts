@@ -56,6 +56,35 @@ function distanceKm(lat1: number, lon1: number, lat2: number, lon2: number): num
   return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+/**
+ * Aggiunge un cache-buster all'URL dell'immagine webcam: le snapshot
+ * (SpotAir/meteobridge/Holfuy/Fripon/…) aggiornano l'immagine in continuo,
+ * il busto evita che browser e CDN servano frame vecchi.
+ */
+function withCacheBuster(imageUrl: string): string {
+  const separator = imageUrl.includes("?") ? "&" : "?";
+  return `${imageUrl}${separator}cb=${Date.now().toString(36)}`;
+}
+
+/**
+ * Webcam curate nel database decolli (fonte SpotAir + club):
+ * snapshot live già verificate e pagine ufficiali dei gestori.
+ */
+function curatedCameras(site: (typeof DECOLLI)[number]) {
+  return (site.webcams ?? []).map((webcam, index) => ({
+    webcamId: `curated-${site.id}-${index}`,
+    title: webcam.name,
+    status: "active",
+    latitude: site.lat,
+    longitude: site.lon,
+    city: site.location_name ?? site.site_name,
+    region: webcam.fonte,
+    detailUrl: webcam.url && webcam.url.startsWith("https:") ? webcam.url : webcam.url ?? null,
+    imageUrl: webcam.imageUrl ? withCacheBuster(webcam.imageUrl) : null,
+    distanceKm: Number((webcam.distKm ?? 0).toFixed(1)),
+  }));
+}
+
 function localFallbackCameras(site: (typeof DECOLLI)[number]) {
   const base = {
     lat: site.lat,
@@ -76,7 +105,7 @@ function localFallbackCameras(site: (typeof DECOLLI)[number]) {
         city: base.city,
         region: base.region,
         detailUrl: "https://www.ilmeteo.it/webcam/Pian+Mune%27",
-        imageUrl: "https://webcam.pianmune.it/system/uploads/otras/Seggiovia.jpg?cb=2026110319",
+        imageUrl: "https://webcam.pianmune.it/system/uploads/otras/Seggiovia.jpg",
         distanceKm: 0.4,
       },
       {
@@ -105,7 +134,7 @@ function localFallbackCameras(site: (typeof DECOLLI)[number]) {
         city: base.city,
         region: base.region,
         detailUrl: "https://www.ilmeteo.it/webcam/Rucas+di+Bagnolo",
-        imageUrl: "https://weather-cams.visioray.com/snap/3104.jpg?cb=2026110319",
+        imageUrl: "https://weather-cams.visioray.com/snap/3104.jpg",
         distanceKm: 0.7,
       },
       {
@@ -117,7 +146,7 @@ function localFallbackCameras(site: (typeof DECOLLI)[number]) {
         city: base.city,
         region: base.region,
         detailUrl: "https://www.ilmeteo.it/webcam/Montoso",
-        imageUrl: "https://weather-cams.visioray.com/snap/4507.jpg?cb=2026110319",
+        imageUrl: "https://weather-cams.visioray.com/snap/4507.jpg",
         distanceKm: 1.1,
       },
     ];
@@ -151,6 +180,29 @@ function normalizeWebcam(value: unknown): Omit<WindyWebcam, "webcamId"> & { webc
   };
 }
 
+function dedupeCameras<T extends { title: string; webcamId: string }>(cameras: T[]): T[] {
+  const seen = new Set<string>();
+  const result: T[] = [];
+  for (const camera of cameras) {
+    const key = camera.title.trim().toLocaleLowerCase("it-IT");
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(camera);
+  }
+  return result;
+}
+
+function buildResponse(site: (typeof DECOLLI)[number], cameras: WindyWebcam[], provider: string, radiusKm = SEARCH_RADIUS_KM) {
+  return {
+    ok: true,
+    provider,
+    site: { id: site.id, name: site.site_name, latitude: site.lat, longitude: site.lon },
+    radiusKm,
+    total: cameras.length,
+    cameras,
+  };
+}
+
 export default defineHandler(async (event) => {
   const query = getQuery(event);
   const unsupportedParameters = Object.keys(query).filter((key) => key !== "site");
@@ -175,17 +227,13 @@ export default defineHandler(async (event) => {
     });
   }
 
+  const curated = curatedCameras(site);
   const fallbackCameras = localFallbackCameras(site);
   const apiKey = process.env.WINDY_WEBCAMS_API_KEY?.trim();
   if (!apiKey) {
-    return {
-      ok: true,
-      provider: "webcam locali verificate",
-      site: { id: site.id, name: site.site_name, latitude: site.lat, longitude: site.lon },
-      radiusKm: SEARCH_RADIUS_KM,
-      total: fallbackCameras.length,
-      cameras: fallbackCameras,
-    };
+    setHeader(event, "Cache-Control", "public, s-maxage=600, stale-while-revalidate=1800");
+    const cameras = curated.length > 0 ? curated : fallbackCameras;
+    return buildResponse(site, cameras, curated.length > 0 ? "SpotAir + webcam locali verificate" : "webcam locali verificate");
   }
 
   const url = new URL(WINDY_WEBCAMS_API_URL);
@@ -222,7 +270,7 @@ export default defineHandler(async (event) => {
       throw createError({ statusCode: 502, statusMessage: "Risposta webcam Windy non valida" });
     }
 
-    const cameras = payload.webcams
+    const windyCameras = payload.webcams
       .map((webcam) => {
         const camera = normalizeWebcam(webcam);
         return {
@@ -237,50 +285,38 @@ export default defineHandler(async (event) => {
         distanceKm: Number(exactDistanceKm.toFixed(1)),
       }));
 
-    const finalCameras = cameras.length > 0 ? cameras : fallbackCameras;
+    const merged = dedupeCameras([...curated, ...windyCameras] as WindyWebcam[]);
+    const finalCameras = merged.length > 0 ? merged : (fallbackCameras as WindyWebcam[]);
 
     setHeader(event, "Cache-Control", "public, s-maxage=600, stale-while-revalidate=1800");
-    return {
-      ok: true,
-      provider: cameras.length > 0 ? "Windy Webcams API" : "webcam locali verificate",
-      site: { id: site.id, name: site.site_name, latitude: site.lat, longitude: site.lon },
-      radiusKm: SEARCH_RADIUS_KM,
-      total: finalCameras.length,
-      cameras: finalCameras,
-    };
+    return buildResponse(
+      site,
+      finalCameras,
+      curated.length > 0 && windyCameras.length > 0
+        ? "SpotAir + Windy Webcams API"
+        : windyCameras.length > 0
+          ? "Windy Webcams API"
+          : "SpotAir + webcam locali verificate",
+    );
   } catch (error: unknown) {
+    const canFallback = curated.length > 0 || fallbackCameras.length > 0;
     if (error instanceof Error && "statusCode" in error && typeof error.statusCode === "number") {
-      if (fallbackCameras.length > 0) {
-        return {
-          ok: true,
-          provider: "webcam locali verificate",
-          site: { id: site.id, name: site.site_name, latitude: site.lat, longitude: site.lon },
-          radiusKm: SEARCH_RADIUS_KM,
-          total: fallbackCameras.length,
-          cameras: fallbackCameras,
-        };
+      if (canFallback) {
+        setHeader(event, "Cache-Control", "public, s-maxage=600");
+        return buildResponse(site, (curated.length > 0 ? curated : fallbackCameras) as WindyWebcam[], "SpotAir + webcam locali verificate");
       }
       throw error;
     }
     if (error instanceof Error && error.name === "AbortError") {
-      return {
-        ok: true,
-        provider: "webcam locali verificate",
-        site: { id: site.id, name: site.site_name, latitude: site.lat, longitude: site.lon },
-        radiusKm: SEARCH_RADIUS_KM,
-        total: fallbackCameras.length,
-        cameras: fallbackCameras,
-      };
+      if (canFallback) {
+        setHeader(event, "Cache-Control", "public, s-maxage=600");
+        return buildResponse(site, (curated.length > 0 ? curated : fallbackCameras) as WindyWebcam[], "SpotAir + webcam locali verificate");
+      }
+      return buildResponse(site, [], "webcam locali verificate");
     }
-    if (fallbackCameras.length > 0) {
-      return {
-        ok: true,
-        provider: "webcam locali verificate",
-        site: { id: site.id, name: site.site_name, latitude: site.lat, longitude: site.lon },
-        radiusKm: SEARCH_RADIUS_KM,
-        total: fallbackCameras.length,
-        cameras: fallbackCameras,
-      };
+    if (canFallback) {
+      setHeader(event, "Cache-Control", "public, s-maxage=600");
+      return buildResponse(site, (curated.length > 0 ? curated : fallbackCameras) as WindyWebcam[], "SpotAir + webcam locali verificate");
     }
     throw createError({ statusCode: 502, statusMessage: "Provider Windy temporaneamente non raggiungibile" });
   } finally {
