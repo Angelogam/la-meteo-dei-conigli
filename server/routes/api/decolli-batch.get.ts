@@ -42,20 +42,33 @@ const HOURLY = [
 
 const DAILY = ["temperature_2m_max", "temperature_2m_min", "cloud_cover_mean", "precipitation_sum"].join(",");
 
-function validCoordinates(): { lats: string; lons: string } {
-  const lats: string[] = [];
-  const lons: string[] = [];
+/**
+ * Con più di ~60 località per richiesta l'URL verso Open-Meteo diventa fragile:
+ * si spezza l'elenco in chunk e si fondono le risposte nell'ordine dei decolli.
+ */
+const CHUNK_SIZE = 50;
+
+function coordinateChunks(): { latitude: string; longitude: string }[] {
+  const latArr: string[] = [];
+  const lonArr: string[] = [];
   for (const d of DECOLLI) {
     const lat = Number(d.lat);
     const lon = Number(d.lon);
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
-    lats.push(lat.toFixed(5));
-    lons.push(lon.toFixed(5));
+    latArr.push(lat.toFixed(5));
+    lonArr.push(lon.toFixed(5));
   }
-  if (!lats.length) {
+  if (!latArr.length) {
     throw createError({ statusCode: 500, statusMessage: "Elenco decolli non disponibile sul server" });
   }
-  return { lats: lats.join(","), lons: lons.join(",") };
+  const chunks: { latitude: string; longitude: string }[] = [];
+  for (let i = 0; i < latArr.length; i += CHUNK_SIZE) {
+    chunks.push({
+      latitude: latArr.slice(i, i + CHUNK_SIZE).join(","),
+      longitude: lonArr.slice(i, i + CHUNK_SIZE).join(","),
+    });
+  }
+  return chunks;
 }
 
 export default defineHandler(async (event) => {
@@ -68,16 +81,21 @@ export default defineHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: "Timezone non valido" });
   }
 
-  const { lats, lons } = validCoordinates();
+  const chunks = coordinateChunks();
 
-  const results = await fetchOpenMeteoMulti({
-    latitude: lats,
-    longitude: lons,
-    timezone,
-    forecast_days: "3",
-    hourly: HOURLY,
-    daily: DAILY,
-  });
+  const chunkResults = await Promise.all(
+    chunks.map((chunk) =>
+      fetchOpenMeteoMulti({
+        latitude: chunk.latitude,
+        longitude: chunk.longitude,
+        timezone,
+        forecast_days: "3",
+        hourly: HOURLY,
+        daily: DAILY,
+      }),
+    ),
+  );
+  const results = chunkResults.flat();
 
   if (results.length !== DECOLLI.length) {
     throw createError({

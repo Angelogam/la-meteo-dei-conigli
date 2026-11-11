@@ -224,12 +224,32 @@ function Compass({ expDeg, dir, relCls }: { expDeg: number; dir: number | null; 
 
 type CardItem = Decollo & { aggressiveWeather?: AggressiveWeatherData | null };
 
+const REGIONI: { key: "ALL" | "CN" | "TO" | "LO" | "LIG" | "FR"; label: string }[] = [
+  { key: "ALL", label: "Tutti" },
+  { key: "CN", label: "Cuneo" },
+  { key: "TO", label: "Torino" },
+  { key: "LO", label: "Lombardia" },
+  { key: "LIG", label: "Liguria" },
+  { key: "FR", label: "Francia" },
+];
+
 function HeadBlock({ item, selected, index }: { item: CardItem; selected: boolean; index: number | null }) {
   const lat = Number(item.lat);
   const lon = Number(item.lon);
   const hasCoords = Number.isFinite(lat) && Number.isFinite(lon);
   return (
     <div className="dxc-card-head">
+      {item.photo && item.photo.url && (
+        <img
+          className="dxc-photo"
+          src={item.photo.url}
+          alt={"Foto di " + (item.site_name || item.name)}
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          title={item.photo.credit || "Wikimedia Commons"}
+          onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+        />
+      )}
       <div className="dxc-site-block">
         <span className="dxc-site-name">{item.site_name || item.name}</span>
         <span className="dxc-site-meta">
@@ -267,6 +287,7 @@ function HeadBlock({ item, selected, index }: { item: CardItem; selected: boolea
             )}
           </span>
         )}
+        {selected && item.note && <span className="dxc-note">{item.note}</span>}
       </div>
       <div className="dxc-badges">
         {index !== null && (
@@ -531,15 +552,20 @@ export default function DecolliCard({
   decolli, selectedId, onSelect, selectedDay = 0, isUpdating = false, error,
 }: DecolliCardProps) {
   const [query, setQuery] = useState("");
+  const [regione, setRegione] = useState<"ALL" | "CN" | "TO" | "LO" | "LIG" | "FR">("ALL");
   const dt = getDateTime(selectedDay);
   const dayKey = dateKeyFor(selectedDay);
   const nowHour = new Date().getHours();
   const filtered = useMemo(() => {
     const q = query.trim().toLocaleLowerCase("it-IT");
-    return decolli.filter((item) => !q || [
-      item.site_name, item.location_name, item.orientation, item.elevation_m,
-    ].some((value) => String(value ?? "").toLocaleLowerCase("it-IT").includes(q)));
-  }, [decolli, query]);
+    return decolli.filter((item) => {
+      if (regione !== "ALL" && item.province !== regione) return false;
+      if (!q) return true;
+      return [
+        item.site_name, item.location_name, item.orientation, item.elevation_m,
+      ].some((value) => String(value ?? "").toLocaleLowerCase("it-IT").includes(q));
+    });
+  }, [decolli, query, regione]);
   const loadedCount = decolli.filter((d) => {
     const status = d.aggressiveWeather?.stato?.toLowerCase();
     return status && !["offline", "errore", "n/d"].includes(status);
@@ -566,6 +592,20 @@ export default function DecolliCard({
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Cerca decollo, valle o esposizione…" aria-label="Cerca un decollo" />
         </label>
         <span className="dxc-update"><Clock aria-hidden="true" size={12} />{dt.date}</span>
+      </div>
+      <div className="dxc-regioni" role="group" aria-label="Filtra i decolli per zona">
+        {REGIONI.map((r) => (
+          <button
+            key={r.key}
+            type="button"
+            className={"dxc-region-chip" + (regione === r.key ? " is-active" : "")}
+            aria-pressed={regione === r.key}
+            onClick={() => setRegione(r.key)}
+          >
+            {r.label}
+            <small>{r.key === "ALL" ? decolli.length : decolli.filter((d) => d.province === r.key).length}</small>
+          </button>
+        ))}
       </div>
       {error && <p className="dxc-message is-error">{error}</p>}
       {!loadedCount && !isUpdating && <p className="dxc-message">I dati comparativi di alcuni siti non sono disponibili in questo momento; le previsioni del sito selezionato restano separate.</p>}
