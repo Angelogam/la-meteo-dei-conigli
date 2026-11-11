@@ -66,11 +66,6 @@
   color: #fcd34d;
 }
 
-.cmap-upper {
-  display: flex;
-  gap: 0.85rem;
-  align-items: flex-start;
-}
 .cmap-head-tools { display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end; }
 
 .cmap-layers { display: flex; gap: 0.3rem; flex-wrap: wrap; justify-content: flex-end; }
@@ -386,9 +381,13 @@
 /* --------------------------- pannello dettaglio --------------------------- */
 
 .cmap-panelbox {
-  /* Sidebar laterale a destra della mappa — flusso normale, non absolute */
-  flex: 0 0 min(400px, 42vw);
-  max-height: clamp(460px, 58vw, 700px);
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  left: auto;
+  z-index: 740;
+  width: min(406px, calc(100% - 20px));
+  max-height: calc(100% - 24px);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -400,7 +399,6 @@
   backdrop-filter: blur(10px);
   box-shadow: 0 16px 40px rgba(2, 8, 16, 0.6);
   scrollbar-width: thin;
-  align-self: flex-start;
 }
 
 .cmap-panelbox.is-empty { justify-content: center; min-height: 130px; }
@@ -926,16 +924,19 @@
 /* ------------------------------- responsive ------------------------------- */
 
 @media (max-width: 940px) {
-  .cmap-upper { flex-direction: column; }
   .cmap-head { padding: 0.85rem 0.85rem 0.7rem; }
   .cmap-head-tools { align-items: flex-start; }
   .cmap-layers { justify-content: flex-start; }
   .cmap-map { margin: 0 0.5rem; height: 480px; }
   .cmap-panelbox {
-    flex: none;
-    width: calc(100% - 1rem);
-    max-height: 360px;
-    align-self: stretch;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    max-height: 72%;
+    border-radius: 13px 13px 0 0;
+    padding: 0.75rem 0.85rem 0.95rem;
   }
   .cmap-alt { right: 8px; top: 8px; }
   .cmap-readout { bottom: auto; top: 8px; padding: 0.35rem 0.55rem; }

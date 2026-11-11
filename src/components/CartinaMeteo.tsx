@@ -1064,57 +1064,56 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect, syncDay, s
   /* --------------------------------- render --------------------------------- */
   return (
     <section className="cmap-panel" aria-labelledby="cmap-title" data-testid="cartina-decolli">
-      <div className="cmap-upper">
-        <header className="cmap-head">
-          <div className="cmap-head-title">
-            <p className="cmap-kicker">CARTINA AEROLOGICA · SISTEMA METEO-PARAPENTE</p>
-            <h2 id="cmap-title">Cartina dei decolli</h2>
-            <p>
-              Il campo termico calcolato sul terreno reale — dove il sole riscalda i pendii nascono le
-              bolle, come su Meteo-Parapente. Scegli il livello e l'ora, premi «Riproduci» o tocca un decollo.
+      <header className="cmap-head">
+        <div className="cmap-head-title">
+          <p className="cmap-kicker">CARTINA AEROLOGICA · SISTEMA METEO-PARAPENTE</p>
+          <h2 id="cmap-title">Cartina dei decolli</h2>
+          <p>
+            Il campo termico calcolato sul terreno reale — dove il sole riscalda i pendii nascono le
+            bolle, come su Meteo-Parapente. Scegli il livello e l'ora, premi «Riproduci» o tocca un decollo.
+          </p>
+          <p className="cmap-hint" data-testid="cartina-hint">{LAYER_HINT[layer]}</p>
+          {layer === "termiche" && demState === "loading" && (
+            <p className="cmap-hint is-warn">Calcolo del terreno reale…</p>
+          )}
+          {layer === "termiche" && demState === "off" && (
+            <p className="cmap-hint is-warn">
+              Terreno non disponibile: mostro aloni semplificati sui decolli.
             </p>
-            <p className="cmap-hint" data-testid="cartina-hint">{LAYER_HINT[layer]}</p>
-            {layer === "termiche" && demState === "loading" && (
-              <p className="cmap-hint is-warn">Calcolo del terreno reale…</p>
-            )}
-            {layer === "termiche" && demState === "off" && (
-              <p className="cmap-hint is-warn">
-                Terreno non disponibile: mostro aloni semplificati sui decolli.
-              </p>
-            )}
+          )}
+        </div>
+        <div className="cmap-head-tools">
+          <div className="cmap-layers" role="group" aria-label="Livello meteo della cartina">
+            {LAYER_TABS.map(({ id, label, icon: Icon }) => (
+              <button
+                key={id}
+                type="button"
+                className={"cmap-lbtn" + (layer === id ? " is-active" : "")}
+                aria-pressed={layer === id}
+                onClick={() => setLayer(id)}
+              >
+                <Icon size={14} aria-hidden="true" />
+                <span>{label}</span>
+              </button>
+            ))}
           </div>
-          <div className="cmap-head-tools">
-            <div className="cmap-layers" role="group" aria-label="Livello meteo della cartina">
-              {LAYER_TABS.map(({ id, label, icon: Icon }) => (
-                <button
-                  key={id}
-                  type="button"
-                  className={"cmap-lbtn" + (layer === id ? " is-active" : "")}
-                  aria-pressed={layer === id}
-                  onClick={() => setLayer(id)}
-                >
-                  <Icon size={14} aria-hidden="true" />
-                  <span>{label}</span>
-                </button>
-              ))}
-            </div>
-            <div className="cmap-bases" role="group" aria-label="Base cartografica">
-              {BASE_TABS.map((b) => (
-                <button
-                  key={b.id}
-                  type="button"
-                  className={"cmap-bbtn" + (base === b.id ? " is-active" : "")}
-                  aria-pressed={base === b.id}
-                  onClick={() => setBase(b.id)}
-                >
-                  {b.label}
-                </button>
-              ))}
-            </div>
+          <div className="cmap-bases" role="group" aria-label="Base cartografica">
+            {BASE_TABS.map((b) => (
+              <button
+                key={b.id}
+                type="button"
+                className={"cmap-bbtn" + (base === b.id ? " is-active" : "")}
+                aria-pressed={base === b.id}
+                onClick={() => setBase(b.id)}
+              >
+                {b.label}
+              </button>
+            ))}
           </div>
-        </header>
+        </div>
+      </header>
 
-        <div className="cmap-map">
+      <div className="cmap-map">
         <div ref={containerRef} className="cmap-leaflet" />
 
         <div className="cmap-readout" aria-live="polite">
@@ -1209,20 +1208,17 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect, syncDay, s
           )}
         </div>
 
-        </div>
+        <CartinaPanel
+          snapshot={panelSite}
+          hours={panelHours}
+          hour={hour}
+          onClose={() => setPanelSiteId(null)}
+          onPickHour={setHour}
+          onUse={() => {
+            if (panelSite && onSelect) onSelect(panelSite.item);
+          }}
+        />
       </div>
-
-      {/* scheda di volo — a destra di titolo+carta, fuori dalla mappa */}
-      <CartinaPanel
-        snapshot={panelSite}
-        hours={panelHours}
-        hour={hour}
-        onClose={() => setPanelSiteId(null)}
-        onPickHour={setHour}
-        onUse={() => {
-          if (panelSite && onSelect) onSelect(panelSite.item);
-        }}
-      />
 
       <div className="cmap-timeline">
         <div className="cmap-days" role="group" aria-label="Giorno della previsione">
