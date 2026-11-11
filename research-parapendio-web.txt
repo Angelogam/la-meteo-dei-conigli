@@ -1,0 +1,122 @@
+# Ricerca Meteo Parapendio - Studio Piloti
+## Data: 2026-09-28
+## Sito locale: Malanotte (Valle Ellero, 1740m slm)
+
+---
+
+## RISORSE STUDIO (Siti da consultare)
+
+### Siti Internazionali di Riferimento:
+1. **wingweather.com** - Sito UK di riferimento per parapendio e deltaplano
+   - Struttura professionale con mappe interattive e dati meteo
+   - Utile per capire come presentare i dati ai piloti
+
+2. **xcweather.co.uk** - Meteo cross-country per volo libero
+   - Focus su condizioni per cross-country
+   - Strutturazione chiara dei parametri di volo
+
+3. **paragliding-hub.com** - Portale internazionale parapendio
+   - Community attiva con consigli pratici
+   - Recensioni siti di volo
+
+4. **soaring.engine** - Strumento meteo per alianti e parapendio
+   - Interfaccia professionale e tecnica
+   - Ottimo esempio di visualizzazione dati vento
+
+5. **meteofrance.com/parapente** - Meteo Francia sezione parapendio
+   - Approccio francese alla meteorologia del volo libero
+
+---
+
+## DATI RECUPERATI DAL PROGETTO ESISTENTE
+
+### Siti di Decollo (Piemonte):
+- Malanotte (1740m) - Valle Ellero - S/SE
+- Colle di Tenda (1990m) - Valle Roya/Vermenagna - S
+- Boves (900m) - Cuneese - NE
+- Monte Male – Dronero (950m) - Valle Maira - S
+- Iretta (1050m) - Valle Maira - SO
+- Pratoni di Val Mala (1400m) - Valle Maira - S
+- Monte Birrone (2131m) - Valle Maira - S
+- Colle dell'Agnello (2748m) - Valle Varaita - S
+- Pian Munè – Seggiovia (1870m) - Valle Po - S/SW
+- Pian Munè – Bric Lombatera (1350m) - Valle Po - S
+- Martiniana Po (1400m) - Valle Po - NE
+- Rucas Alto (1500m) - Valle Infernotto - S/SE
+- Montoso – Decollo Basso (1250m) - Valle Infernotto - SE
+- Monte Vandalino (2120m) - Val Pellice - S/SE
+- Pian dell'Alpe (1990m) - Val Chisone - S
+- Roletto – Piggi (820m) - Pinerolese - S
+- Piossasco – Monte S. Giorgio (673m) - Collina Torinese - S
+- Truccetti (900m) - Canavese - S
+- Val della Torre (970m) - Val della Torre - S
+- Rocca Canavese – M. della Neve (1100m) - Canavese - S
+- Santa Elisabetta (1000m) - Canavese - S
+- Santa Elisabetta Alto (1400m) - Canavese - S
+- Monte Cavallaria (1430m) - Canavese - S
+- Andrate (1000m) - Canavese - S
+
+### Fonti Meteo Esistenti:
+- Open-Meteo API (principale)
+- Aggioramento ogni 15 minuti (orologio in alto a destra)
+- 4 fonti alternative per aggiornamento aggressivo
+- 3 modelli numerici disponibili
+- Modelli globali e regionali (ARPEGE, AROME, etc.)
+
+### Funzionalità Esistenti:
+- **Analogia**: Confronto condizioni attuali vs giorni precedenti
+- **Analisi Avanzata**: Rilevamento pattern pericolosi (temporali, shear, rotori)
+- **Validazione Previsioni**: Controllo accuratezza con dati reali
+- **Indice Volabilità**: 1-10 basato su vento, temperatura, nuvolosità, precipitazioni
+- **Windgram**: Grafico professionale vento 3D
+- **Previsioni Giornaliere**: 7 giorni con grafici temporali
+- **Grafico Termiche**: Rateo ascensione stimato 10 minuti
+- **Grafico Termico Pro**: Rateo e quota massima con visualizzazione avanzata
+- **Vento Interpolato**: Profilo verticale (10m → 180m)
+- **Termiche**: Previsione rateo ascensione e quota massima
+- **Alert Banner**: Notifiche meteo critiche
+- **Diagnostica**: Verifica integrità dati e allerta errori
+
+### Parametri Calcolati:
+- Base cumuli (LCL)
+- Rateo termico medio e massimo
+- Spread temperatura/punto rugiada
+- Trend pressione (7h)
+- Wind shear verticale
+- CAPE, Lifted Index, CIN
+- Rischio temporali
+- Finestra di volo oraria
+- Direzione/velocità vento a 850hPa
+
+### Utilità Utilizzate:
+- `windInterpretation.ts` - Interpretazione naturale del vento
+- `indiceVolabilita.ts` - Calcolo indice 1-10
+- `generateReportMeteo.ts` - Report completo in testo
+- `calcCloudBase.ts` - Calcolo base cumuli
+- `validaVentoDecollo.ts` - Validazione venti per decollo
+- `termiche.ts` - Calcolo termiche
+- `volo.ts` - Utilità per calcolo parametri volo
+
+---
+
+## NOTE PERSONALI STUDIO PILOTA
+
+### Cosa ho imparato consultando i siti:
+1. I siti professionali usano mappe interattive con layer meteo sovrapposti
+2. Il vento è il parametro più importante: direzione + velocità + raffiche
+3. La base cumuli deve essere ALTA (>= 800m sopra il terreno) per volo sicuro
+4. Lo spread T-Td > 6°C è ideale per termiche forti
+5. I piloti guardano prima: vento al suolo, direzione vento, nuvolosità, pioggia
+6. Le mappe di vento 850hPa sono essenziali per pianificare il volo in quota
+7. L'instabilità (CAPE) è importante ma secondaria rispetto al vento
+8. I siti migliori mostrano: prob降水, trend temporali, finestre di volo
+
+### Struttura ideale per un sito meteo parapendio:
+1. HERO: Voto volo (1-10) + condizioni immediate
+2. Vento: direzione, velocità, raffiche, profilo verticale
+3. Nuvolosità: copertura, base cumuli, sviluppo termico
+4. Precipitazioni: probabilità, intensità, trend
+5. Instabilità: CAPE, LI, rischio temporali
+6. Consiglio tattico: quando volare, come volare
+
+---

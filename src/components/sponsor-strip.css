@@ -1,0 +1,131 @@
+/* ═══════════════════════════════════════════════════════════
+   SPONSOR STRIP — nastro simpatico sotto la hero.
+   Fondi scuri (i loghi sono su nero), bordi teneri, scorrimento
+   lento e pausable. Con movimento ridotto: griglia statica.
+   ═══════════════════════════════════════════════════════════ */
+
+.sponsor-strip {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: .7rem .9rem;
+  border: 1px solid rgba(148, 176, 200, .18);
+  border-radius: 20px;
+  background: linear-gradient(165deg, rgba(16, 30, 44, .66), rgba(8, 17, 28, .72));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .045);
+  overflow: hidden;
+}
+
+.sponsor-strip__title {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  margin: 0;
+  flex: 0 0 auto;
+  color: #9db8c9;
+  font-size: .72rem;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.sponsor-strip__heart {
+  color: #ff7d9c;
+  font-size: .8rem;
+  animation: sponsor-heart 2.4s ease-in-out infinite;
+}
+@keyframes sponsor-heart {
+  0%, 100% { transform: scale(1); }
+  18% { transform: scale(1.28); }
+  36% { transform: scale(1); }
+}
+
+.sponsor-strip__viewport {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 4%, #000 96%, transparent);
+}
+
+.sponsor-strip__track {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  width: max-content;
+  animation: sponsor-marquee 30s linear infinite;
+}
+.sponsor-strip__viewport:hover .sponsor-strip__track { animation-play-state: paused; }
+
+@keyframes sponsor-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(-50% - .35rem)); }
+}
+
+/* Targhette BIANCHE: i loghi del brand stanno su superficie chiara come nei
+   classici banner degli eventi — vividi, senza filtri che li sbiadiscono. */
+.sponsor-strip__card {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 148px;
+  height: 64px;
+  padding: .5rem .7rem;
+  border: 1px solid rgba(255, 255, 255, .55);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 6px 16px rgba(2, 8, 16, .42), 0 1px 3px rgba(2, 8, 16, .3);
+  transition: transform .22s ease, box-shadow .22s ease;
+}
+.sponsor-strip__card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 22px rgba(2, 8, 16, .5), 0 2px 4px rgba(2, 8, 16, .32);
+}
+.sponsor-strip__card img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  /* i PNG hanno canale alpha vero (ritagliati dagli originali dello sponsor):
+     nessun filtro, i colori restano quelli del brand */
+}
+
+/* loghi quadrati/rotondi (badge SKY): restringono DENTRO la targhetta
+   lasciando il margine bianco visibile su ogni lato. Px fissi, non %:
+   le percentuali su grid item non si risolvono in modo affidabile. */
+.sponsor-strip__card--small img {
+  max-height: 34px;
+  max-width: 92px;
+}
+
+/* sponsor di punta: bordo rosso caldo + nastro */
+.sponsor-strip__card--top {
+  border-color: rgba(226, 59, 59, .65);
+  box-shadow: 0 0 0 1px rgba(226, 59, 59, .25), 0 8px 18px rgba(120, 20, 20, .3);
+}
+.sponsor-strip__ribbon {
+  position: absolute;
+  top: -7px;
+  right: 8px;
+  padding: .04rem .38rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #e23b3b, #ff7a3c);
+  color: #fff;
+  font-size: 7.5px;
+  font-weight: 900;
+  letter-spacing: .14em;
+  font-style: normal;
+}
+
+@media (max-width: 640px) {
+  .sponsor-strip { flex-direction: column; align-items: flex-start; gap: .5rem; }
+  /* in colonna flex:1 darebbe basis 0 sull'asse verticale e la striscia collasserebbe */
+  .sponsor-strip__viewport { width: 100%; flex: 0 0 auto; }
+  .sponsor-strip__card { width: 118px; height: 54px; }
+  .sponsor-strip__card--small img { max-height: 28px; max-width: 72px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sponsor-strip__track { animation: none; flex-wrap: wrap; width: auto; }
+  .sponsor-strip__viewport { overflow: visible; -webkit-mask-image: none; mask-image: none; }
+  .sponsor-strip__heart { animation: none; }
+}

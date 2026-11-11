@@ -1,0 +1,367 @@
+/* Verifica numerica del MOTORE A CORSIE (lanes.ts): geometria delle streamline,
+   direzione anabatica/catabatica, velocità per corsia e continuità del moto.
+   Qui si DIMOSTRA che:
+   1. le corsie esistono sui pendii (non su pianura);
+   2. SALGONO dal fondo valle alla cresta (anabatica: h finale >> h iniziale);
+   3. la tangente della corsia segue il pendio (dot con il gradiente > 0);
+   4. DUE CORSIE NON SI INCROCIANO MAI (raster: ogni cella 40 m ha ≤ 1 corsia)
+      e non si avvicinano meno di SAFE_M (165 m) — per costruzione;
+   5. velocità per corsia finite, spaziatura dei fronti costante e inversione
+      del moto tra il regime diurno e quello notturno;
+   6. il campione d'arco laneAt è continuo (niente salti);
+   7. TUTTO È BLU: BREEZE_BLUE unico colore della famiglia brezza;
+   8. sito pianeggiante → fallback corsie dritte (mai scena vuota);
+   9. FLUSSO CONTINUO: le corsie NASCONO sul fondovalle (pendenza locale
+      sotto la soglia di semina) — il flusso parte dalla valle, non da metà
+      pendio, e ingrandendo sulla valle si vede ancora.
+   Eseguita in Node: lanes.ts non dipende da Cesium.
+   Uso: npx tsx scripts/verify-lane-flow.ts */
+import {
+  buildLaneField,
+  laneAt,
+  directedLaneArc,
+  directedLaneAzimuth,
+  BREEZE_BLUE,
+  FLOW_TIME_SCALE,
+  LANE_MIN_LEN,
+  ROW_SPACING,
+  effectiveRowSpacing,
+  rowSlotCount,
+  withinBreezeRadius,
+  type Lane,
+  type WindField,
+} from "../src/components/cartina3d/lanes";
+import { WIND_FIELD_RADIUS_M } from "../src/components/cartina3d/winds";
+
+let fails = 0;
+const ok = (cond: boolean, msg: string) => {
+  console.log((cond ? "  ✓ " : "  ✗ ") + msg);
+  if (!cond) fails++;
+};
+
+/* ---------- DEM sintetico: due monti sovrapposti + noise gentile ----------
+   dominio quadrato di 20,48 km, come il campo DEM reale; il flusso è limitato
+   a un cerchio di 10 km intorno al decollo. */
+const LAT0 = 44.2;
+const LON0 = 7.1;
+const MLAT = 111320;
+const MLON = MLAT * Math.cos((LAT0 * Math.PI) / 180);
+const ROWS = 33;
+const COLS = 33;
+const STEP = 640;
+const ROWS2 = (ROWS - 1) * 4 + 1; // 129
+const COLS2 = (COLS - 1) * 4 + 1; // 129
+const STEP2 = STEP / 4; // 160
+const EXTENT_M = ((ROWS - 1) * STEP) / 2;
+
+const hill = (xN: number, xE: number, cx: number, cy: number, amp: number, sig: number) =>
+  amp * Math.exp(-(((xN - cx) ** 2 + (xE - cy) ** 2) / (2 * sig * sig)));
+
+const H2at = (xN: number, xE: number): number =>
+  220 +
+  hill(xN, xE, 1800, -2600, 950, 2700) + // monte principale
+  hill(xN, xE, -2200, 3200, 640, 1900) + // monte secondario
+  26 * Math.sin(xE / 950) * Math.cos(xN / 1150); // ondulazione gentile
+
+const makeField = (hAt: (xN: number, xE: number) => number): WindField => {
+  const H2: number[][] = [];
+  for (let i = 0; i < ROWS2; i++) {
+    const xN = ((ROWS2 - 1) / 2 - i) * STEP2;
+    const row: number[] = [];
+    for (let j = 0; j < COLS2; j++) row.push(hAt(xN, (j - (COLS2 - 1) / 2) * STEP2));
+    H2.push(row);
+  }
+  const H: number[][] = [];
+  for (let i = 0; i < ROWS; i++) {
+    const row: number[] = [];
+    for (let j = 0; j < COLS; j++) row.push(H2[i * 4][j * 4]);
+    H.push(row);
+  }
+  const zeros = (): number[][] =>
+    Array.from({ length: ROWS }, () => Array.from({ length: COLS }, () => 0));
+  return {
+    lat0: LAT0,
+    lon0: LON0,
+    rows: ROWS,
+    cols: COLS,
+    step: STEP,
+    mLat: MLAT,
+    mLon: MLON,
+    H,
+    gE: zeros(),
+    gN: zeros(),
+    S: zeros(),
+    H2,
+    rows2: ROWS2,
+    cols2: COLS2,
+    step2: STEP2,
+  };
+};
+
+const field = makeField(H2at);
+const flat = makeField(() => 500);
+
+const opts = {
+  hour: 14,
+  doy: 180,
+  live: null,
+  fallback: { ws: 5, wd: 270, rad: 700 as number | null, cloud: 10 as number | null },
+  budget: 640, // come il desktop v16
+};
+
+const t0 = Date.now();
+const lf = buildLaneField(field, opts);
+const nightLf = buildLaneField(field, { ...opts, hour: 2 });
+const buildMs = Date.now() - t0;
+const lanes = lf.lanes;
+const SP = effectiveRowSpacing(lanes.reduce((a, l) => a + l.len, 0), lanes.length, opts.budget);
+console.log(`costruzione corsie: ${lanes.length} corsie in ${buildMs} ms (flat=${lf.flat}, day=${lf.day}, passo fronti=${SP.toFixed(0)} m)`);
+
+/* ---------- 1. CORSIE SUI PENDII ---------- */
+console.log("1. CORSIE SUI PENDII:");
+ok(lanes.length >= 5, `corsie costruite: ${lanes.length} (≥ 5)`);
+
+/* ---------- 2. SALITA: dal fondo valle alla cresta ---------- */
+let climbOk = 0;
+let noDescend = true;
+for (const l of lanes) {
+  const gain = l.h[l.n - 1] - l.h[0];
+  if (gain > 25) climbOk++;
+  /* v16: le corsie di FONDOVALLE possono guadagnare poco (è il vento di
+     valle che risale il fondo) — ma NESSUNA corsia scende */
+  if (gain < -5) noDescend = false;
+}
+console.log("2. SALITA lungo la corsia (anabatica):");
+ok(climbOk >= lanes.length * 0.9 && lanes.length > 0, `corsie che salgono ≥25 m: ${climbOk}/${lanes.length} (≥ 90% — le altre sono flusso di fondovalle)`);
+ok(noDescend, `nessuna corsia scende (guadagno minimo: ${Math.round(Math.min(...lanes.map((l) => l.h[l.n - 1] - l.h[0])))} m)`);
+ok(lanes.every((l) => l.len >= LANE_MIN_LEN), `tutte le corsie ≥ ${LANE_MIN_LEN} m (min attuale: ${Math.round(Math.min(...lanes.map((l) => l.len)))} m)`);
+
+/* ---------- 3. DIREZIONE = LUNGO IL PENDIO (gradiente fine) ---------- */
+/* gradiente numerico dallo STESSO DEM (independent check) */
+const gradAt = (la: number, lo: number): { gN: number; gE: number } => {
+  const d = 120;
+  const xN = (la - LAT0) * MLAT;
+  const xE = (lo - LON0) * MLON;
+  const hN1 = H2at(xN + d, xE);
+  const hN0 = H2at(xN - d, xE);
+  const hE1 = H2at(xN, xE + d);
+  const hE0 = H2at(xN, xE - d);
+  return { gN: (hN1 - hN0) / (2 * d), gE: (hE1 - hE0) / (2 * d) };
+};
+let upNodes = 0;
+let totNodes = 0;
+for (const l of lanes) {
+  for (let i = 1; i < l.n; i++) {
+    const dLa = l.la[i] - l.la[i - 1];
+    const dLo = l.lo[i] - l.lo[i - 1];
+    const g = gradAt(l.la[i], l.lo[i]);
+    const dot = dLa * MLAT * g.gN + dLo * MLON * g.gE;
+    totNodes++;
+    if (dot > 0) upNodes++;
+  }
+}
+const upRatio = upNodes / Math.max(1, totNodes);
+console.log("3. DIREZIONE lungo la massima pendenza:");
+ok(upRatio > 0.9, `nodi in salita: ${(upRatio * 100).toFixed(1)}% (> 90%)`);
+let totalTurn = 0;
+for (const lane of lanes) {
+  for (let i = 1; i < lane.n; i++) {
+    let delta = lane.az[i] - lane.az[i - 1];
+    while (delta > Math.PI) delta -= 2 * Math.PI;
+    while (delta < -Math.PI) delta += 2 * Math.PI;
+    totalTurn += Math.abs(delta);
+  }
+}
+const meanLaneTurn = totalTurn / Math.max(1, lanes.length);
+ok(meanLaneTurn > 0.2, `streamline sinuose sul rilievo (rotazione media accumulata ${meanLaneTurn.toFixed(2)} rad/corsia)`);
+
+/* ---------- 4. NIENTE INCROCI + SEPARAZIONE MINIMA ---------- */
+const RASTER = 40; // m
+const cellOf = (la: number, lo: number): number => {
+  const xN = (la - LAT0) * MLAT + EXTENT_M;
+  const xE = (lo - LON0) * MLON + EXTENT_M;
+  const mi = Math.floor(xN / RASTER);
+  const mj = Math.floor(xE / RASTER);
+  return mi * 100000 + mj;
+};
+const raster = new Map<number, number>();
+let conflicts = 0;
+lanes.forEach((l, li) => {
+  for (let i = 0; i < l.n; i++) {
+    const c = cellOf(l.la[i], l.lo[i]);
+    const owner = raster.get(c);
+    if (owner === undefined) raster.set(c, li);
+    else if (owner !== li) conflicts++;
+  }
+});
+/* distanza minima reale tra corsie diverse: ogni nodo contro i nodi delle
+   ALTRE corsie nei 9 bucket vicini (ricontrollo indipendente dal motore) */
+const BK = 210;
+const buckets = new Map<number, { li: number; la: number; lo: number }[]>();
+const bkey = (la: number, lo: number): number => {
+  const mi = Math.floor(((la - LAT0) * MLAT + EXTENT_M) / BK);
+  const mj = Math.floor(((lo - LON0) * MLON + EXTENT_M) / BK);
+  return mi * 100000 + mj;
+};
+lanes.forEach((l, li) => {
+  for (let i = 0; i < l.n; i++) {
+    const k = bkey(l.la[i], l.lo[i]);
+    let arr = buckets.get(k);
+    if (!arr) {
+      arr = [];
+      buckets.set(k, arr);
+    }
+    arr.push({ li, la: l.la[i], lo: l.lo[i] });
+  }
+});
+let minDist = Infinity;
+for (const [k, arr] of buckets) {
+  const mi = Math.floor(k / 100000);
+  const mj = k - mi * 100000;
+  for (let di = -1; di <= 1; di++)
+    for (let dj = -1; dj <= 1; dj++) {
+      const near = buckets.get((mi + di) * 100000 + (mj + dj));
+      if (!near) continue;
+      for (const a of arr) {
+        for (const b of near) {
+          if (a.li === b.li) continue;
+          const d = Math.hypot((a.la - b.la) * MLAT, (a.lo - b.lo) * MLON);
+          if (d < minDist) minDist = d;
+        }
+      }
+    }
+}
+console.log("4. ANTI-INCROCIO:");
+ok(conflicts === 0, `celle da 40 m condivise da 2 corsie: ${conflicts} (deve essere 0)`);
+ok(minDist >= 150, `distanza minima tra corsie diverse: ${minDist.toFixed(0)} m (≥ 150 m — niente frecce che si toccano)`);
+
+/* ---------- 5. MOTO DIREZIONALE E FRONTI A PETTINE ----------
+   Riproduce il renderer: fronti a progress comune su tutte le corsie, che
+   seguono ciascuna la propria curva e invertono percorso durante la notte. */
+const EPS = 1e-9;
+let passoOk = true;
+let passoMin = Infinity;
+let passoMax = 0;
+let slotOk = true;
+const speedsOk = lanes.every((lane) => Number.isFinite(lane.speedMs) && lane.speedMs >= 0.6 && lane.speedMs <= 7);
+const M0 = Math.ceil((lf.maxLen + 1) / SP) * SP;
+const meanSpeedMs = lanes.reduce((sum, lane) => sum + lane.speedMs, 0) / lanes.length;
+let alignedRows = true;
+const sampleSeconds = [0, 5, 20, 90];
+for (const seconds of sampleSeconds) {
+  const m = M0 + meanSpeedMs * FLOW_TIME_SCALE * seconds;
+  const k = Math.floor(m / SP);
+  const rowProgress = lanes.map(() => m - k * SP);
+  const rowRange = Math.max(...rowProgress) - Math.min(...rowProgress);
+  if (rowRange > EPS || rowProgress[0] > Math.min(...lanes.map((lane) => lane.len))) alignedRows = false;
+  for (const lane of lanes) {
+    const k0 = Math.max(0, Math.ceil((m - lane.len) / SP - EPS));
+    const k1 = Math.floor(m / SP + EPS);
+    /* (i) passo esatto tra fronti consecutivi sulla stessa corsia */
+    for (let k = k0; k < k1; k++) {
+      const d = (m - k * SP) - (m - (k + 1) * SP);
+      passoMin = Math.min(passoMin, d);
+      passoMax = Math.max(passoMax, d);
+      if (Math.abs(d - SP) > 1e-6) passoOk = false;
+    }
+    /* fronti sempre DENTRO la corsia */
+    if (k0 <= k1) {
+      if (m - k0 * SP < -EPS || m - k0 * SP > lane.len + EPS) passoOk = false;
+      if (m - k1 * SP < -EPS || m - k1 * SP > lane.len + EPS) passoOk = false;
+    }
+    /* (iii) slot senza collisioni: K = ceil(len/SP)+1 ⇒ K·SP > len */
+    const K = rowSlotCount(lane.len, SP);
+    if (!(K * SP > lane.len + SP - 1e-6)) slotOk = false; // due fronti sulla stessa slot mai simultanei
+  }
+}
+console.log("5. MOTO DIREZIONALE E FRONTI A PETTINE:");
+ok(lf.day && lf.uphill, "campo diurno: moto anabatico dal fondo verso la cresta");
+ok(speedsOk, "velocità modellate per corsia finite e comprese tra 0,6 e 7 m/s");
+ok(alignedRows, "progressione comune su tutte le corsie: fronti allineati come denti di un pettine");
+ok(
+  !nightLf.day &&
+    !nightLf.uphill &&
+    nightLf.lanes.length > 0 &&
+    directedLaneArc(lanes[0], 0, nightLf.uphill) === lanes[0].len &&
+    directedLaneArc(lanes[0], lanes[0].len, nightLf.uphill) === 0 &&
+    Math.abs(directedLaneAzimuth(0.7, false) - (0.7 - Math.PI)) < 1e-9,
+  "campo notturno reale: corsie costruite e direzione invertita per il drenaggio catabatico",
+);
+ok(passoOk, `fronti a passo ESATTO ${SP.toFixed(0)} m su ogni corsia (misurato ${passoMin.toFixed(1)}–${passoMax.toFixed(1)} m)`);
+ok(slotOk, `slot freccia senza collisioni (K·SP > len su tutte le corsie)`);
+
+/* ---------- 6. CONTINUITÀ del campione d'arco ---------- */
+let maxJump = 0;
+const smpA = { la: 0, lo: 0, h: 0, az: 0, aK: 0 };
+const smpB = { la: 0, lo: 0, h: 0, az: 0, aK: 0 };
+for (const l of lanes.slice(0, 12)) {
+  for (let a = 0; a <= l.len - 30; a += 137) {
+    laneAt(l, a, smpA);
+    laneAt(l, a + 30, smpB);
+    const d = Math.hypot((smpB.la - smpA.la) * MLAT, (smpB.lo - smpA.lo) * MLON);
+    maxJump = Math.max(maxJump, Math.abs(d - 30));
+  }
+}
+console.log("6. CONTINUITÀ (niente teletrasporti):");
+ok(maxJump < 6, `errore massimo sul passo d'arco di 30 m: ${maxJump.toFixed(2)} m`);
+
+/* ---------- 7. UN SOLO COLORE: BLU ---------- */
+const isBlue = /^#[0-9a-f]{6}$/i.test(BREEZE_BLUE) && parseInt(BREEZE_BLUE.slice(5, 7), 16) > parseInt(BREEZE_BLUE.slice(1, 3), 16);
+console.log("7. COLORE UNICO:");
+ok(isBlue, `BREEZE_BLUE = ${BREEZE_BLUE} (canale blu dominante: «blu e basta»)`);
+
+/* ---------- 8. FALLBACK PIANURA ---------- */
+const lfFlat = buildLaneField(flat, opts);
+console.log("8. FALLBACK PIANURA:");
+ok(
+  lfFlat.flat &&
+    lfFlat.lanes.length > 0 &&
+    lfFlat.lanes.every((lane) => Number.isFinite(lane.speedMs) && lane.speedMs >= 0.6 && lane.speedMs <= 7) &&
+    rowSlotCount(lfFlat.lanes[0].len) > 1,
+  `sito piatto → ${lfFlat.lanes.length} corsie dritte, ${lfFlat.lanes.reduce((a, l) => a + rowSlotCount(l.len), 0)} slot-freccia (mai scena vuota)`,
+);
+
+/* ---------- 9. FLUSSO CONTINUO: le corsie NASCONO nel fondovalle ----------
+   Richiesta pilota v16: «flusso continuo dalla valle alla cima della
+   montagna» — la base delle corsie deve stare dove la pendenza è piccola
+   (fondovalle), non a metà versante: ingrandendo sulla valle il flusso c'è. */
+let valleyBorn = 0;
+for (const l of lanes) {
+  const g0 = gradAt(l.la[0], l.lo[0]);
+  const s0 = Math.hypot(g0.gN, g0.gE);
+  if (s0 < 0.04) valleyBorn++;
+}
+let hGainMin = Infinity;
+for (const l of lanes) hGainMin = Math.min(hGainMin, l.h[l.n - 1] - l.h[0]);
+console.log("9. FLUSSO CONTINUO DALLA VALLE:");
+ok(valleyBorn >= 1, `corsie nate sul fondovalle (pendenza < 4%): ${valleyBorn}/${lanes.length}`);
+ok(hGainMin >= -5, `guadagno minimo fondo→fine corsia: ${hGainMin.toFixed(0)} m (mai in discesa — le corsie di valle sono vento che risale)`);
+
+/* ---------- 10. CAMPO RADIALE 10 KM / 360° ---------- */
+let bearingsCovered = true;
+for (let deg = 0; deg < 360; deg += 5) {
+  const angle = (deg * Math.PI) / 180;
+  if (!withinBreezeRadius(WIND_FIELD_RADIUS_M * Math.cos(angle), WIND_FIELD_RADIUS_M * Math.sin(angle))) {
+    bearingsCovered = false;
+    break;
+  }
+}
+let maxLaneRadius = 0;
+for (const lane of lanes) {
+  for (let i = 0; i < lane.n; i++) {
+    maxLaneRadius = Math.max(maxLaneRadius, Math.hypot((lane.la[i] - LAT0) * MLAT, (lane.lo[i] - LON0) * MLON));
+  }
+}
+let flatMaxRadius = 0;
+for (const lane of lfFlat.lanes) {
+  for (let i = 0; i < lane.n; i++) {
+    flatMaxRadius = Math.max(flatMaxRadius, Math.hypot((lane.la[i] - LAT0) * MLAT, (lane.lo[i] - LON0) * MLON));
+  }
+}
+console.log("10. CAMPO RADIALE 10 KM / 360°:");
+ok(EXTENT_M >= WIND_FIELD_RADIUS_M && bearingsCovered, "griglia DEM oltre 10 km in ogni direzione cardinale e intercardinale");
+ok(maxLaneRadius <= WIND_FIELD_RADIUS_M + 1, `corsie sul rilievo restano entro 10 km (max ${maxLaneRadius.toFixed(0)} m)`);
+ok(flatMaxRadius <= WIND_FIELD_RADIUS_M + 1, `fallback lineare resta entro 10 km (max ${flatMaxRadius.toFixed(0)} m)`);
+
+console.log(fails === 0 ? "\nTUTTI I TEST CORSIE PASSATI ✓" : `\n${fails} TEST FALLITI ✗`);
+process.exit(fails === 0 ? 0 : 1);

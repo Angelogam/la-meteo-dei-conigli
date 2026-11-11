@@ -1,0 +1,389 @@
+/* Hero «La Meteo dei Conigli» — una sola hero cinematografica con il bollettino
+   reale del giorno incorporato. Regola di robustezza: gli stili base sono SEMPRE
+   visibili; le animazioni solo decorano (se non partono, il contenuto resta lì). */
+
+@font-face {
+  font-family: "Barlow Condensed Local";
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("/fonts/locandina/barlow-condensed-800-subset.woff2") format("woff2");
+}
+
+.hero-foto {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: flex;
+  align-items: stretch;
+  min-height: clamp(430px, 56vh, 620px);
+  border: 1px solid rgba(182, 220, 233, .23);
+  border-radius: 24px;
+  box-shadow: 0 22px 55px rgba(0, 0, 0, .28), inset 0 1px rgba(255, 255, 255, .07);
+  background: #0a1626;
+}
+
+.hero-foto__img {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 50%;
+  filter: brightness(1.07) contrast(1.03) saturate(1.08);
+  animation: hero-foto-kenburns 52s ease-in-out infinite alternate;
+}
+
+.hero-foto__scrim {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(180deg, rgba(4, 11, 22, .22) 0%, rgba(4, 11, 22, .02) 30%, rgba(4, 11, 22, .08) 58%, rgba(4, 11, 22, .55) 100%),
+    linear-gradient(100deg, rgba(4, 11, 22, .6) 0%, rgba(4, 11, 22, .32) 30%, rgba(4, 11, 22, .06) 56%, rgba(4, 11, 22, .16) 100%);
+}
+
+/* ---------- griglia interna: titolo a sinistra, bollettino a destra ---------- */
+
+.hero-foto__inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(280px, .9fr);
+  align-items: end;
+  gap: clamp(1rem, 2.4vw, 2.2rem);
+  padding: clamp(1.4rem, 3.2vw, 2.6rem);
+}
+
+/* ---------- colonna titolo ---------- */
+
+.hero-foto__content {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  min-width: 0;
+  padding-bottom: .2rem;
+}
+
+.hero-foto__kicker {
+  margin: 0;
+  color: #8fd0ea;
+  font-size: .78rem;
+  font-weight: 600;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+  animation: hero-foto-rise .6s ease-out both;
+}
+
+.hero-foto__title {
+  margin: 0;
+  color: #ffffff;
+  font-family: "Barlow Condensed Local", var(--font-display), sans-serif;
+  font-size: clamp(3rem, 6.4vw, 5rem);
+  font-weight: 800;
+  line-height: .96;
+  letter-spacing: .01em;
+  text-transform: uppercase;
+  text-shadow: 0 4px 30px rgba(2, 8, 16, .6);
+  animation: hero-foto-rise .7s ease-out .08s both;
+}
+
+.hero-foto__motto {
+  margin: 0 0 .3rem;
+  color: #d5e7f2;
+  font-family: var(--font-body), 'Manrope', sans-serif;
+  font-style: italic;
+  font-size: clamp(1rem, 1.7vw, 1.2rem);
+  text-shadow: 0 2px 14px rgba(2, 8, 16, .5);
+  animation: hero-foto-rise .7s ease-out .16s both;
+}
+
+/* ---------- chips meteo ---------- */
+
+.hero-foto__chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem;
+  margin-top: .3rem;
+  animation: hero-foto-rise .7s ease-out .22s both;
+}
+
+.hero-foto__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .42rem;
+  padding: .42rem .78rem;
+  border: 1px solid rgba(182, 220, 233, .3);
+  border-radius: 999px;
+  background: rgba(6, 16, 29, .55);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+  color: #edf6ff;
+  font-size: .84rem;
+  line-height: 1;
+}
+
+.hero-foto__chip svg { width: 15px; height: 15px; color: #8fd0ea; }
+.hero-foto__chip strong { font-weight: 650; }
+.hero-foto__chip small { color: #9db8c9; font-size: .76rem; }
+
+.hero-foto__chip--live { gap: .38rem; font-size: .76rem; letter-spacing: .08em; text-transform: uppercase; }
+
+.hero-foto__live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #34d399;
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, .18);
+  animation: hero-foto-pulse 2.2s ease-in-out infinite;
+}
+
+.hero-foto__chip-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(143, 208, 234, .3);
+  border-top-color: #8fd0ea;
+  border-radius: 50%;
+  animation: hero-foto-spin .9s linear infinite;
+}
+
+/* ---------- azioni ---------- */
+
+.hero-foto__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .6rem;
+  margin-top: .8rem;
+  animation: hero-foto-rise .7s ease-out .3s both;
+}
+
+.hero-foto__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .62rem 1.15rem;
+  border: 1px solid rgba(125, 211, 252, .45);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(14, 116, 174, .85), rgba(12, 74, 110, .85));
+  color: #f0f9ff;
+  font-size: .9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+  box-shadow: 0 8px 22px rgba(2, 8, 16, .35);
+}
+
+.hero-foto__cta svg { width: 16px; height: 16px; }
+
+.hero-foto__cta:hover {
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, rgba(14, 130, 194, .95), rgba(12, 84, 124, .95));
+  box-shadow: 0 10px 26px rgba(2, 8, 16, .45);
+}
+
+.hero-foto__cta--ghost {
+  background: rgba(6, 16, 29, .45);
+  border-color: rgba(182, 220, 233, .35);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+  color: #dbeafe;
+}
+
+.hero-foto__cta--ghost:hover { background: rgba(10, 26, 43, .65); }
+
+/* ---------- bollettino reale (vetro scuro, dati del giorno) ---------- */
+
+.hero-bulletin {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: .55rem;
+  padding: .95rem 1rem .9rem;
+  border: 1px solid rgba(182, 220, 233, .26);
+  border-radius: 16px;
+  background: rgba(5, 14, 26, .62);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: 0 14px 34px rgba(2, 8, 16, .4);
+  animation: hero-foto-rise .75s ease-out .2s both;
+}
+
+.hero-bulletin__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .6rem;
+}
+
+.hero-bulletin__verdict {
+  padding: .34rem .8rem;
+  border-radius: 999px;
+  font-family: var(--font-display), 'Barlow Condensed', sans-serif;
+  font-size: 1.02rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  line-height: 1;
+  border: 1px solid transparent;
+}
+
+.hero-bulletin__verdict.is-go { background: rgba(16, 122, 87, .32); border-color: rgba(52, 211, 153, .55); color: #6ee7b7; }
+.hero-bulletin__verdict.is-caution { background: rgba(146, 64, 14, .3); border-color: rgba(251, 191, 36, .5); color: #fcd34d; }
+.hero-bulletin__verdict.is-nogo { background: rgba(153, 27, 27, .32); border-color: rgba(248, 113, 113, .55); color: #fca5a5; }
+
+.hero-bulletin__volabile {
+  display: inline-flex;
+  align-items: center;
+  gap: .34rem;
+  color: #bcd8e8;
+  font-size: .8rem;
+}
+
+.hero-bulletin__volabile svg { width: 14px; height: 14px; color: #8fd0ea; }
+.hero-bulletin__volabile strong { color: #f2f9ff; font-weight: 700; }
+
+.hero-bulletin__where {
+  margin: 0;
+  color: #d7e9f4;
+  font-size: .92rem;
+  line-height: 1.35;
+}
+
+.hero-bulletin__where strong { font-family: var(--font-display), 'Barlow Condensed', sans-serif; font-size: 1.18rem; font-weight: 700; letter-spacing: .02em; text-transform: uppercase; color: #ffffff; }
+.hero-bulletin__where em { display: block; font-style: normal; color: #93b4c8; font-size: .74rem; letter-spacing: .04em; }
+
+/* righe vento: freccia = direzione REALE del flusso (da dove parte verso dove va) */
+
+.hero-bulletin__rows {
+  display: flex;
+  flex-direction: column;
+}
+
+.hero-bulletin__row {
+  display: grid;
+  grid-template-columns: 22px minmax(64px, auto) 1fr auto;
+  align-items: center;
+  gap: .5rem;
+  padding: .42rem 0;
+  border-top: 1px solid rgba(182, 220, 233, .14);
+}
+
+.hero-bulletin__rows .hero-bulletin__row:first-child { border-top: 0; }
+
+.hero-bulletin__arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(234, 88, 12, .22);
+  color: #fb923c;
+  transition: transform .5s ease;
+}
+
+.hero-bulletin__arrow svg { width: 13px; height: 13px; }
+.hero-bulletin__arrow--empty { opacity: .35; background: rgba(182, 220, 233, .1); color: #9db8c9; }
+
+.hero-bulletin__quota {
+  color: #a8c6d8;
+  font-size: .8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.hero-bulletin__val { min-width: 0; color: #ffffff; font-size: .92rem; }
+.hero-bulletin__val strong { font-weight: 750; font-variant-numeric: tabular-nums; }
+.hero-bulletin__val small { color: #9db8c9; font-size: .74rem; }
+
+.hero-bulletin__src {
+  color: #7fa1b5;
+  font-size: .68rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.hero-bulletin__foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .35rem .9rem;
+  padding-top: .5rem;
+  border-top: 1px solid rgba(182, 220, 233, .14);
+  color: #c4dcea;
+  font-size: .74rem;
+}
+
+.hero-bulletin__foot strong { color: #8fd0ea; font-weight: 600; }
+.hero-bulletin__fonte { margin-left: auto; color: #7fa1b5; }
+
+/* ---------- credit ---------- */
+
+.hero-foto__credit {
+  position: absolute;
+  z-index: 1;
+  right: .9rem;
+  bottom: .55rem;
+  margin: 0;
+  color: rgba(237, 246, 255, .5);
+  font-size: .68rem;
+  letter-spacing: .05em;
+  text-shadow: 0 1px 6px rgba(2, 8, 16, .6);
+}
+
+/* ---------- animazioni ---------- */
+
+@keyframes hero-foto-kenburns {
+  from { transform: scale(1.01) translateX(0); }
+  to { transform: scale(1.05) translateX(-.8%); }
+}
+
+/* entra dall'alto: SOLO se l'animazione parte — gli stili base restano visibili */
+@keyframes hero-foto-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes hero-foto-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .45; }
+}
+
+@keyframes hero-foto-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 1020px) {
+  .hero-foto__inner {
+    grid-template-columns: 1fr;
+    align-items: end;
+  }
+  .hero-bulletin { order: 2; }
+  .hero-foto__content { order: 1; }
+}
+
+@media (max-width: 640px) {
+  .hero-foto { min-height: 480px; border-radius: 18px; }
+  .hero-foto__inner { padding: 1.1rem 1rem 1.15rem; gap: .9rem; }
+  .hero-foto__img { object-position: 58% 30%; }
+  .hero-foto__credit { display: none; }
+  .hero-bulletin { padding: .8rem .85rem .75rem; }
+  .hero-bulletin__src { max-width: 90px; white-space: normal; line-height: 1.25; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-foto__img,
+  .hero-foto__live-dot,
+  .hero-foto__chip-spinner,
+  .hero-foto__kicker,
+  .hero-foto__title,
+  .hero-foto__motto,
+  .hero-foto__chips,
+  .hero-foto__actions,
+  .hero-bulletin {
+    animation: none;
+  }
+}

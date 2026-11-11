@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="it">
+<!-- Promo opener «la meteo dei conigli» — costruito con il skill bang-motion v1.19 (MIT, bangtutorial/bang-motion)
+     Concetto: tanya→jawab diegetik · 6 battute · solo fotografie reali e testo: NESSUNA grafica
+     vettoriale (niente parapendi disegnati, niente windgram/bolle/squiggle — quello è materiale
+     del sito, qui restano solo le foto vere); le transizioni sono luce + kamera.
+     Dati bollettino: testo della locandina reale del sito (Montoso–Rucas · 6 ott 2026, Open-Meteo).
+     Un solo file · autoplay + loop · ?debug=1 per lo scrub · ?clean=1 tiene fermo l'autoplay (per export/snap). -->
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>la meteo dei conigli — promo</title>
+<link rel="icon" href="../favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Caveat:wght@700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<!-- GSAP auto-ospitato: niente CDN esterni (un adblocker che blocca jsdelivr
+     lasciava lo schermo nero e il video sembrava assente) -->
+<script src="./gsap.min.js"></script>
+<style>
+:root{
+  /* palette: tutta dal brand (logo calotta arancio, sito notte alpina, dati smeraldo) */
+  --accent:#ea580c; --accent-lit:#fb923c;
+  --base:#071321; --ink:#f2f7fc; --ink-dark:#0E241D;
+  --paper:#F7FAF8; --card:#FFFFFF; --border:#D2DED8; --green:#1D8F5F; --green-bg:#E3F0E8;
+  --muted:#9db2c7; --muted-dark:#5c6f66; --cyan:#78d7ee;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:#000;overflow:hidden;font-family:"Inter",system-ui,sans-serif}
+
+#filters{position:fixed;width:0;height:0;opacity:0;pointer-events:none}
+
+#stage{position:fixed;left:50%;top:50%;width:1920px;height:1080px;
+  transform:translate(-50%,-50%) scale(1);overflow:hidden;background:var(--base)}
+#world{position:absolute;inset:0;will-change:transform}
+#dom{position:absolute;inset:0}
+
+/* ---------- sfondi (§7d: sempre ≥2 strati) ---------- */
+.bg-night{position:absolute;inset:0;
+  background:
+    radial-gradient(70% 42% at 50% 106%, color-mix(in srgb,var(--accent) 26%,transparent), color-mix(in srgb,var(--accent) 9%,transparent) 46%, transparent 70%),
+    linear-gradient(180deg,#040d18 0%,var(--base) 52%,#0b2237 100%)}
+.ph{position:absolute;inset:-90px;opacity:0;visibility:hidden;overflow:hidden}
+.ph .im{position:absolute;inset:-70px;background-size:cover;background-position:center;will-change:transform}
+.ph .grade{position:absolute;inset:0}
+#ph1 .im{background-image:url(../hero-alpi-neve.jpg)}
+#ph1 .grade{background:linear-gradient(180deg,rgba(4,13,24,.88) 0%,rgba(6,19,33,.55) 42%,rgba(7,19,33,.86) 100%)}
+#ph2 .im{background-image:url(../locandine/foto/decollo-parapendio.jpg)}
+#ph2 .grade{background:linear-gradient(180deg,rgba(7,19,33,.62) 0%,rgba(7,19,33,.18) 40%,rgba(6,17,29,.72) 100%)}
+#ph3 .im{background-image:url(../hero-valle-verde.jpg)}
+#ph3 .grade{background:linear-gradient(180deg,rgba(5,15,26,.90) 0%,rgba(7,19,33,.62) 34%,rgba(5,14,24,.55) 62%,rgba(4,12,21,.88) 100%)}
+
+/* ---------- scena 1 · domanda scritta ---------- */
+.scene{position:absolute;inset:0}
+.q-label{position:absolute;left:150px;top:150px;font:600 34px/1 "Inter";letter-spacing:.24em;
+  color:var(--ink);opacity:0;text-transform:uppercase;text-shadow:0 2px 18px rgba(0,0,0,.6)}
+.q-label small{display:block;font:500 30px/1.5 "Inter";letter-spacing:.06em;color:var(--muted);
+  text-transform:none;margin-top:10px}
+.q-hand{position:absolute;left:150px;top:400px;font:700 128px/1.05 "Caveat",cursive;color:#fff;
+  text-shadow:0 4px 30px rgba(0,0,0,.55);opacity:0;transform:rotate(-2deg);white-space:nowrap}
+
+/* ---------- scena 2-3 · bollettino (mockup fedele al prodotto) ---------- */
+.card{position:absolute;left:470px;top:212px;width:980px;height:646px;background:var(--card);
+  border:1.5px solid var(--border);border-radius:22px;
+  box-shadow:0 34px 90px rgba(10,32,24,.24), 0 6px 22px rgba(10,32,24,.12);
+  padding:40px 46px;will-change:transform}
+.card .kick{font:600 21px/1 "Inter";letter-spacing:.3em;color:var(--green);text-transform:uppercase}
+.card h2{font:800 66px/1 "Barlow Condensed";color:var(--ink-dark);letter-spacing:.01em;margin-top:12px}
+.card .sub{font:400 23px/1.4 "Inter";color:var(--muted-dark);margin-top:8px}
+.wrows{position:absolute;left:46px;right:46px;top:206px}
+.wrow{display:flex;align-items:center;gap:10px;padding:15px 0;border-bottom:1px solid var(--border);opacity:0}
+.wrow:last-child{border-bottom:none}
+.wrow .alt{font:700 33px/1 "Barlow Condensed";color:var(--ink-dark);min-width:96px}
+.wrow .spd{margin-left:auto;font:600 22px/1.1 "Inter";color:var(--muted-dark);text-align:right;
+  font-variant-numeric:tabular-nums}
+.wrow .spd b{display:block;color:var(--ink-dark);font:700 23px/1.1 "Barlow Condensed";letter-spacing:.02em}
+.wrow .spd small{display:block;font:600 18px/1.25 "Inter";color:var(--muted-dark);font-variant-numeric:tabular-nums}
+.chips{position:absolute;left:46px;right:46px;top:442px;display:flex;gap:16px}
+.chip{flex:1;background:var(--green-bg);border:1.5px solid color-mix(in srgb,var(--green) 26%,#fff);
+  border-radius:14px;padding:14px 18px;opacity:0}
+.chip .k{font:600 18px/1 "Inter";letter-spacing:.12em;color:var(--muted-dark);text-transform:uppercase}
+.chip .v{font:700 34px/1.15 "Barlow Condensed";color:var(--ink-dark);margin-top:7px;
+  font-variant-numeric:tabular-nums}
+.card .src{position:absolute;left:46px;bottom:16px;font:500 19px/1 "Inter";color:var(--muted-dark);opacity:.85}
+
+/* verdetto */
+.claim{position:absolute;left:0;right:0;top:104px;text-align:center;font:800 100px/1 "Barlow Condensed";
+  color:#fff;letter-spacing:.01em;white-space:nowrap;opacity:0;
+  text-shadow:0 4px 30px rgba(0,0,0,.65), 0 2px 12px rgba(0,0,0,.5)}
+.claim .wd{display:inline-block}
+.claim .hl{position:relative;display:inline-block}
+.claim .hl i{position:absolute;left:-.08em;right:-.08em;top:.46em;bottom:-.02em;background:var(--accent);
+  opacity:.5;transform:scaleX(0) rotate(-1.5deg);border-radius:.08em}
+.claim .hl .hl-t{position:relative}
+.stamp{position:absolute;left:1315px;top:120px;width:210px;height:210px;opacity:0;will-change:transform}
+.stamp .in{position:absolute;inset:0;border:9px solid var(--green);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px;
+  color:var(--green);background:rgba(255,255,255,.86);box-shadow:0 10px 30px rgba(14,80,52,.25)}
+.stamp .in b{font:800 92px/1 "Barlow Condensed";letter-spacing:.02em}
+.stamp .in span{font:700 19px/1 "Barlow Condensed";letter-spacing:.3em;text-transform:uppercase}
+.stamp .in small{font:600 17px/1 "Inter";letter-spacing:.06em;color:var(--muted-dark)}
+
+/* ---------- scena 4 · label decollo ---------- */
+.tk-label{position:absolute;left:150px;bottom:210px;opacity:0}
+.tk-label .a{font:800 62px/1 "Barlow Condensed";color:#fff;text-shadow:0 3px 24px rgba(0,0,0,.6)}
+.tk-label .b{font:500 31px/1.4 "Inter";color:#dbe7ee;margin-top:8px;text-shadow:0 2px 14px rgba(0,0,0,.55)}
+
+/* ---------- fallback statico (se l'animazione non può partire) ---------- */
+#static{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+  flex-direction:column;gap:18px;text-align:center;
+  background:linear-gradient(180deg,rgba(4,13,24,.82) 0%,rgba(6,19,33,.55) 42%,rgba(7,19,33,.88) 100%)}
+#static .s-kick{font:600 26px/1 "Inter";letter-spacing:.3em;color:var(--cyan);text-transform:uppercase;
+  text-shadow:0 2px 16px rgba(0,0,0,.6)}
+#static .s-title{font:800 118px/1 "Barlow Condensed";color:#fff;text-shadow:0 4px 30px rgba(0,0,0,.55);white-space:nowrap}
+#static .s-tag{font:500 34px/1.3 "Inter";color:#dbe7ee;text-shadow:0 2px 14px rgba(0,0,0,.55)}
+#static .s-url{font:600 26px/1 "Inter";letter-spacing:.14em;color:var(--cyan);text-shadow:0 2px 16px rgba(0,0,0,.5)}
+body.no-anim #static{display:flex}
+body.no-anim #world,body.no-anim .leak,body.no-anim .grain,body.no-anim .vignette{display:none}
+body.no-anim{background:#071321}
+
+/* ---------- scena 5-6 · titolo ---------- */
+.t-band{position:absolute;left:0;right:0;top:392px;height:300px;opacity:0;
+  background:linear-gradient(180deg,transparent 0%,rgba(4,12,20,.66) 26%,rgba(4,12,20,.74) 74%,transparent 100%)}
+.title{position:absolute;left:0;right:0;top:452px;text-align:center;font:800 122px/1 "Barlow Condensed";
+  color:#fff;letter-spacing:.005em;text-shadow:0 4px 30px rgba(0,0,0,.55);white-space:nowrap;opacity:0}
+.title .wd{display:inline-block}
+.tagline{position:absolute;left:0;right:0;top:636px;text-align:center;opacity:0}
+.tagline .wd{display:inline-block;font:500 40px/1.3 "Inter";color:#c9dbe4;margin:0 .16em;opacity:.16}
+.tagline b{font-weight:700;color:#fff}
+.url{position:absolute;left:0;right:0;top:742px;text-align:center;font:600 31px/1 "Inter";
+  letter-spacing:.14em;color:var(--cyan);opacity:0;text-shadow:0 2px 16px rgba(0,0,0,.5)}
+
+/* ---------- luci e grana ---------- */
+.leak{position:absolute;left:50%;top:50%;width:2400px;height:2400px;margin:-1200px 0 0 -1200px;
+  border-radius:50%;filter:blur(64px);mix-blend-mode:screen;opacity:0;pointer-events:none;z-index:40;
+  background:radial-gradient(circle,color-mix(in srgb,var(--accent-lit) 85%,white) 0%,
+    color-mix(in srgb,var(--accent) 55%,transparent) 34%,transparent 74%)}
+.vignette{position:absolute;inset:0;pointer-events:none;z-index:30;
+  background:linear-gradient(180deg,rgba(0,0,0,.42),transparent 30%),
+    radial-gradient(ellipse 78% 68% at 50% 52%,transparent 42%,rgba(0,0,0,.5) 88%,rgba(0,0,0,.8) 100%)}
+.grain{position:absolute;inset:-60px;pointer-events:none;z-index:34;opacity:.10;mix-blend-mode:overlay}
+
+/* ---------- debug ---------- */
+#ui{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);display:none;align-items:center;
+  gap:14px;padding:11px 18px;border-radius:16px;background:rgba(14,16,22,.9);
+  border:1px solid rgba(255,255,255,.1);font-size:13px;color:#A0A6B4;z-index:50}
+#ui.on{display:flex}
+#ui button{background:#262A34;color:#fff;border:none;padding:8px 16px;border-radius:9px;font:inherit;cursor:pointer}
+#scrub{width:340px;accent-color:var(--accent)}
+#clock{font-variant-numeric:tabular-nums;min-width:5.2ch;text-align:right}
+</style>
+</head>
+<body>
+
+<svg id="filters" xmlns="http://www.w3.org/2000/svg"><defs>
+  <filter id="grainf" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency=".8" numOctaves="3" stitchTiles="stitch"/>
+    <feColorMatrix type="saturate" values="0"/>
+  </filter>
+  <filter id="mblur" x="-70%" y="-70%" width="240%" height="240%">
+    <feGaussianBlur stdDeviation="0 0"/>
+  </filter>
+</defs></svg>
+
+<div id="stage">
+  <!-- fallback statico: visibile solo se l'animazione non può partire
+       (GSAP mancante / JS bloccato) — mai schermo nero -->
+  <div id="static">
+    <div class="s-kick">Bollettino meteo · volo libero</div>
+    <div class="s-title">la meteo dei conigli</div>
+    <div class="s-tag">il bollettino <b>dei piloti,</b> per <b>i piloti</b></div>
+    <div class="s-url">la-meteo-dei-conigli.vercel.app</div>
+  </div>
+  <div id="world">
+    <div id="dom">
+      <div class="bg-night" id="bgn"></div>
+      <div class="ph" id="ph1"><div class="im"></div><div class="grade"></div></div>
+      <div class="ph" id="ph2"><div class="im"></div><div class="grade"></div></div>
+      <div class="ph" id="ph3"><div class="im"></div><div class="grade"></div></div>
+      <!-- scena 1 · la domanda -->
+      <section class="scene" id="s1">
+        <div class="q-label" id="qlabel">Rucas · alta valle Po<small>prima dell'alba, sul decollo</small></div>
+        <div class="q-hand" id="qhand">Si vola oggi?</div>
+      </section>
+
+      <!-- scena 2-3 · il bollettino -->
+      <section class="scene" id="s2">
+        <div class="card" id="card">
+          <div class="kick" id="ck">Bollettino meteo · volo libero</div>
+          <h2 id="ch">BOLLETTINO DI OGGI</h2>
+          <div class="sub" id="cs"></div>
+          <div class="wrows" id="wrows">
+            <div class="wrow"><span class="alt" id="w1q">sul decollo</span><span class="spd"><b id="w1">—</b><small id="w1s">ora corrente al decollo</small></span></div>
+            <div class="wrow"><span class="alt" id="w2q">a 1.500 m</span><span class="spd"><b id="w2">—</b><small id="w2s">previsione modello</small></span></div>
+            <div class="wrow"><span class="alt" id="w3q">in quota</span><span class="spd"><b id="w3">—</b><small id="w3s">previsione modello</small></span></div>
+          </div>
+          <div class="chips" id="chips">
+            <div class="chip"><div class="k">Zero termico</div><div class="v"><span id="nzt">0</span><span id="ztv">—</span></div></div>
+            <div class="chip"><div class="k">Volabile</div><div class="v" id="cvol">—</div></div>
+            <div class="chip"><div class="k">Raffiche max</div><div class="v" id="cgust">—</div></div>
+          </div>
+          <div class="src" id="csrc">Fonte: Open-Meteo · elaborazione per piloti</div>
+        </div>
+        <div class="claim" id="claim"><span class="wd" id="cw1">OGGI</span>&nbsp;<span class="hl" id="hlc"><i></i><span class="hl-t" id="cw2">SI VOLA</span></span></div>
+        <div class="stamp" id="stamp"><div class="in"><b id="sv">GO</b><span id="sl">verdetto del giorno</span><small id="ss">bollettino Open-Meteo</small></div></div>
+      </section>
+
+      <!-- scena 4 · decollo -->
+      <section class="scene" id="s4">
+        <div class="tk-label" id="tklabel"><div class="a">Dal decollo Rucas</div><div class="b">prato in pendio · termiche dalle 10:30</div></div>
+      </section>
+
+      <!-- scena 5-6 · titolo e brand -->
+      <section class="scene" id="s5">
+        <div class="t-band" id="tband"></div>
+        <h1 class="title" id="title"><span class="wd">la</span> <span class="wd">meteo</span> <span class="wd">dei</span> <span class="wd">conigli</span></h1>
+        <div class="tagline" id="tagline"><span class="wd">il</span> <span class="wd">bollettino</span> <span class="wd"><b>dei</b></span> <span class="wd"><b>piloti,</b></span> <span class="wd">per</span> <span class="wd"><b>i</b></span> <span class="wd"><b>piloti</b></span></div>
+        <div class="url" id="url">la-meteo-dei-conigli.vercel.app</div>
+      </section>
+
+      <!-- niente calotta vettoriale: solo fotografie reali, il parapendio è quello vero nella foto -->
+
+    </div>
+  </div>
+
+  <div class="leak" id="leak"></div>
+  <div class="grain" id="grain"></div>
+  <div class="vignette" id="vig"></div>
+</div>
+
+<div id="ui">
+  <button id="btn-play">Pausa</button><button id="btn-restart">Ricomincia</button>
+  <input id="scrub" type="range" min="0" max="1000" value="0">
+  <span id="clock">0.00s</span>
+</div>
+
+<script>
+/* ================= Deterministico: nessun Date.now / Math.random nel render =================
+   (la DATA del bollettino è il mondo reale, non parte dell'animazione: può usare Date) */
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const W=1920,H=1080,DURATION=31.0;
+const Q=new URLSearchParams(location.search);
+
+/* ---- dati REALI del bollettino (iniettati dalla pagina via postMessage) ----
+   Default: solo la data di oggi — nessun numero inventato. */
+const oggiLabel=()=>new Date().toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+const cap=s=>s? s.charAt(0).toUpperCase()+s.slice(1):s;
+const DATA={site:null,elev:null,dateLabel:cap(oggiLabel()),wind:[null,null,null],zero:null,volabile:null,gust:null,verdict:null};
+function applyData(d){
+  if(!d||typeof d!=='object')return;
+  if(d.site){DATA.site=String(d.site);$('#ch').textContent=DATA.site.toUpperCase();}
+  if(d.elev!=null)DATA.elev=d.elev;
+  if(d.dateLabel)DATA.dateLabel=String(d.dateLabel);
+  $('#cs').textContent=[DATA.dateLabel,DATA.site?`decollo ${DATA.site}`:null,DATA.elev!=null?`${Math.round(DATA.elev)} m s.l.m.`:null].filter(Boolean).join(' · ');
+  (d.wind||[]).forEach((w,i)=>{if(i>2||!w)return;
+    if(w.q)$('#w'+(i+1)+'q').textContent=w.q;
+    if(w.v!=null)$('#w'+(i+1)).textContent=w.v;
+    if(w.s)$('#w'+(i+1)+'s').textContent=w.s;});
+  if(d.zero!=null){
+    DATA.zero=d.zero;$('#ztv').textContent=' m';
+    /* se la scena del contatore è già passata, aggiorna subito il numero */
+    const t=window.OPENER&&window.OPENER.tl?window.OPENER.tl.time():0;
+    if(t>10.7)$('#nzt').textContent=Math.round(d.zero).toLocaleString('it-IT');
+  }
+  if(d.volabile!=null){DATA.volabile=d.volabile;$('#cvol').textContent=`${Math.round(d.volabile)}%`;}
+  if(d.gust){DATA.gust=String(d.gust);$('#cgust').textContent=DATA.gust;}
+  if(d.verdict){
+    DATA.verdict=String(d.verdict);
+    const v=DATA.verdict;
+    const sv=$('#sv');sv.textContent=v;
+    sv.style.fontSize=Math.min(92,Math.max(34,Math.round(180/((v.length||2)*.45))))+'px';
+    $('#sl').textContent=v==='GO'?'giornata ok':v==='NO GO'?'meglio riposare':' con cautela';
+    $('#ss').textContent=DATA.volabile!=null?`volabile ${Math.round(DATA.volabile)}% · Open-Meteo`:'bollettino Open-Meteo';
+    const c1=v==='NO GO'?'OGGI':v==='GO'?'OGGI':'SI VOLA';
+    const c2=v==='GO'?'SI VOLA':v==='NO GO'?'MEGLIO NO':'CON CAUTELA';
+    $('#cw1').textContent=c1;$('#cw2').textContent=c2;
+  }
+}
+window.PROMO_SET_DATA=applyData;
+addEventListener('message',e=>{if(e.data&&e.data.type==='promo-data')applyData(e.data.data);});
+
+/* ---- fallback statico: se GSAP non è disponibile (adblocker/JS bloccato)
+   mostriamo comunque foto + titolo, MAI lo schermo nero ---- */
+if(typeof gsap==='undefined'){
+  document.body.classList.add('no-anim');
+  $('#cs').textContent=[DATA.dateLabel,'bollettino per piloti'].join(' · ');
+  $('#ztv').textContent='';$('#nzt').textContent='—';
+  window.OPENER={ready:true,tl:null,DURATION,seek(){},fallback:true};
+  const start=()=>{window.OPENER.ready=true;};
+  if(document.readyState==='complete')setTimeout(start,0);else addEventListener('load',start);
+  setTimeout(start,1500);
+}
+
+/* =============== ANIMAZIONE (solo se GSAP è disponibile) =============== */
+if(typeof gsap!=='undefined'){
+
+/* ---- motion blur direzionale (feGaussianBlur x/y separati) ---- */
+const mblur=$('#mblur');
+function blurTween(targets,at,from,to,dur,{ease='power3.out',ax=1,ay=.08}={}){
+  const o={v:from};
+  tl.set(targets,{filter:'url(#mblur)'},at);
+  tl.to(o,{v:to,duration:dur,ease,onUpdate(){
+    mblur.setAttribute('stdDeviation',`${(o.v*ax).toFixed(2)} ${(o.v*ay).toFixed(2)}`);}},at);
+  tl.set(targets,{filter:'none'},at+dur+.02);
+}
+const VERT={ax:.1,ay:1};
+
+/* ---- kamera DOM (§3b): shot via scala+punto focale, morso frenato ai bordi ---- */
+const world=$('#world');
+const CAM={s:1,fx:W/2,fy:H/2,sh:0};
+const shot =(at,dur,s,fx,fy,ease='power2.inOut')=>tl.to(CAM,{s,fx,fy,duration:dur,ease},at);
+const cutTo=(at,s,fx,fy)=>tl.set(CAM,{s,fx,fy},at);
+const ims=$$('.ph .im');
+function applyCam(t){
+  const s=CAM.s*(1+.008*Math.sin(t*.6));
+  let tx=W/2-CAM.fx*s, ty=H/2-CAM.fy*s;
+  tx=Math.min(0,Math.max(W-W*s,tx)); ty=Math.min(0,Math.max(H-H*s,ty));
+  const shx=Math.sin(t*151.3)*CAM.sh, shy=Math.cos(t*131.7)*CAM.sh;
+  world.style.transform=`translate(${tx+shx}px,${ty+shy}px) scale(${s})`;
+  /* parallasse 2 livelli sulle foto (§7c #10): lo strato foto risponde alla kamera */
+  const px=(CAM.fx-W/2), py=(CAM.fy-H/2);
+  for(const el of ims) el.style.transform=`translate(${-px*.045}px,${-py*.045}px) scale(1.1)`;
+}
+
+/* ---- grana viva deterministica (§7d) ---- */
+const grain=$('#grain');
+grain.style.filter='url(#grainf)';
+const grainAt=t=>{const k=Math.floor(t*12);grain.style.transform=`translate(${k*37%60-30}px,${k*61%60-30}px)`;};
+
+/* ---- timeline ---- */
+const tl=gsap.timeline({paused:true});
+const leak=$('#leak');
+let leakSide=1;
+const sweep=(at,dur=1.0)=>{const side=(leakSide*=-1);
+  tl.fromTo(leak,{x:side*1500,y:-240,scale:.85},{x:side*330,y:130,scale:1.12,duration:dur,ease:'sine.out',immediateRender:false},at);
+  tl.fromTo(leak,{opacity:0},{opacity:.8,duration:dur*.4,ease:'sine.in',immediateRender:false},at);
+  tl.to(leak,{opacity:0,duration:dur*.6,ease:'sine.out'},at+dur*.4);};
+const breathe=(from,to,{z0=1,z1=1.045,origin='50% 50%'}={})=>{
+  tl.set(world,{transformOrigin:origin},from);
+  tl.fromTo(world,{scale:z0},{scale:z1,duration:to-from,ease:'sine.inOut',immediateRender:false},from);};
+
+/* stati iniziali (t=0) */
+tl.set(['#ph1','#ph2','#ph3','#tband','#title','#tagline','#url','#claim','#stamp'],
+  {autoAlpha:0},0);
+tl.set('#card',{y:900,rotateX:14,transformOrigin:'50% 0%'},0);
+tl.set('#vig',{opacity:1},0);
+tl.set('#world',{filter:'none'},0);          /* reset del buio finale al loop */
+tl.set(CAM,{s:1.03,fx:960,fy:560,sh:0},0);
+
+/* ============ BATTUTA 1 · ALBA + DOMANDA (0–4.8) ============ */
+tl.set('#ph1',{autoAlpha:1},0);
+tl.set('#bgn',{autoAlpha:1},0);
+breathe(0,10.4,{z0:1.03,z1:1.075,origin:'50% 42%'});
+tl.fromTo('#qlabel',{opacity:0,y:26},{opacity:1,y:0,duration:.7,ease:'power3.out',immediateRender:false},.5);
+/* la domanda viene scritta nel mondo (mask reveal = mano che scrive) */
+tl.set('#qhand',{opacity:1},1.05);
+tl.fromTo('#qhand',{clipPath:'inset(-20% 100% -20% 0%)'},{clipPath:'inset(-20% 0% -20% 0%)',
+  duration:1.5,ease:'power2.inOut',immediateRender:false},1.1);
+shot(1.0,1.6,1.10,880,520);
+/* la domanda sale via: l'alba si apre */
+tl.to('#qhand',{y:-90,opacity:0,duration:.55,ease:'power2.in',immediateRender:false},3.9);
+blurTween('#qhand',3.9,0,34,.6,{ease:'power2.in',ax:.2,ay:1});
+tl.to('#qlabel',{opacity:0,y:-26,duration:.5,ease:'power2.in'},4.0);
+
+/* ============ BATTUTA 2 · IL BOLLETTINO SI COSTRUISCE (4.8–14.2) ============ */
+/* la card arriva da sotto e si appone alla FOTO reale (nessun mondo grafico: resta l'alba) */
+tl.to('#card',{y:0,rotateX:0,duration:1.15,ease:'power4.out',immediateRender:false},4.8);
+tl.fromTo('#ck',{opacity:0,y:22},{opacity:1,y:0,duration:.55,ease:'power3.out',immediateRender:false},5.5);
+tl.fromTo('#ch',{opacity:0,y:34},{opacity:1,y:0,duration:.65,ease:'power4.out',immediateRender:false},5.7);
+tl.fromTo('#cs',{opacity:0},{opacity:1,duration:.55,ease:'power2.out',immediateRender:false},6.0);
+/* kamera: avvicinamento alla card, poi wide */
+shot(6.9,1.2,1.16,960,555,'power2.inOut');
+shot(8.8,1.0,1.0,960,540);
+/* righe vento stagger */
+tl.fromTo('.wrow',{opacity:0,x:44},{opacity:1,x:0,duration:.6,stagger:.22,ease:'power3.out',immediateRender:false},9.1);
+/* chip con contatore deterministico (bersaglio = zero termico REALE del giorno) */
+tl.fromTo('.chip',{opacity:0,y:26},{opacity:1,y:0,duration:.55,stagger:.16,ease:'power3.out',immediateRender:false},10.4);
+{const o={v:0},el=$('#nzt');
+ tl.to(o,{v:()=>(DATA.zero??0),duration:1.1,ease:'power2.out',immediateRender:false,
+   onUpdate(){el.textContent=DATA.zero!=null?Math.round(o.v).toLocaleString('it-IT'):'—';}},10.6);
+ tl.call(()=>{if(DATA.zero==null){el.textContent='—';$('#ztv').textContent='';}},null,11.75);}
+tl.fromTo('#csrc',{opacity:0},{opacity:.85,duration:.5,immediateRender:false},11.3);
+
+/* ============ BATTUTA 3 · VERDETTO (14.2–17.6) ============ */
+shot(13.8,1.0,1.07,960,470);
+tl.set('#claim',{autoAlpha:1},14.0);
+tl.fromTo('#claim .wd:first-child',{opacity:0,xPercent:-38},{opacity:1,xPercent:0,duration:.6,ease:'power4.out',immediateRender:false},14.1);
+tl.fromTo('#hlc i',{scaleX:0},{scaleX:1,duration:.5,ease:'power3.out',immediateRender:false},14.45);
+tl.fromTo('#hlc .hl-t',{opacity:0,yPercent:64},{opacity:1,yPercent:0,duration:.65,ease:'power4.out',immediateRender:false},14.45);
+/* il timbro GO cade */
+tl.set('#stamp',{autoAlpha:1},15.15);
+tl.fromTo('#stamp',{scale:2.7,rotate:-16,y:-120,opacity:0},{scale:1,rotate:-8,y:0,opacity:1,duration:.32,
+  ease:'power4.in',immediateRender:false},15.2);
+tl.to(CAM,{sh:7,duration:.08,ease:'power2.in',immediateRender:false},15.5);
+tl.to(CAM,{sh:0,duration:.5,ease:'power2.out',immediateRender:false},15.58);
+tl.fromTo('#stamp',{y:-16},{y:0,duration:.5,ease:'bounce.out',immediateRender:false},15.52);
+/* transizione battuta 3→4: schiata di luce + la card esce, arriva la foto del decollo */
+sweep(15.95,.95);
+tl.to('#card',{x:1620,rotateY:26,duration:.85,ease:'power2.in',immediateRender:false},16.25);
+blurTween('#card',16.25,0,30,.8,{ease:'power2.in'});
+tl.set('#claim',{autoAlpha:0},16.3); tl.set('#stamp',{autoAlpha:0},16.35);
+tl.to('#card',{autoAlpha:0,duration:.4,ease:'power2.in'},16.85);
+tl.set('#ph2',{autoAlpha:1},16.6);
+shot(16.6,.9,1.0,960,540,'power2.out');   /* kamera si assesta sulla nuova foto */
+
+/* ============ BATTUTA 4 · DECOLLO (17.6–22.6) ============ */
+tl.fromTo('#tklabel',{opacity:0,y:30},{opacity:1,y:0,duration:.7,ease:'power3.out',immediateRender:false},18.1);
+/* solo fotografia reale: la kamera respira sul decollo (Ken Burns) */
+shot(18.6,1.4,1.12,1010,540,'power1.inOut');
+shot(20.1,1.5,1.24,985,500,'sine.inOut');
+/* spinta in cielo: kamera spinge + foto sfoca (transizione portata dalla luce) */
+shot(21.55,1.0,1.5,960,430,'power2.in');
+blurTween('#ph2',21.7,0,26,.85,{ease:'power2.in'});
+tl.to('#tklabel',{opacity:0,y:-24,duration:.45,ease:'power2.in'},21.6);
+
+/* ============ BATTUTA 5 ✦ · SOPRA IL TITOLO (22.6–27.6) ============ */
+tl.set('#ph2',{autoAlpha:0},22.55);
+tl.set('#ph3',{autoAlpha:1},22.55);
+cutTo(22.55,1.12,960,470);                    /* taglio netto dal blur: la valle arriva nitida */
+tl.set('#tband',{autoAlpha:1},22.7);
+tl.fromTo('#title',{x:80,autoAlpha:0},{x:0,autoAlpha:1,duration:.85,ease:'power3.out',immediateRender:false},22.95);
+tl.fromTo('#title .wd',{opacity:0,yPercent:46},{opacity:1,yPercent:0,duration:.6,stagger:.09,
+  ease:'back.out(1.5)',immediateRender:false},23.05);
+/* ✦ il parapendio vero nella foto attraversa il quadro col respiro della kamera */
+shot(23.2,1.2,1.18,860,455,'power1.inOut');
+shot(24.9,1.0,1.02,960,540);
+/* sapuan cahaya: leak (componente canonica) */
+sweep(26.1,1.05);
+tl.set('#tagline',{autoAlpha:1},26.4);
+tl.fromTo('#tagline .wd',{opacity:.16,y:14},{opacity:1,y:0,duration:.5,stagger:.11,ease:'power2.out',immediateRender:false},26.5);
+
+/* ============ BATTUTA 6 · BRAND (27.6–31) ============ */
+tl.fromTo('#url',{autoAlpha:0,y:22},{autoAlpha:1,y:0,duration:.6,ease:'power3.out',immediateRender:false},27.3);
+shot(27.2,1.6,1.0,960,520,'sine.inOut');
+/* chiusura: tutto si calma verso la notte — il loop rientra nella scena 1 */
+tl.to(['#url','#tagline'],{autoAlpha:0,duration:.7,ease:'power2.in'},29.6);
+tl.to('#world',{filter:'brightness(.55)',duration:1.2,ease:'sine.in'},29.5);
+tl.to('#title',{autoAlpha:0,duration:.6,ease:'power2.in'},29.9);
+tl.to('#tband',{opacity:0,duration:.6,ease:'power2.in'},29.9);
+tl.to({},{duration:.01},DURATION);
+
+/* ================= RENDER LOOP ================= */
+function render(t){
+  applyCam(t); grainAt(t);
+}
+const stage=$('#stage');
+const fit=()=>{const s=Math.min(innerWidth/W,innerHeight/H);
+  stage.style.transform=`translate(-50%,-50%) scale(${s})`;};
+addEventListener('resize',fit); fit();
+
+const clock=$('#clock'),scrub=$('#scrub'),btn=$('#btn-play');
+let scrubbing=false;
+(function frame(){const t=tl.time();render(t);
+  clock.textContent=t.toFixed(2)+'s';
+  if(!scrubbing)scrub.value=String(t/DURATION*1000);
+  requestAnimationFrame(frame);})();
+const toggle=()=>{if(tl.paused()||tl.progress()>=1){if(tl.progress()>=1)tl.progress(0);tl.play();btn.textContent='Pausa';}
+  else{tl.pause();btn.textContent='Play';}};
+btn.onclick=toggle;
+$('#btn-restart').onclick=()=>{tl.pause(0);tl.play();btn.textContent='Pausa';};
+scrub.addEventListener('pointerdown',()=>{scrubbing=true;tl.pause();btn.textContent='Play';});
+addEventListener('pointerup',()=>scrubbing=false);
+scrub.addEventListener('input',()=>{tl.pause();tl.time(scrub.value/1000*DURATION);});
+addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();toggle();}
+  if(/^[rR]$/.test(e.key)){tl.pause(0);tl.play();}});
+if(Q.has('debug'))$('#ui').classList.add('on');
+tl.eventCallback('onComplete',()=>{tl.play(0);});
+
+/* seek sincrono per snap/export */
+const seek=t=>{tl.pause();tl.time(t,false);if(gsap.ticker.tick)gsap.ticker.tick();render(t);};
+window.OPENER={tl,DURATION,seek,ready:false};
+/* autoplay dopo font + foto (fallback: parte comunque dopo 3.5 s) */
+let started=false;
+const start=()=>{if(started)return;started=true;window.OPENER.ready=true;if(!Q.has('clean'))tl.play(0);};
+Promise.all([
+  document.fonts.ready,
+  Promise.all(['../hero-alpi-neve.jpg','../locandine/foto/decollo-parapendio.jpg','../hero-valle-verde.jpg']
+    .map(u=>new Promise(res=>{const im=new Image();im.onload=im.onerror=res;im.src=u;})))
+]).then(start);
+setTimeout(start,3500);
+
+} /* fine blocco GSAP */
+</script>
+</body>
+</html>

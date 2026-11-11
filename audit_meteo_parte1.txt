@@ -1,0 +1,81 @@
+AUDIT METEOROLOGICO — PARTE 1/3
+═══════════════════════════════════
+
+A. MODELLO OPEN-METEO ATTUALE
+═══════════════════════════════
+
+MODELLO: AUTO-SELECTION (non forzato)
+
+La variabile DEFAULT_MODELS in openMeteoClient.ts è definita come stringa vuota:
+  const DEFAULT_MODELS = "";
+
+Il parametro models NON viene mai passato all'API.
+Open-Meteo seleziona automaticamente i modelli migliori per la località.
+
+Endpoint: https://api.open-meteo.com/v1/forecast (via proxy Nitro /api/open-meteo)
+
+Conseguenze dell'auto-selection:
+- La disponibilità di boundary_layer_height, temperature a livelli hPa intermedi dipende dal modello
+- Per l'Europa usa tipicamente AROME (Météo-France), ICON-D2 (DWD), GFS (NOAA)
+- I venti a 5 livelli di pressione (925–500 hPa) sono supportati da ICON e GFS ma NON da AROME
+- temperature_180m è disponibile in alcuni modelli ma non uniformemente
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+B. INVENTARIO COMPLETO DEI DATI REALI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. CHIAMATE API INDIPENDENTI (non passano dai service centrali)
+
+File                            | Funzione                | Chiamata   | Params
+--------------------------------|-------------------------|------------|--------
+openMeteoService.ts             | fetchPrevisioniGiornaliere | fetchFull | 39+16+17
+weatherService.ts               | fetchWeather            | fetchFull  | 35+19+19
+ProfessionalWindgram.tsx        | useEffect               | fetchHourly| 13
+useMultiHourWindProfile.ts      | useEffect (fallback)    | fetchHourly| 20
+useStabilitaMasseAria.ts        | useEffect               | fetchHourly| 16
+AlpiumWindgram.tsx              | useEffect               | fetchHourly| 28
+RasoftWindgram.tsx              | useEffect               | fetchHourly| 22
+windAlgorithm.ts                | fetchRealWindData       | fetchHourly| 9
+getVento.ts                     | getVento                | fetchHourly| 3
+threeSourceWeather.ts           | —                       | fetchHourly+Current | 12
+aggressiveWeather.ts            | fetchOpenMeteo          | fetchHourly+Daily | 9
+
+2. CHIAMATE DUPLICATE RILEVATE
+
+- useMultiHourWindProfile fa un fetch autonomo se rawData è null, mentre useWeatherData
+  fa già lo stesso fetch. Due chiamate parallele possibili.
+- ProfessionalWindgram fa un fetch autonomo, ma riceve anche rawData da useWeatherData.
+- useStabilitaMasseAria fa un fetch completamente indipendente con parametri diversi.
+- AlpiumWindgram fa un fetch indipendente con parametri diversi.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+C. DATI SUPERFICIE — Richiesti per servizio
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Variabile                 | OMService | WeatherSvc | ProfWind | Stabilita | Alpium | Rasoft
+--------------------------|-----------|------------|----------|-----------|--------|-------
+temperature_2m            | ✅        | ✅         | ✅       | ✅        | ✅     | ✅
+relative_humidity_2m      | ✅        | ✅         | ✅       | ❌        | ❌     | ✅
+dew_point_2m              | ✅        | ✅         | ✅       | ✅        | ✅     | ✅
+apparent_temperature      | ✅        | ✅         | ❌       | ❌        | ❌     | ❌
+precipitation             | ✅        | ✅         | ✅       | ✅        | ✅     | ❌
+precipitation_probability | ✅        | ✅         | ❌       | ❌        | ❌     | ❌
+weather_code              | ✅        | ✅         | ❌       | ❌        | ❌     | ❌
+pressure_msl              | ✅        | ✅         | ❌       | ❌        | ❌     | ❌
+surface_pressure          | ✅        | ✅         | ✅       | ❌        | ❌     | ❌
+cloud_cover               | ✅        | ✅         | ✅       | ✅        | ✅     | ✅
+cloud_cover_low           | ✅        | ✅         | ❌       | ❌        | ❌     | ❌
+cloud_cover_mid           | ✅        | ✅         | ❌       | ❌        | ❌     | ❌
+cloud_cover_high          | ✅        | ✅         | ❌       | ❌        | ❌     | ❌
+wind_speed_10m            | ✅        | ✅         | ✅       | ✅        | ✅     | ✅
+wind_direction_10m        | ✅        | ✅         | ✅       | ✅        | ✅     | ✅
+wind_gusts_10m            | ✅        | ✅         | ✅       | ❌        | ✅     | ❌
+uv_index                  | ✅        | ✅         | ❌       | ❌        | ❌     | ❌
+shortwave_radiation       | ✅        | ✅         | ✅       | ❌        | ❌     | ✅
+direct_radiation          | ✅        | ✅         | ❌       | ❌        | ❌     | ❌
+sunshine_duration         | ✅        | ✅         | ❌       | ❌        | ❌     | ❌
+visibility                | ✅        | ❌         | ❌       | ❌        | ❌     | ❌
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

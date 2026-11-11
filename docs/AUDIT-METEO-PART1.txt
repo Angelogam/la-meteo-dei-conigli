@@ -1,0 +1,374 @@
+================================================================================
+AUDIT TECNICO — SISTEMA METEOROLOGICO "METEO DEI CONIGLI"
+SEZIONE 1/3: Fasi 1-2 (API + Rilevamenti)
+================================================================================
+
+FASE 1 — AUDIT DELL'API ATTUALE
+================================================================================
+
+CONFIGURAZIONE EFFETTIVA DEL PROGETTO
+--------------------------------------------------------------------------------
+Modello usato:        Open-Meteo (GFS / AROME / ICON — auto-selezionato per Europa)
+Endpoint:              https://api.open-meteo.com/v1/forecast (via proxy /api/open-meteo)
+API Key richiesta:    NO (gratuita)
+Periodicità:           Oraria, forecast fino a 120 ore (5 giorni)
+Auto-refresh:          Ogni 15 minuti (REFRESH_INTERVAL = 900000 ms)
+
+PARAMETRI HOURLY RICHIESTI (da weatherService.ts HOURLY_PARAMS):
+--------------------------------------------------------------------------------
+Temperatura:
+  - temperature_2m              ✅ richiesto
+  - temperature_80m             ✅ richiesto
+  - temperature_120m            ✅ richiesto
+  - temperature_180m            ✅ richiesto (impiegato in ProfessionalWindgram e WindgramMatrix)
+  - temperature_925hPa..1000hPa ⚠️ SOLO in AlpiumWindgram (chiamata autonoma separata)
+
+Umidità:
+  - relative_humidity_2m        ✅ richiesto
+
+Punto di rugiada:
+  - dew_point_2m                ✅ richiesto
+
+Precipitazioni:
+  - precipitation               ✅ richiesto
+  - precipitation_probability   ✅ richiesto
+  - rain                        ✅ richiesto
+  - snowfall                    ✅ richiesto
+
+Nuvolosità:
+  - cloud_cover                 ✅ richiesto
+  - cloud_cover_low             ✅ richiesto
+  - cloud_cover_mid             ✅ richiesto
+  - cloud_cover_high            ✅ richiesto
+
+Vento suolo (10m):
+  - wind_speed_10m              ✅ richiesto
+  - wind_direction_10m          ✅ richiesto
+  - wind_gusts_10m              ✅ richiesto
+
+Vento quote basse:
+  - wind_speed_80m              ✅ richiesto
+  - wind_direction_80m          ✅ richiesto
+  - wind_speed_120m             ✅ richiesto
+  - wind_direction_120m         ✅ richiesto
+  - wind_speed_180m             ✅ richiesto
+  - wind_direction_180m         ✅ richiesto
+
+Vento livelli di pressione:
+  - wind_speed_925hPa           ✅ richiesto
+  - wind_direction_925hPa       ✅ richiesto
+  - wind_speed_850hPa           ✅ richiesto
+  - wind_direction_850hPa       ✅ richiesto
+  - wind_speed_700hPa           ✅ richiesto
+  - wind_direction_700hPa       ✅ richiesto
+  - wind_speed_600hPa           ✅ richiesto
+  - wind_direction_600hPa       ✅ richiesto
+  - wind_speed_500hPa           ✅ richiesto
+  - wind_direction_500hPa       ✅ richiesto
+
+CONVEZIONE / STABILITÀ:
+  - cape                        ✅ richiesto
+  - convective_inhibition       ✅ richiesto
+  - lifted_index                ✅ richiesto
+
+ALTRI:
+  - freezing_level_height       ✅ richiesto
+  - shortwave_radiation         ✅ richiesto
+  - direct_radiation            ✅ richiesto
+  - sunshine_duration           ✅ richiesto
+  - uv_index                    ✅ richiesto
+  - pressure_msl                ✅ richiesto
+  - surface_pressure            ✅ richiesto
+  - weather_code                ✅ richiesto
+  - visibility                  ✅ richiesto
+
+GEOPOTENTIAL HEIGHT:
+  ❌ NON richiesta nell'API attuale (nessun componente la usa)
+
+RELATIVE HUMIDITY AI LIVELLI DI PRESSIONE:
+  ❌ NON richiesta (non disponibile in Open-Meteo gratuito)
+
+BOUNDARY LAYER HEIGHT:
+  ❌ NON richiesta (non disponibile in Open-Meteo gratuito)
+
+RISULTATO FAPE 1:
+Tutti i parametri meteorologici essenziali per il volo libico SONO richiesti
+dall'API. I dati verticali disponibili sono:
+  • Vento a 9 livelli: 10m, 80m, 120m, 180m, 925hPa, 850hPa, 700hPa, 600hPa, 500hPa
+  • Temperatura a 4 livelli: 2m, 80m, 120m, 180m
+  • Temperature hPa: solo in AlpiumWindgram (chiamata separata)
+  • CAPE, CIN, Lifted Index, Freezing Level: tutti reali
+
+================================================================================
+FASE 2 — TROVA TUTTI I DATI INVENTATI
+================================================================================
+
+METHODOLOGIA DI RICERCA
+--------------------------------------------------------------------------------
+Pattern cercati:
+  - ?? 0, || 0, ?? 10, || 10, ?? 30, || 30, ?? 400, ?? 3600
+  - speed: 8, dir: 200
+  - temperature - 6, temperature - 8
+  - return 10, indice: 10
+  - fallback meteorologici generici
+  - valori fissi usati quando manca un dato reale
+
+CLASSIFICAZIONE RISULTATI
+--------------------------------------------------------------------------------
+Legenda:
+  A) fallback innocuo di programmazione (gestione errori JS standard)
+  B) fallback visuale (valore di default per UI quando non ci sono dati)
+  C) fallback meteorologico pericoloso (valore inventato che modifica il risultato)
+  D) formula derivata legittima (calcolo basato su fisica/modello)
+
+================================================================================
+RISULTATI DETTAGLIATI PER OGNI FILE
+================================================================================
+
+1. src/hooks/useMultiHourWindProfile.ts
+--------------------------------------------------------------------------------
+   Linea 89:   h.dewPoint ?? (t - 8)
+   Classificazione: C — PERICOLOSO
+   Spiegazione: Se dewPoint manca, inventa t-8°C. Questo cambia la base cumuli
+                di ~250m e il deltaT di conseguenza.
+
+   Linea 145:  Number(h.dew_point_2m?.[idx]) ?? (t - 8)
+   Classificazione: C — PERICOLOSO
+   Spiegazione: Stesso problema, versione con raw JSON.
+
+   Linea 90:   h.cloudCover ?? 30
+   Classificazione: B — VISUALE ACCETTABILE
+   Spiegazione: Nuvolosità di default per rendering. Non influisce su calcoli critici.
+
+   Linea 146:  Number(h.cloud_cover?.[idx]) ?? 30
+   Classificazione: B — VISUALE ACCETTABILE
+
+================================================================================
+2. src/components/ProfessionalWindgram.tsx
+--------------------------------------------------------------------------------
+   Linea 266:  dewPrev ?? (t - 6)
+   Classificazione: C — PERICOLOSO
+   Spiegazione: Fallback diverso da t-8 (incoerenza con altri componenti).
+
+   Linea 267:  cloudPrev ?? 30 / cloudNext ?? 30
+   Classificazione: B — VISUALE ACCETTABILE
+
+   Linea 278:  levelWinds: displayAltitudes.map(alt => ({ alt, speed: 8, dir: 200 }))
+   Classificazione: C — PERICOLOSO / CRITICO
+   Spiegazione: Per ore non disponibili, vento inventato a 8 km/h da 200° a TUTTE
+                le quote. Questo disegna frecce vento false sul windgram.
+
+   Linea 290:  h.dew_point_2m[idx] ?? (tNum - 8)
+   Classificazione: C — PERICOLOSO
+
+   Linea 373:  deltaT ?? 0.72
+   Classificazione: C — PERICOLOSO
+   Spiegazione: DeltaT fisso se mancante. 0.72 °C/100m è vicino al gradiente
+                adiabatico secco (0.98), ma è un valore inventato.
+
+   Linea 504:  profile[clampedIdx] ?? 0.72
+   Classificazione: C — PERICOLOSO
+
+   Linea 509:  lastProfile[clampedIdx] ?? 0.72
+   Classificazione: C — PERICOLOSO
+
+   Linea 385:  tempAt80m: t80Sim ?? Math.round(t - 3)
+   Classificazione: C — PERICOLOSO
+   Spiegazione: Temperatura a 80m stimata con formula fissa se dato reale mancante.
+
+   Linea 385:  tempAt120m: t120Sim ?? Math.round(t - 6)
+   Classificazione: C — PERICOLOSO
+
+================================================================================
+3. src/components/WindgramMatrix.tsx
+--------------------------------------------------------------------------------
+   Linea 139:  h.dewPoint ?? (h.temperature ?? 18) - 6
+   Classificazione: C — PERICOLOSO
+   Spiegazione: Doppio fallback (prima a 18, poi -6). Incoerente con altri
+                componenti che usano t-8.
+
+   Linea 183:  h.cloudCover ?? 30
+   Classificazione: B — VISUALE ACCETTABILE
+
+   Linea 500:  hourThermalData[hr]?.cloudCover ?? 30
+   Classificazione: B — VISUALE ACCETTABILE
+
+================================================================================
+4. src/components/SmartAlerts.tsx
+--------------------------------------------------------------------------------
+   Linea:      current.dewPoint ?? (current.temperature - 8)
+   Classificazione: C — PERICOLOSO
+
+   Linea:      hourly.reduce((s, h) => s + (h.cape ?? 0), 0) / hourly.length
+   Classificazione: C — PERICOLOSO
+   Spiegazione: CAPE = 0 influenza le decisioni di allerta. Meglio escludere i null.
+
+   Linea:      hourly.reduce((s, h) => s + (h.liftedIndex ?? 0), 0) / hourly.length
+   Classificazione: C — PERICOLOSO
+   Spiegazione: LI = 0 (stabile) inventato. Un LI reale potrebbe essere -3 (instabile).
+
+   Linea:      hourly.reduce((s, h) => s + (h.freezingLevel ?? 0), 0) / hourly.length
+   Classificazione: C — PERICOLOSO
+   Spiegazione: freezingLevel = 0 porta a zeroThermal = siteAlt + 3000 (fisso).
+
+   Linea:      current.windSpeed ?? null
+   Classificazione: B — VISUALE (già corretto dopo fix)
+
+   Linea:      current.windDir ?? null
+   Classificazione: B — VISUALE (già corretto dopo fix)
+
+   Linea:      hourly[6]?.windDir850 ?? null
+   Classificazione: B — VISUALE (già corretto dopo fix)
+
+   Linea:      current.visibility ?? 10000
+   Classificazione: C — PERICOLOSO
+   Spiegazione: Visibilità = 10km inventata se mancante. Potrebbe mascherare
+                nebbia/visibilità ridotta.
+
+================================================================================
+5. src/components/AlpiumWindgram.tsx
+--------------------------------------------------------------------------------
+   Linea 252:  hourly.dew2m[idx] ?? (tNum - 6)
+   Classificazione: C — PERICOLOSO
+
+   Linea 335:  hourly.cloud[idx] ?? 0
+   Classificazione: B — VISUALE ACCETTABILE
+
+   Linea 336:  hourly.gust10[idx] ?? 0
+   Classificazione: B — VISUALE ACCETTABILE
+
+   Linea:      getTempAtAlt → returns 15 - (alt - siteAlt) * 0.0065
+   Classificazione: D — FORMULA LEGITTIMA
+   Spiegazione: Gradiente atmosferico standard ISA quando mancano temperature hPa.
+
+================================================================================
+6. src/components/AnalisiMeteo.tsx
+--------------------------------------------------------------------------------
+   Linea 102:  central.dewPoint ?? (t2m - 8)
+   Classificazione: C — PERICOLOSO
+   Spiegazione: K-Index calcolato con temperatura stimata.
+
+   Linea:      siteTemp850 = t2m - 8
+   Linea:      siteTemp500 = t2m - 22
+   Classificazione: C — PERICOLOSO
+   Spiegazione: Temperature a 850hPa e 500hPa INVENTATE con formule fisse.
+
+================================================================================
+7. src/components/VoloDecisionCard.tsx
+--------------------------------------------------------------------------------
+   Linea 379:  (current.dewPoint ?? (current.temperature ?? 18) - 8)
+   Classificazione: C — PERICOLOSO
+   Spiegazione: Triply-nested fallback. Massima pericolosità.
+
+================================================================================
+8. src/utils/generateReportMeteo.ts
+--------------------------------------------------------------------------------
+   [PRIMA DELLE CORREZIONI]
+
+   Linea:      let liftedIndex = 1.5;
+               if (maxCape > 1500) liftedIndex = -6.0;
+               else if (maxCape > 1000) liftedIndex = -4.5;
+               ...
+   Classificazione: C — PERICOLOSO / CRITICO
+   Spiegazione: Lifted Index Ricostruito da CAPE invece di usare il valore REALE
+                fornito dall'API (lifted_index). Il dato reale viene completamente
+                ignorato.
+
+   Linea:      const wind1500_2500 = avgWindGround * 1.4 + 3;
+               const wind2500_3500 = avgWindGround * 2.1 + 8;
+               const windOver3500 = avgWindGround * 2.9 + 15;
+   Classificazione: C — PERICOLOSO / CRITICO
+   Spiegazione: Venti in quota INVENTATI con formule empiriche. Il report può
+                dire "25 km/h a 2000m" mentre il windgram mostra "12 km/h".
+
+   Linea:      const dir1500_2500 = degToCardinal(mainDirDeg + 12);
+               const dir2500_3500 = degToCardinal(mainDirDeg + 28);
+               const dirOver3500 = degToCardinal(mainDirDeg + 45);
+   Classificazione: C — PERICOLOSO
+   Spiegazione: Direzioni in quota INVENTATE con rotazione fissa.
+
+   Linea:      freezes[i] ?? 3600
+   Classificazione: C — PERICOLOSO
+   Spiegazione: Freezing level = 3600m inventato.
+
+   Linea:      capes[i] ?? 300
+   Classificazione: C — PERICOLOSO
+   Spiegazione: CAPE = 300 inventato.
+
+   Linea:      temps[i] ?? 18
+   Classificazione: C — PERICOLOSO
+   Spiegazione: Temperatura = 18°C inventata.
+
+   Linea:      dews[i] ?? 10
+   Classificazione: C — PERICOLOSO
+   Spiegazione: Dew point = 10°C inventato.
+
+   Linea:      shortwave_radiation → Array.fill(400)
+   Classificazione: C — PERICOLOSO
+   Spiegazione: Radiazione = 400 W/m² per tutte le ore se manca.
+
+   Linea:      const maxCape = Math.max(...dayCapes, 150);
+   Classificazione: C — PERICOLOSO
+   Spiegazione: maxCape minimo 150 J/kg inventato.
+
+================================================================================
+9. src/utils/analisiApprofondita.ts
+--------------------------------------------------------------------------------
+   Linea:      const cape = Math.round(Math.max(0, hAttuale.cape || (tempAttuale - dewPoint) * 40));
+   Classificazione: C — PERICOLOSO
+   Spiegazione: CAPE calcolato da spread se dato API manca.
+
+   Linea:      const liftedIndex = Math.round((hAttuale.liftedIndex ?? (tempAttuale - dewPoint - 5)) * 100) / 100;
+   Classificazione: C — PERICOLOSO
+   Spiegazione: Lifted Index ricostruito da formula se dato API manca.
+
+   Linea:      const cin = Math.round(Math.max(0, hAttuale.cin || 200 - cape * 0.3));
+   Classificazione: C — PERICOLOSO
+   Spiegazione: CIN calcolato da CAPE se dato API manca.
+
+   Linea:      const radiazione = Math.round(Math.max(0, hAttuale.radiation ?? 500));
+   Classificazione: C — PERICOLOSO
+   Spiegazione: Radiazione = 500 se mancante.
+
+   Linea:      const uvIndex = Math.round(hAttuale.uvIndex ?? 5);
+   Classificazione: C — PERICOLOSO
+   Spiegazione: UV = 5 se mancante.
+
+================================================================================
+10. src/utils/termiche.ts
+--------------------------------------------------------------------------------
+    Linea:      const dewPoint = (h.dewPoint != null && h.dewPoint > -10) ? h.dewPoint : temp - 8;
+    Classificazione: C — PERICOLOSO
+    Spiegazione: Dew point stimato come t-8 se mancante.
+
+================================================================================
+11. src/services/fallbackWeatherData.ts
+--------------------------------------------------------------------------------
+    Linea:      const dew = ref.dewPoint ?? t - 8;
+    Classificazione: C — PERICOLOSO
+    Spiegazione: Servizio fallback che genera dati inventati. Atteso per questo file,
+                 ma va comunque segnato.
+
+================================================================================
+RIASSUNTO CLASSIFICAZIONI
+================================================================================
+
+Totale fallback trovati: ~40 occorrenze
+
+Classificazione A (programmazione innocua):   ~5  (es. ?? 0 in array bounds)
+Classificazione B (visuale accettabile):      ~10 (es. cloudCover ?? 30 per UI)
+Classificazione C (pericoloso):               ~25 (fallback meteorologici inventati)
+Classificazione D (formula legittima):        ~2  (ISA gradient, etc.)
+
+CRITICI (C): ~25 occorrenze che producono dati meteorologici falsi
+  • Dew point inventato: 8 occorrenze
+  • Lifted Index ricostruito: 3 occorrenze
+  • Vento in quota inventato: 3 occorrenze (formule moltiplicative)
+  • Freezing level inventato: 2 occorrenze
+  • CAPE inventato: 3 occorrenze
+  • Temperature in quota inventate: 2 occorrenze
+  • Radiazione inventata: 2 occorrenze
+  • Vento/freccia inventata (speed:8, dir:200): 1 occorrenza
+  • Visibility inventata: 1 occorrenza
+  • DeltaT fisso: 3 occorrenze
+

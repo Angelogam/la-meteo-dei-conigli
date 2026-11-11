@@ -1,0 +1,401 @@
+AUDIT METEOROLOGICO — PARTE 3/3
+═══════════════════════════════════
+
+K. WIND SHEAR — Analisi completa
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+File: src/utils/windShearCalculator.ts
+
+1. directionDifference(a, b)
+   - Differenza angolare più breve (0–180°)
+   - Formula: Math.abs(((a%360+360)%360 - (b%360+360)%360)); se >180 allora 360-diff
+   - ✅ Gestisce correttamente 359°→0°
+
+2. calculateWindShear(lower, upper)
+   - speedDifference: valore assoluto km/h
+   - directionDifference: gradi, 0–180° (percorso più breve)
+   - speedDifferencePer100m: speedDiff / altDiff * 100
+   - Unità: km/h per 100m di dislivello
+   - ❌ Non calcola shear vettoriale
+   - ❌ Non calcola rotazione del vento
+
+3. calculateShearProfile(observations)
+   - Ordina per altitudine crescente
+   - Calcola shear tra coppie adiacenti
+   - Skippa coppie con dati mancanti
+
+Nel contesto di derivedMeteorology.ts:
+- buildVerticalWindProfile calcola shear tra: ground(sito) → 925hPa → 850hPa → 700hPa → 600hPa → 500hPa
+- Le quote usate sono ISA stimate (760, 1450, 3000, 4200, 5500)
+- Il vento è REALE dall'API (se disponibile)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+L. CLOUD BASE — Analisi completa
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+File                 | Funzione                        | Formula                                      | Classif.
+---------------------|---------------------------------|----------------------------------------------|----------
+calcCloudBase.ts     | calcCloudBase(siteAlt,t,dew)    | siteAlt + min(1800, max(0.5,t-dew)*125)      | DERIVATA
+derivedMeteorology   | computeCloudBase(siteAlt,spread)| siteAlt + min(1800, spread*125), min gain 100| DERIVATA
+derivedMeteorology   | computeDerivedSurface() interno | freezingLevel + spread*125 (se freeze disp.) | STIMATA (scartata→null)
+ProfessionalWindgram | calcCloudBase(altitude,t,dew)   | Stessa formula                               | DERIVATA
+expertoMeteo         | calcCloudBase(siteAlt,t,dew)    | Stessa formula                               | DERIVATA
+indiceVolabilita     | calcCloudBase(quota,temp,dew)   | Stessa formula                               | DERIVATA
+termiche             | calcCloudBase(altitude,temp,dew)| Stessa formula                               | DERIVATA
+MeteoTab             | calcCloudBase(siteAlt,t,dew)    | Stessa formula                               | DERIVATA
+DayDetailPopup       | calcCloudBase(altitude,t,dew)   | Stessa formula                               | DERIVATA
+SmartAlerts          | calcCloudBase(siteAlt,t,dew)    | Stessa formula                               | DERIVATA
+AnalisiTab           | calcCloudBase(1400,tempMedia,dewMedia) | Stessa formula                      | DERIVATA
+fallbackWeatherData  | calcCloudBase(temp,dew,altitude)| Stessa formula                               | DERIVATA
+TomorrowrowWindgram  | calcCloudBase(elev,temp,temp-(100-cloud)/5) | Td STIMATO da nuvolosità          | STIMATA (formula errata)
+meteoAI              | calcCloudBaseSLM(temp,dew)      | FUNZIONE NON IMPLEMENTATA                    | ERRORE
+
+Nota critica:
+- meteoAI.ts riga 8: calcCloudBaseSLM è apparentemente un placeholder non implementato
+- TomorrowrowWindgram.tsx righe 348/360: dew point stimato come temperature - (100-cloudCover)/5
+  Questa formula non ha fondamento fisico
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+M. TERMICHE — Classificazione completa
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+A. DATO METEOROLOGICO REALE DELL'API
+─────────────────────────────────────
+CAPE, CIN, Lifted Index, Freezing level, Temperature 2m, Dew point 2m,
+Vento 10m/80m/120m/180m, Vento 925/850/700/600/500 hPa,
+Temperature 80m/120m (e 180m solo in alcuni componenti),
+Shortwave radiation, UV index, Cloud cover (totale + stratificato)
+
+B. GRANDEZZE DERIVATE DA DATI REALI
+─────────────────────────────────────
+Spread (T-Td)          = max(0.5, temperature2m - dewPoint2m)
+Cloud Base (LCL)       = siteAlt + min(1800, spread * 125), min gain 100m
+Real Lapse Rate        = (T2m - T80m) / 78 * 100  OPPURE (T2m - T120m) / 118 * 100
+Lapse Rate Classification = <0=inversione, <0.3=stabile, <0.65=neutro, <0.98=instabile, ≥0.98=molto_instabile
+Wind Shear (velocità)  = |speed_upper - speed_lower|
+Wind Shear (direzione) = directionDifference(dir_lower, dir_upper)
+Wind Shear (per 100m)  = speedDiff / altDiff * 100
+Wave Index             = directionDifference(dir10m, dir850hPa)
+
+C. STIMA EMPIRICA DEL PROGETTO
+─────────────────────────────────────
+Estimated Thermal Top         = cloudBase + min(800, CAPE*0.1) + spread*50, max 5000m
+Rateo Termico (indiceVolabi)  = max(0, spread*0.22 + min(1.5, CAPE/800))
+Rateo Termico (expertoMeteo)  = min(4.0, max(0.3, avgSpread*0.25 + avgCape*0.001))
+Thermal Top (expertoMeteo)    = min(4000, cloudBase + min(800, rateo*100 + avgCape*0.1))
+Freezing Level fallback       = siteAlt + (t / 0.0098) * 100  (se API non fornisce)
+Base Lapse Rate (ProfWind)    = 0.65 + solarFactor*0.3  (se t180 non disponibile)
+
+D. FALLBACK / DATO INVENTATO
+─────────────────────────────────────
+vapourPressureDeficit   = 0  hardcoded
+mixingRatio             = 0  hardcoded
+virtualTemp             = 0  hardcoded
+evapotranspiration      = 0  hardcoded
+et0                     = 0  hardcoded
+soilTemp                = 0  hardcoded
+soilMoisture            = 0  hardcoded
+diffuseRadiation        = 0  hardcoded
+directNormalIrradiance  = 0  hardcoded
+terrestrialRadiation    = 0  hardcoded
+isDay                   = true  hardcoded (ERRATO — dovrebbe controllare l'orario)
+boundaryLayerHeight     = null  hardcoded (non richiesto dall'API)
+cloud (useMultiHour)    = 30  fallback quando cloud_cover mancante
+cape (useMultiHour)     = 0   fallback quando CAPE mancante ← NASCONDE INSTABILITÀ!
+vento (windAlgorithm)   = 0, N  quando nessun dato reale ← DATO COMPLETAMENTE INVENTATO
+freeze (useMultiHour)   = siteAlt + (t/0.0098)*100  fallback ISA
+dew (TomorrowrowWind)   = temperature - (100-cloudCover)/5  ← FORMULA ERRATA
+humidity (transformMeteo)= 50  fallback
+dewPoint (transformMeteo)= 10  fallback
+pressure (transformMeteo)= 1013  fallback ISA
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+N. PBL / BOUNDARY LAYER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+boundary_layer_height:
+- Presente in RealData interface? SÌ (riga 37 di derivedMeteorology.ts)
+- Valorizzato? NO — hardcoded a null (riga 79) con commento "non ancora richiesta dall'API"
+- Richiesto dall'API? SÌ — disponibile su Open-Meteo (GFS, ICON, AROME)
+- Stime alternative? NO
+- Curve/funzioni inventate? NO
+- Valori fissi? NO
+
+Il PBL è un dato MANCANTE completamente nel flusso di elaborazione.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+O. SOUNDING / PROFILO VERTICALE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+VERO PROFILO DA MODELLO:
+- useStabilitaMasseAria: temperature a 7 livelli (2m, 180m, 925, 850, 700, 600, 500 hPa)
+- AlpiumWindgram: temperature a 13 livelli (500-1000 hPa) + wind a 8 livelli
+
+PROFILO RICOSTRUITO/INTERPOLATO:
+- useMultiHourWindProfile: interpolation lineare tra 10m, 80m, 120m, 180m, 925, 850, 700, 600, 500 hPa
+- ProfessionalWindgram: ricostruisce profilo stabilità (deltaT) con modello a strati basato su t2m, t180m, quote hPa
+
+PROFILO EMPIRICO/SIMULATO:
+- windAlgorithm.ts calcolaProfiloVento: profilo vento completo 0-3000m usando gradiente medio + regola empirica di rotazione (+2° per 250m). Livelli tra 180m e 925hPa interamente inventati.
+- ProfessionalWindgram calcDeltaTAt(alt): profilo di stabilità a 250m basato su formula empirica (surfaceHeat + freeAtmos + inversion + cloudSuppression + solarBoost + rainSuppress). Non è un vero profilo termodinamico.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+P. MODELLO vs DERIVATO vs STIMATO — Tabella riassuntiva
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Grandezza              | Fonte              | Classe       | Affidabilità  | Note
+-----------------------|--------------------|--------------|---------------|------
+Temperatura 2m         | API Open-Meteo     | REAL         | Alta          | Dato osservativo diretto
+Dew point 2m           | API Open-Meteo     | REAL         | Alta          | Dato osservativo diretto
+Umidità relativa 2m    | API Open-Meteo     | REAL         | Alta          | Dato osservativo diretto
+Vento 10m              | API Open-Meteo     | REAL         | Alta          | Misura diretta
+Raffica 10m            | API Open-Meteo     | REAL         | Media-Alta    | Misura diretta, variabile
+Vento 80m              | API Open-Meteo     | REAL         | Alta          | Misura diretta (ICON/GFS)
+Vento 120m             | API Open-Meteo     | REAL         | Alta          | Misura diretta (ICON/GFS)
+Vento 180m             | API Open-Meteo     | REAL         | Alta          | Misura diretta (ICON/GFS)
+Vento 925-500 hPa      | API Open-Meteo     | REAL         | Media         | NON disponibile con AROME
+CAPE                   | API Open-Meteo     | REAL         | Media         | Dipende dal modello
+CIN                    | API Open-Meteo     | REAL         | Media         | Dipende dal modello
+Lifted Index           | API Open-Meteo     | REAL         | Media         | Dipende dal modello
+Freezing level         | API Open-Meteo     | REAL         | Alta          | Dato osservativo diretto
+PBL height             | —                  | NON DISPONIB.| —             | Non richiesto
+Cloud base (LCL)       | Formula T-Td×125   | DERIVATA     | Media-Alta    | Formula standard accettata
+Lapse rate reale       | (T2m-T80m)/78×100  | DERIVATA     | Media         | Dipende da t80m disponibile
+Stability classification| Threshold lapse   | DERIVATA     | Bassa         | Classificazione soggettiva
+Wind shear (velocità)  | |Δspeed|           | DERIVATA     | Alta          | Calcolo esatto
+Wind shear (direzione) | directionDiff      | DERIVATA     | Alta          | Calcolo esatto
+Wind shear (per 100m)  | speedDiff/altDiff  | DERIVATA     | Media         | Dipende da quote stimate
+Thermal top (estimated)| cloudBase+CAPE+spr | STIMATA      | Bassa-Media   | Formula empirica
+Rateo termico          | spread×0.22+CAPE   | STIMATA      | Bassa         | Formula euristica
+Cloud cover            | API Open-Meteo     | REAL         | Alta          | Dato osservativo diretto
+Precipitazione         | API Open-Meteo     | REAL         | Alta          | Dato osservativo diretto
+Radiazione solare      | API Open-Meteo     | REAL         | Alta          | Dato osservativo diretto
+UV index               | API Open-Meteo     | REAL         | Alta          | Dato osservativo diretto
+Vento quote intermedie | Interpolazione     | RICOSTRUITO  | Media         | Interpolazione ragionevole
+Profilo vento completo | Gradiente+regola   | SIMULATO     | Bassa         | Livelli 180m-925hPa inventati
+DeltaT profile         | Modello a strati   | SIMULATO     | Bassa         | Non vero profilo termodinamico
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Q. DATI IMPORTANTI PER IL PARAPENDIO — Stato disponibilità
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+GIÀ DISPONIBILI (dall'API):
+✅ Temperatura superficie
+✅ Punto di rugiada superficie
+✅ Vento superficie (10m)
+✅ Raffiche superficie
+✅ Vento in quota (80m, 120m, 180m)
+✅ Vento a 5 livelli di pressione (925-500 hPa)
+✅ CAPE, CIN, Lifted Index
+✅ Freezing level
+✅ Cloud cover (totale, low, mid, high)
+✅ Precipitazione e probabilità
+✅ Radiazione solare
+✅ UV index
+✅ Temperatura a 80m e 120m
+
+DISPONIBILI MA NON RICHIESTI:
+⚠️ boundary_layer_height — disponibile API, non richiesto
+⚠️ temperature_180m — disponibile API, non nei service centrali
+⚠️ temperature a 9 livelli hPa intermedi — solo AlpiumWindgram
+⚠️ geopotential_height — disponibile daily, non usato
+⚠️ relative_humidity a livelli hPa — potenzialmente disponibile
+
+DERIVABILI:
+✅ Cloud base (LCL) — da T e Td
+✅ Lapse rate superficiale — da T2m e T80m/T120m
+✅ Shear verticale — da venti ai diversi livelli
+✅ Stabilità atmosferica — classificata dal lapse rate
+
+NON DISPONIBILI (o parziali):
+❌ Brezza di valle/monte — fenomeno locale non modellato
+❌ Convergenza — non direttamente misurabile
+❌ Rotor/sottovento — fenomeno orografico locale
+❌ Turbolenza meccanica — inferibile da gust/speed ratio ma non diretta
+❌ Overdevelopment/temporali — solo indicativamente da CAPE+LI
+❌ Attività termica misurata — CAPE è proxy, non misura diretta
+❌ Boundary layer height reale — disponibile ma non richiesto
+❌ Geopotential height reale — disponibile daily ma non usato
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+R. PROBLEMI ARCHITETTURALI
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1. FRAMMENTAZIONE CHIAMATE API
+   10+ componenti fanno fetch indipendenti, molti duplicati.
+   ProfessionalWindgram, useStabilita, useMultiHourWindProfile, AlpiumWindgram
+   fanno tutti chiamate autonome sovrapponibili.
+
+2. DOPPIO SET DI SERVICE
+   openMeteoService.ts e weatherService.ts fanno essenzialmente la stessa cosa
+   con parametri diversi. Duplichano la logica di normalizzazione.
+
+3. temperature_180m NON NORMALIZZATO
+   I service centrali non lo estraggono ma ProfessionalWindgram e useStabilita
+   lo richiedono dal raw JSON (funziona perché data è typed as any).
+
+4. CAMP I HARDWARED A 0
+   10+ campi inventati nell'interfaccia MeteoHourly:
+   vapourPressureDeficit, mixingRatio, virtualTemp, evapotranspiration,
+   et0, soilTemp, soilMoisture, diffuseRadiation, directNormalIrradiance,
+   terrestrialRadiation — tutti a 0.
+
+5. isDay HARDWARED A true
+   Errore logico in openMeteoService.ts e weatherService.ts.
+   Dovrebbe basarsi sull'orario reale.
+
+6. NessUN FLAG "dati reali vs fallback"
+   Impossibile distinguere dati reali da stimati per l'utente.
+
+7. Funzione incompleta
+   calcCloudBaseSLM in meteoAI.ts sembra un placeholder non implementato.
+
+8. Formula errata dew point
+   TomorrowrowWindgram.tsx: dew = temperature - (100-cloudCover)/5
+   Questa formula non ha fondamento fisico.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+S. ARCHITETTURA FUTURA PROPOSTA
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+OPEN-METEO API
+      ↓ (fetchFull centralizzato, eliminate chiamate duplicate)
+RAW JSON RESPONSE
+      ↓ (unificazione in unico layer di normalizzazione)
+NORMALIZZAZIONE
+  - Unifica formati (MeteoHourly da openMeteoService, raw da componenti)
+  - Mappa temperature_180m, boundary_layer_height, etc.
+  - Segnala campi null vs 0 vs fallback
+      ↓
+DATI REALI (RealData interface)
+  - Solo ciò che l'API fornisce realmente
+  - Null = non disponibile, mai 0 inventato
+      ↓
+DERIVED METEOROLOGY (derivedMeteorology.ts)
+  - spread, cloudBase, lapseRate, shear, stability
+  - Funzioni pure, testabili, senza side-effects
+      ↓
+AEROLOGICAL INTERPRETATION
+  - Thermal top estimation
+  - Wind profile completion (interpolazione solo dove dati mancano)
+  - Stability classification
+  - Wave index
+      ↓
+SITE / DECOLLO CONTEXT
+  - Orientation, exposure, local wind effects
+  - Rotor risk, valley/breeze patterns (qualitativi)
+      ↓
+HOURLY EVOLUTION
+  - Per ogni ora: condizioni combinate
+  - Trend rispetto all'ora precedente
+      ↓
+PILOT-FACING INTERPRETATION
+  - Indice di volabilità
+  - Tipo di volo consigliato
+  - Finestra temporale
+  - Rischi specifici
+
+Principio chiave: Ogni livello deve ricevere solo dati che ha giustificazione di avere.
+I null devono propagarsi, non essere mascherati da 0.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+T. PRIORITÀ TECNICHE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+P0 — Indispensabile prima di continuare:
+1. Unificare le chiamate API — eliminare i fetch duplicati
+2. Normalizzare temperature_180m — aggiungerlo al service centrale e all'interfaccia
+3. Correggere isDay: true hardcoded — usare orario reale
+4. Rimuovere fallback CAPE=0 — se CAPE manca, deve essere null (nasconde instabilità)
+
+P1 — Molto importante:
+5. Aggiungere boundary_layer_height ai parametri API
+6. Uniformare le quote ISA — ProfessionalWindgram usa 5000m per 500hPa, altri usano 5500m
+7. Correggere formula dew point in TomorrowrowWindgram.tsx
+8. Sistemare meteoAI.ts — calcCloudBaseSLM non implementata
+
+P2 — Utile:
+9. Rimuovere i 10+ campi hardcoded a 0 (o calcolarli correttamente)
+10. Aggiungere geopotential_height (daily) per migliorare stima quote livelli di pressione
+11. Uniformare parametri API tra i vari service
+12. Valutare aggiunta temperature a livelli hPa intermedi nel service centrale
+
+P3 — Futuro:
+13. Implementare vero sounding parser per profilo termico verticale
+14. Aggiungere relative_humidity a livelli di pressione
+15. Separare chiaramente dati offline (fallback) da reali con flag esplicito
+16. Rimuovere componenti obsoleti (AlpiumWindgram, RasoftWindgram, etc.)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+U. RISULTATO FINALE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+AUDIT METEOROLOGICO COMPLETATO
+
+A. MODELLO OPEN-METEO ATTUALE
+AUTO-SELECTION — nessun modello forzato. Disponibilità dati dipende dal modello scelto.
+
+B. DATI REALI DISPONIBILI
+39 parametri orari centralizzati + chiamate indipendenti. Vento a 4 quote basso + 5 livelli hPa.
+CAPE/CIN/LI/Freezing level. Radiazione, UV, nuvole stratificate.
+
+C. DATI REALI DISPONIBILI MA NON UTILIZZATI
+boundary_layer_height, temperature_180m (solo parziale), temperature a 9 livelli hPa intermedi,
+geopotential_height (daily).
+
+D. DATI DERIVABILI
+Cloud base (LCL), spread T-Td, lapse rate superficiale, wind shear (velocità e direzione),
+wave index, classificazione stabilità.
+
+E. DATI STIMATI ATTUALMENTE
+Thermal top (formula CAPE+spread+cloudBase), rateo termico (empirico),
+freezing level fallback (ISA), lapse rate profile (modello a strati empirico),
+vento tra 180m e 925hPa (interpolazione + regola empirica).
+
+F. FALLBACK METEOROLOGICI ANCORA PRESENTI
+isDay=true hardcoded, CAPE fallback a 0, cloud fallback a 30%, vento fallback a 0/N,
+10+ campi a 0 hardcoded, dew point da nuvolosità (formula errata),
+temperature/dew/pressure fallback in transformMeteo.ts.
+
+G. DATI IMPORTANTI NON DISPONIBILI
+Brezza valle/monte, convergenza, rotor, turbolenza meccanica, attività termica misurata,
+PBL height (non richiesto), geopotential height reale (non usato).
+
+H. PROBLEMI ARCHITETTURALI
+Frammentazione chiamate API, doppio set di service, temperature_180m non normalizzato,
+campi hardcoded a 0, isDay errato, nessun flag dati reali vs fallback,
+funzione incompleta in meteoAI.ts, formula errata dew point in TomorrowrowWindgram.
+
+I. PRIORITÀ P0
+Unificare chiamate API, normalizzare temperature_180m, correggere isDay, rimuovere fallback CAPE=0
+
+J. PRIORITÀ P1
+Aggiungere boundary_layer_height, uniformare quote ISA, correggere formula dew point,
+sistemare meteoAI.ts
+
+K. PRIORITÀ P2
+Rimuovere/calcolare i 10+ campi hardcoded a 0, aggiungere geopotential_height,
+uniformare parametri API
+
+L. PRIORITÀ P3
+Sounding parser vero, wind-relative humidity a livelli, separazione netta offline/online,
+rimozione componenti obsoleti
+
+M. FILE MODIFICATI
+NESSUNO
+
+N. COMMIT
+NESSUNO
+
+O. PUSH
+NESSUNO

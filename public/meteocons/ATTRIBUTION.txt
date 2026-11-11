@@ -1,0 +1,8 @@
+Meteocons — animated weather icons by Bas Milius
+https://github.com/basmilius/meteocons • https://meteocons.com
+License: MIT — free for personal and commercial use.
+Fonte: cdn.meteocons.com/3.0.0-next.10 (SVG fill animati).
+File: sun.svg, cloud.svg (legacy) + clear-day, partly-cloudy-day,
+partly-cloudy-day-rain, overcast-day, fog-day, drizzle, rain, snow,
+thunderstorms-day-rain (set previsioni, novembre 2026).
+Foto hero: hero-parapendio-alpi.jpg — Unsplash (licenza libera), dicembre 2026.

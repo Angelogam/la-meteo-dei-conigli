@@ -1,0 +1,720 @@
+/* ============================================================
+   VISTA 3D DEL TERRENO — pannello, toolbar, HUD, legenda
+   Tema coerente con la cartina (Alpine Night), stili autonimi.
+   ============================================================ */
+
+.cartina3d {
+  margin-top: 0.85rem;
+  border: 1px solid rgba(125, 211, 252, 0.16);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(13, 27, 44, 0.92), rgba(9, 18, 31, 0.95));
+  box-shadow: 0 18px 42px rgba(2, 8, 18, 0.45);
+  overflow: hidden;
+}
+
+/* ---------- toolbar ---------- */
+.c3d-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem 0.9rem;
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid rgba(125, 211, 252, 0.12);
+  background: linear-gradient(180deg, rgba(17, 33, 54, 0.75), rgba(12, 24, 40, 0.4));
+}
+.c3d-title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.45rem;
+  color: #bfe3ff;
+  min-width: 0;
+}
+.c3d-title svg {
+  align-self: center;
+  color: #ffd76a;
+  flex: none;
+}
+.c3d-title h3 {
+  margin: 0;
+  font-family: var(--font-display, "Barlow Condensed", sans-serif);
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #eaf6ff;
+}
+.c3d-sub {
+  color: #6d8496;
+  font-size: 0.62rem;
+  font-family: var(--font-mono, monospace);
+  white-space: nowrap;
+}
+.c3d-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.7rem;
+}
+
+/* selettore decollo */
+.c3d-site {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #7e93a6;
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+}
+.c3d-site select {
+  max-width: 190px;
+  padding: 0.28rem 1.5rem 0.28rem 0.55rem;
+  border-radius: 9px;
+  border: 1px solid rgba(125, 211, 252, 0.22);
+  background:
+    linear-gradient(45deg, transparent 50%, #7dd3fc 50%) calc(100% - 14px) calc(50% - 1px) / 5px 5px no-repeat,
+    linear-gradient(135deg, #7dd3fc 50%, transparent 50%) calc(100% - 9px) calc(50% - 1px) / 5px 5px no-repeat,
+    rgba(9, 18, 31, 0.9);
+  color: #eaf6ff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: inherit;
+  appearance: none;
+  cursor: pointer;
+}
+.c3d-site select:focus-visible {
+  outline: 2px solid rgba(125, 211, 252, 0.55);
+  outline-offset: 1px;
+}
+
+/* chip quota */
+.c3d-quotas {
+  display: flex;
+  align-items: center;
+  gap: 0.22rem;
+}
+.c3d-quotas-k {
+  color: #7e93a6;
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  margin-right: 0.15rem;
+}
+.c3d-q {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  min-width: 52px;
+  min-height: 38px;
+  padding: 0.28rem 0.42rem;
+  border-radius: 8px;
+  border: 1px solid rgba(125, 211, 252, 0.2);
+  background: rgba(9, 18, 31, 0.85);
+  color: #9db1c4;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+.c3d-q-temp {
+  color: #ffd76a;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.58rem;
+  font-weight: 700;
+  line-height: 1;
+}
+.c3d-q.is-on .c3d-q-temp { color: #4a3510; }
+.c3d-q:hover { color: #eaf6ff; border-color: rgba(125, 211, 252, 0.45); }
+.c3d-q.is-on {
+  color: #0a1626;
+  background: linear-gradient(180deg, #ffd76a, #f5b93e);
+  border-color: #ffd76a;
+  box-shadow: 0 2px 10px rgba(255, 215, 106, 0.35);
+}
+/* striscia dei livelli quota (dal decollo a 4000 m, passi di 250): scrollabile */
+.c3d-quotas-scroll {
+  display: flex;
+  align-items: center;
+  gap: 0.22rem;
+  overflow-x: auto;
+  max-width: 430px;
+  padding: 2px 2px 3px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(125, 211, 252, 0.35) transparent;
+}
+.c3d-quotas-scroll::-webkit-scrollbar { height: 5px; }
+.c3d-quotas-scroll::-webkit-scrollbar-thumb { background: rgba(125, 211, 252, 0.3); border-radius: 3px; }
+
+/* toggle */
+.c3d-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #9db1c4;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.c3d-toggle [data-radix-collection-item],
+.c3d-toggle button {
+  flex: none;
+}
+
+/* ---------- palco ---------- */
+.c3d-stage {
+  position: relative;
+  height: clamp(380px, 56vh, 560px);
+  background: #0a1626;
+}
+.c3d-mount,
+.c3d-mount .cesium-widget,
+.c3d-mount .cesium-widget canvas {
+  width: 100%;
+  height: 100%;
+}
+
+/* crediti: obbligatori, ma discreti */
+.c3d-credits {
+  position: absolute;
+  left: 8px;
+  bottom: 6px;
+  right: 8px;
+  z-index: 3;
+  pointer-events: none;
+  font-size: 9.5px;
+  line-height: 1.25;
+  color: rgba(214, 232, 248, 0.62);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+.c3d-credits .cesium-credit-logoContainer,
+.c3d-credits .cesium-credit-expand-link {
+  display: none !important;
+}
+.c3d-credits img { display: none; }
+
+/* dot «live» pulsante */
+.c3d-live-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: #3ddc84;
+  box-shadow: 0 0 0 0 rgba(61, 220, 132, 0.55);
+  animation: c3d-pulse 1.8s ease-out infinite;
+  vertical-align: 1px;
+}
+@keyframes c3d-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(61, 220, 132, 0.55); }
+  70% { box-shadow: 0 0 0 7px rgba(61, 220, 132, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(61, 220, 132, 0); }
+}
+
+/* HUD flottante */
+.c3d-hud {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  max-width: min(78%, 340px);
+}
+.c3d-hud-k,
+.c3d-hud-v {
+  width: fit-content;
+  padding: 0.3rem 0.6rem;
+  border-radius: 9px;
+  border: 1px solid rgba(125, 211, 252, 0.18);
+  background: rgba(8, 17, 30, 0.82);
+  backdrop-filter: blur(6px);
+  font-family: var(--font-mono, monospace);
+  font-size: 0.7rem;
+  color: #cfe6f8;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+.c3d-hud-k {
+  color: #ffd76a;
+  font-weight: 700;
+  border-color: rgba(255, 215, 106, 0.28);
+}
+.c3d-hud-v { font-weight: 600; }
+
+/* overlay caricamento / errore */
+.c3d-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8rem;
+  background:
+    radial-gradient(60% 60% at 50% 40%, rgba(23, 48, 76, 0.5), transparent 70%),
+    rgba(8, 16, 28, 0.9);
+  text-align: center;
+  padding: 1rem;
+}
+.c3d-overlay p { margin: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+.c3d-overlay strong { color: #eaf6ff; font-size: 0.95rem; letter-spacing: 0.02em; }
+.c3d-overlay small { color: #7e93a6; font-size: 0.72rem; font-family: var(--font-mono, monospace); }
+.c3d-overlay.is-err { background: rgba(24, 12, 14, 0.92); }
+.c3d-overlay.is-err strong { color: #ffb3b3; }
+.c3d-overlay .c3d-retry {
+  appearance: none;
+  border: 1px solid rgba(255, 179, 179, 0.55);
+  background: rgba(255, 179, 179, 0.12);
+  color: #ffd9d9;
+  font: 600 0.8rem/1 var(--font-sans, system-ui);
+  padding: 0.55rem 1.5rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.c3d-overlay .c3d-retry:hover { background: rgba(255, 179, 179, 0.26); transform: translateY(-1px); }
+.c3d-overlay .c3d-retry:active { transform: translateY(0); }
+.c3d-lite {
+  position: absolute;
+  left: 0.6rem;
+  bottom: 2.6rem;
+  z-index: 4;
+  background: rgba(10, 22, 38, 0.8);
+  color: #9fd7ff;
+  border: 1px solid rgba(125, 211, 252, 0.25);
+  font-size: 0.68rem;
+  padding: 0.32rem 0.7rem;
+  border-radius: 999px;
+  pointer-events: none;
+}
+.c3d-spin {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 3px solid rgba(125, 211, 252, 0.18);
+  border-top-color: #ffd76a;
+  animation: c3d-rot 0.9s linear infinite;
+}
+@keyframes c3d-rot { to { transform: rotate(360deg); } }
+
+/* ---------- navigazione stile Google Earth ---------- */
+.c3d-nav {
+  position: absolute;
+  right: 10px;
+  bottom: 30px;
+  z-index: 4;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.5rem;
+}
+.c3d-compass {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 1px solid rgba(125, 211, 252, 0.3);
+  background: radial-gradient(circle at 50% 38%, rgba(21, 41, 66, 0.92), rgba(8, 17, 30, 0.94));
+  box-shadow: 0 6px 18px rgba(2, 8, 18, 0.55), inset 0 0 12px rgba(125, 211, 252, 0.08);
+  backdrop-filter: blur(6px);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+.c3d-compass:active { cursor: grabbing; }
+.c3d-compass-ring {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.06s linear;
+}
+.c3d-compass-n {
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #ff7b7b;
+  font-family: var(--font-mono, monospace);
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+}
+.c3d-needle {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2px;
+  height: 16px;
+  transform: translate(-50%, -100%);
+  background: linear-gradient(180deg, #ff7b7b, rgba(255, 123, 123, 0.15));
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+.c3d-needle::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  transform: translate(-50%, -1px);
+  border-radius: 50%;
+  background: rgba(234, 246, 255, 0.75);
+}
+.c3d-nav-btns {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.c3d-nav-btns button {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border: 1px solid rgba(125, 211, 252, 0.24);
+  background: rgba(8, 17, 30, 0.86);
+  color: #bfe3ff;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  backdrop-filter: blur(5px);
+  padding: 0;
+}
+.c3d-nav-btns button:hover {
+  color: #eaf6ff;
+  border-color: rgba(125, 211, 252, 0.55);
+  background: rgba(17, 33, 54, 0.92);
+}
+.c3d-nav-btns .c3d-nav-2d {
+  font-family: var(--font-mono, monospace);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+.c3d-nav-btns .c3d-nav-2d.is-on {
+  color: #0a1626;
+  background: linear-gradient(180deg, #ffd76a, #f5b93e);
+  border-color: #ffd76a;
+}
+
+/* progresso tile */
+.c3d-progress {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  z-index: 4;
+  padding: 0.28rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(8, 17, 30, 0.82);
+  border: 1px solid rgba(125, 211, 252, 0.2);
+  color: #9fe870;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.64rem;
+}
+
+/* ---------- barra previsioni a fasce orarie ---------- */
+.c3d-forecast {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.8rem;
+  padding: 0.5rem 0.9rem;
+  border-bottom: 1px solid rgba(125, 211, 252, 0.12);
+  background: rgba(10, 21, 36, 0.55);
+}
+.c3d-fc-k {
+  color: #7e93a6;
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  white-space: nowrap;
+}
+.c3d-fc-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.8rem;
+  min-width: 0;
+}
+.c3d-fc-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.22rem;
+}
+.c3d-day {
+  padding: 0.26rem 0.55rem;
+  border-radius: 8px;
+  border: 1px solid rgba(125, 211, 252, 0.2);
+  background: rgba(9, 18, 31, 0.85);
+  color: #9db1c4;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+.c3d-day:hover { color: #eaf6ff; border-color: rgba(125, 211, 252, 0.45); }
+.c3d-day.is-on {
+  color: #0a1626;
+  background: linear-gradient(180deg, #7dd3fc, #4cc3ff);
+  border-color: #7dd3fc;
+  box-shadow: 0 2px 10px rgba(76, 195, 255, 0.3);
+}
+.c3d-fc-slots {
+  display: flex;
+  align-items: stretch;
+  gap: 0.3rem;
+  overflow-x: auto;
+  max-width: 100%;
+  padding-bottom: 2px;
+}
+.c3d-slot {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 62px;
+  padding: 0.24rem 0.45rem 0.3rem;
+  border-radius: 10px;
+  border: 1px solid rgba(6, 14, 26, 0.55);
+  color: #08131f;
+  font-family: var(--font-mono, monospace);
+  cursor: pointer;
+  transition: transform 0.12s, box-shadow 0.12s;
+  flex: none;
+}
+.c3d-slot:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(2, 8, 18, 0.45); }
+.c3d-slot.is-on {
+  outline: 2px solid #eaf6ff;
+  outline-offset: 1px;
+}
+.c3d-slot b {
+  font-size: 0.66rem;
+  font-weight: 800;
+  opacity: 0.75;
+}
+.c3d-slot i {
+  font-style: normal;
+  font-size: 0.85rem;
+  line-height: 1;
+  font-weight: 800;
+  display: inline-block;
+}
+.c3d-slot em {
+  font-style: normal;
+  font-size: 0.78rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+}
+.c3d-slot em small {
+  font-size: 0.52rem;
+  font-weight: 700;
+  opacity: 0.7;
+}
+
+/* ---------- tasto schermo intero ---------- */
+.c3d-fsbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.32rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid rgba(125, 211, 252, 0.2);
+  background: rgba(9, 18, 31, 0.85);
+  color: #9db1c4;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+.c3d-fsbtn:hover { color: #eaf6ff; border-color: rgba(125, 211, 252, 0.45); }
+.c3d-fsbtn.is-on {
+  color: #0a1626;
+  background: linear-gradient(180deg, #ffd76a, #f5b93e);
+  border-color: #ffd76a;
+}
+
+/* legenda: scala velocità + puntini termiche */
+.c3d-leg-scale { gap: 0.28rem; }
+.c3d-leg-scale i {
+  width: 14px;
+  height: 9px;
+  border-radius: 2.5px;
+  display: inline-block;
+  flex: none;
+}
+.c3d-leg-scale em {
+  font-style: normal;
+  color: #8ba1b2;
+  margin-right: 0.35rem;
+}
+.c3d-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+  flex: none;
+  margin-left: 0.25rem;
+}
+
+/* ---------- schermo intero (nativo + fallback iOS) ---------- */
+.cartina3d:fullscreen {
+  display: flex;
+  flex-direction: column;
+  border-radius: 0;
+  border: none;
+  background: #06101d;
+  padding: 0.5rem 0.7rem;
+  overflow: auto;
+}
+.cartina3d:fullscreen .c3d-toolbar,
+.cartina3d:fullscreen .c3d-forecast,
+.cartina3d:fullscreen .c3d-legend { flex: none; }
+.cartina3d:fullscreen .c3d-stage {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+}
+.cartina3d.is-fs {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  margin: 0;
+  border-radius: 0;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  background: #06101d;
+  padding: 0.5rem 0.7rem;
+  overflow: auto;
+}
+.cartina3d.is-fs .c3d-toolbar,
+.cartina3d.is-fs .c3d-forecast,
+.cartina3d.is-fs .c3d-legend { flex: none; }
+.cartina3d.is-fs .c3d-stage {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 0;
+}
+
+/* ---------- legenda (vecchi colori aerologici rimasti inutilizzati) ---------- */
+.c3d-sw.is-lift { background: linear-gradient(90deg, rgba(61, 220, 132, 0.55), #3ddc84); }
+.c3d-sw.is-lee { background: linear-gradient(90deg, rgba(255, 84, 112, 0.55), #ff5470); }
+.c3d-sw.is-ana { background: linear-gradient(90deg, rgba(255, 210, 63, 0.55), #ffd23f); }
+.c3d-sw.is-kata { background: linear-gradient(90deg, rgba(76, 195, 255, 0.55), #4cc3ff); }
+.c3d-sw.is-flow { background: linear-gradient(90deg, rgba(255, 179, 71, 0.5), #ffb347); }
+.c3d-sw.is-quota {
+  background: linear-gradient(90deg, #4cc3ff, #3ddc84, #ffd23f, #ff9f43, #ff5cc8);
+}
+.c3d-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1.1rem;
+  padding: 0.55rem 0.9rem 0.7rem;
+  border-top: 1px solid rgba(125, 211, 252, 0.12);
+  color: #8ba1b2;
+  font-size: 0.66rem;
+  font-family: var(--font-mono, monospace);
+}
+.c3d-legend span { display: inline-flex; align-items: center; gap: 0.4rem; }
+.c3d-sw {
+  width: 20px;
+  height: 9px;
+  flex: none;
+  clip-path: polygon(0 38%, 62% 38%, 62% 0, 100% 50%, 62% 100%, 62% 62%, 0 62%);
+}
+
+/* ---------- mobile ---------- */
+@media (max-width: 720px) {
+  .c3d-toolbar { padding: 0.6rem 0.7rem; }
+  .c3d-title { width: 100%; }
+  .c3d-sub { white-space: normal; }
+  .c3d-stage { height: clamp(330px, 62vh, 480px); }
+  .c3d-site select { max-width: 150px; }
+  .c3d-hud { max-width: 62%; }
+  .c3d-hud-k, .c3d-hud-v { font-size: 0.62rem; }
+  .c3d-legend { gap: 0.3rem 0.7rem; font-size: 0.6rem; }
+  .c3d-nav { right: 8px; bottom: 26px; gap: 0.35rem; }
+  .c3d-compass { width: 46px; height: 46px; }
+  .c3d-nav-btns button { width: 27px; height: 27px; }
+  .c3d-forecast { padding: 0.45rem 0.7rem; }
+  .c3d-fc-k { width: 100%; }
+  .c3d-fc-slots { width: 100%; }
+  .c3d-slot { min-width: 54px; }
+  .c3d-quotas-scroll { max-width: 100%; }
+  .c3d-fsbtn span { display: none; }
+  .c3d-fsbtn { padding: 0.3rem 0.38rem; }
+  .c3d-leg-scale em { margin-right: 0.18rem; font-size: 0.55rem; }
+}
+
+/* link Google Earth accanto allo schermo intero (il .c3d-fsbtn è su classe,
+   qui solo i ritocchi specifici del tag <a>) */
+a.c3d-fsbtn {
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+a.c3d-fsbtn:hover { background: rgba(125, 211, 252, 0.14); }
+
+/* credit XCTherm (volI reali dei piloti) nella legenda */
+.c3d-xccredit { color: #d9c08a; }
+
+/* ---------- POSTER mobile: il 3D parte solo a tocco esplicito ---------- */
+.c3d-poster {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  text-align: center;
+  padding: 1.4rem 1.2rem;
+  color: #dfeefb;
+  background:
+    radial-gradient(70% 55% at 50% 30%, rgba(255, 164, 66, 0.14), transparent 70%),
+    radial-gradient(70% 60% at 50% 85%, rgba(38, 118, 142, 0.22), transparent 75%),
+    linear-gradient(180deg, #0a1626 0%, #0d1e33 55%, #10263c 100%);
+}
+.c3d-poster svg { color: #ffb254; }
+.c3d-poster strong { font-size: 1.12rem; letter-spacing: 0.02em; }
+.c3d-poster p { margin: 0; max-width: 30rem; font-size: 0.82rem; line-height: 1.45; color: #a7bdd1; }
+.c3d-poster .c3d-open {
+  appearance: none;
+  border: 1px solid rgba(255, 178, 84, 0.7);
+  border-radius: 999px;
+  padding: 0.62rem 1.5rem;
+  margin-top: 0.3rem;
+  background: linear-gradient(180deg, rgba(255, 178, 84, 0.24), rgba(255, 143, 63, 0.14));
+  color: #ffe1b8;
+  font: 700 0.92rem/1 "Barlow Condensed", "Manrope", sans-serif;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.c3d-poster .c3d-open:active { transform: scale(0.97); }
+.c3d-poster .c3d-open:hover { background: linear-gradient(180deg, rgba(255, 178, 84, 0.34), rgba(255, 143, 63, 0.2)); }
+.c3d-poster small { color: #6c8299; font-size: 0.68rem; font-family: var(--font-mono, monospace); }
+
+/* bottone «Chiudi»: smonta il motore 3D e libera la memoria */
+.c3d-fsbtn.c3d-close { color: #ffc9c9; border-color: rgba(255, 120, 120, 0.4); }
+.c3d-fsbtn.c3d-close:hover { background: rgba(255, 90, 90, 0.14); }
+
+@media (prefers-reduced-motion: reduce) {
+  .c3d-poster .c3d-open { transition: none; }
+}

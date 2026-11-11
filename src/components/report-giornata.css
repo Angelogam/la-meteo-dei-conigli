@@ -1,0 +1,229 @@
+/* Report della giornata — pannello centrale con le 2 pagine A4 mostrate
+   come documento impaginato: cornici, etichette di pagina e fondi a gradiente
+   (niente più impaginazione secca allineata a sinistra). */
+
+.report-giornata {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+  padding: 1rem .95rem 1.15rem;
+  border: 1px solid rgba(133, 190, 220, .2);
+  border-radius: 22px;
+  background:
+    radial-gradient(ellipse at 18% 0%, rgba(84, 170, 205, .14), transparent 55%),
+    radial-gradient(ellipse at 85% 100%, rgba(70, 160, 140, .1), transparent 50%),
+    linear-gradient(172deg, rgba(17, 35, 51, .55), rgba(7, 17, 28, .6));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05), 0 14px 34px rgba(0, 0, 0, .28);
+  overflow: hidden;
+}
+/* filo luminoso in cima alla card */
+.report-giornata::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent 4%, rgba(102, 204, 240, .75), rgba(126, 240, 190, .55) 55%, transparent 96%);
+}
+
+.report-giornata__stage {
+  position: relative;
+  min-height: 260px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.report-giornata__note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 880px;
+  padding: 26px 18px;
+  border: 1px dashed rgba(182, 220, 233, .3);
+  border-radius: 16px;
+  background: rgba(6, 16, 29, .45);
+  color: #bcd8e8;
+  font-size: .9rem;
+  line-height: 1.5;
+}
+
+.report-giornata__note--error {
+  border-color: rgba(248, 113, 113, .4);
+  color: #fca5a5;
+}
+
+.report-giornata__note--error button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 7px 13px;
+  border: 1px solid rgba(248, 113, 113, .5);
+  border-radius: 10px;
+  background: rgba(153, 27, 27, .25);
+  color: #fee2e2;
+  font-weight: 700;
+  font-size: .82rem;
+  cursor: pointer;
+  transition: background .18s ease;
+}
+
+.report-giornata__note--error button:hover { background: rgba(153, 27, 27, .45); }
+
+.report-giornata__spin { animation: report-giornata-spin 1s linear infinite; color: #8fd0ea; }
+
+@keyframes report-giornata-spin {
+  to { transform: rotate(360deg); }
+}
+
+.report-giornata__pages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  animation: report-giornata-in .5s ease-out both;
+}
+
+@keyframes report-giornata-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ogni pagina: cornice documento con etichetta e alone dietro */
+.report-giornata__doc {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  max-width: 880px;
+  margin: 0;
+}
+.report-giornata__doc::before {
+  content: "";
+  position: absolute;
+  inset: 26px 6% -6px 6%;
+  border-radius: 26px;
+  background: radial-gradient(ellipse at 50% 40%, rgba(96, 190, 230, .17), transparent 70%);
+  filter: blur(14px);
+  z-index: 0;
+}
+.report-giornata__doc-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: .28rem .75rem;
+  border: 1px solid rgba(133, 190, 220, .3);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(23, 48, 66, .85), rgba(12, 26, 40, .85));
+  color: #bfe2f2;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .3);
+}
+.report-giornata__doc-tag svg { opacity: .8; }
+
+.report-giornata__page {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, .22);
+  box-shadow:
+    0 2px 0 rgba(255, 255, 255, .06) inset,
+    0 22px 52px rgba(0, 0, 0, .5),
+    0 6px 18px rgba(0, 0, 0, .35);
+  background: #fff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .report-giornata__pages,
+  .report-giornata__spin { animation: none; }
+}
+
+/* ── Toolbar della card: giorno + esportazioni dirette ─────────────── */
+.report-giornata__toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .7rem;
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 880px;
+  padding: .65rem .8rem;
+  border: 1px solid rgba(133, 190, 220, .24);
+  border-radius: 18px;
+  background:
+    radial-gradient(ellipse at 0% 0%, rgba(80, 170, 205, .12), transparent 60%),
+    linear-gradient(165deg, rgba(23, 42, 58, .6), rgba(10, 22, 34, .65));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05);
+}
+.report-giornata__days { display: inline-flex; padding: 3px; gap: 2px; border: 1px solid rgba(133, 190, 220, .24); border-radius: 999px; background: rgba(8, 22, 34, .65); }
+.report-giornata__day {
+  padding: .32rem .85rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #9db8c9;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background .2s ease, color .2s ease;
+}
+.report-giornata__day:hover { color: #e2f2fb; }
+.report-giornata__day.is-active {
+  background: linear-gradient(135deg, rgba(64, 170, 190, .42), rgba(46, 130, 160, .34));
+  color: #e8f8ff;
+  box-shadow: 0 2px 8px rgba(30, 120, 150, .35);
+}
+
+.report-giornata__exports { display: inline-flex; align-items: center; gap: .45rem; flex-wrap: wrap; }
+.report-giornata__export {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .38rem .8rem;
+  border: 1px solid rgba(133, 190, 220, .3);
+  border-radius: 999px;
+  background: rgba(14, 34, 50, .7);
+  color: #cfe8f5;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background .2s ease, border-color .2s ease, color .2s ease, transform .2s ease;
+}
+.report-giornata__export:hover { border-color: rgba(159, 211, 227, .6); color: #fff; transform: translateY(-1px); }
+.report-giornata__export:disabled { opacity: .6; cursor: wait; }
+.report-giornata__export--wa {
+  border-color: rgba(52, 199, 123, .55);
+  background: linear-gradient(135deg, rgba(24, 128, 84, .4), rgba(18, 96, 66, .5));
+  color: #b8f2d4;
+  box-shadow: 0 4px 14px rgba(18, 110, 75, .3);
+}
+.report-giornata__export--wa:hover { border-color: rgba(86, 230, 165, .8); color: #e9fff2; }
+.report-giornata__export svg { width: 14px; height: 14px; }
+
+.report-giornata__hint {
+  width: 100%;
+  max-width: 880px;
+  margin: 0;
+  padding: .45rem .7rem;
+  border: 1px solid rgba(133, 190, 220, .2);
+  border-radius: 12px;
+  background: rgba(12, 28, 42, .55);
+  color: #a9c8d9;
+  font-size: 11.5px;
+  font-weight: 600;
+  text-align: center;
+}

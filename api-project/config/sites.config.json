@@ -1,0 +1,239 @@
+{
+  "version": "1.0.0",
+  "description": "Configurazione siti di decollo per Meteo dei Conigli",
+  "dataSource": "src/data/decolli.ts",
+  "sites": [
+    {
+      "id": "malanotte",
+      "site_name": "Malanotte",
+      "location_name": "Valle Ellero",
+      "orientation": "S/SE",
+      "elevation_m": 1740,
+      "lat": 44.25874571728482,
+      "lon": 7.794304664370852
+    },
+    {
+      "id": "colle-di-tenda",
+      "site_name": "Colle di Tenda",
+      "location_name": "Valle Roya/Vermenagna",
+      "orientation": "S",
+      "elevation_m": 1990,
+      "lat": 44.15093973937469,
+      "lon": 7.569262924652476
+    },
+    {
+      "id": "boves",
+      "site_name": "Boves",
+      "location_name": "Cuneese",
+      "orientation": "NE",
+      "elevation_m": 900,
+      "lat": 44.32113720462757,
+      "lon": 7.544697617792515
+    },
+    {
+      "id": "monte-male-dronero",
+      "site_name": "Monte Male",
+      "location_name": "Valle Maira",
+      "orientation": "S",
+      "elevation_m": 950,
+      "lat": 44.43163071064606,
+      "lon": 7.362886778152897
+    },
+    {
+      "id": "iretta",
+      "site_name": "Iretta",
+      "location_name": "Valle Maira",
+      "orientation": "SO",
+      "elevation_m": 1050,
+      "lat": 44.49893744007536,
+      "lon": 7.382036612070795
+    },
+    {
+      "id": "pratoni-di-val-mala",
+      "site_name": "Pratoni di Val Mala",
+      "location_name": "Valle Maira",
+      "orientation": "S",
+      "elevation_m": 1400,
+      "lat": 44.50780117336976,
+      "lon": 7.346618978966227
+    },
+    {
+      "id": "monte-birrone",
+      "site_name": "Monte Birrone",
+      "location_name": "Valle Maira",
+      "orientation": "S",
+      "elevation_m": 2131,
+      "lat": 44.5398927839592,
+      "lon": 7.25293945830122
+    },
+    {
+      "id": "colle-dell-agnello",
+      "site_name": "Colle dell'Agnello",
+      "location_name": "Valle Varaita",
+      "orientation": "S",
+      "elevation_m": 2748,
+      "lat": 44.68282592463814,
+      "lon": 6.978200601250462
+    },
+    {
+      "id": "pian-mune-seggiovia",
+      "site_name": "Pian Munè – Seggiovia",
+      "location_name": "Valle Po",
+      "orientation": "S/SW",
+      "elevation_m": 1870,
+      "lat": 44.63861029121272,
+      "lon": 7.230889474766025
+    },
+    {
+      "id": "pian-mune-bric-lombatera",
+      "site_name": "Pian Munè – Bric Lombatera",
+      "location_name": "Valle Po",
+      "orientation": "S",
+      "elevation_m": 1350,
+      "lat": 44.65736521807557,
+      "lon": 7.260017009542715
+    },
+    {
+      "id": "martiniana-po",
+      "site_name": "Martiniana Po",
+      "location_name": "Valle Po",
+      "orientation": "NE",
+      "elevation_m": 1400,
+      "lat": 44.60695265332723,
+      "lon": 7.38322612877631
+    },
+    {
+      "id": "rucas-alto",
+      "site_name": "Rucas Alto",
+      "location_name": "Valle Infernotto",
+      "orientation": "S/SE",
+      "elevation_m": 1500,
+      "lat": 44.74213930591463,
+      "lon": 7.220118689737356
+    },
+    {
+      "id": "montoso-decollo-basso",
+      "site_name": "Montoso",
+      "location_name": "Valle Infernotto",
+      "orientation": "SE",
+      "elevation_m": 1250,
+      "lat": 44.7643723437882,
+      "lon": 7.249757926713178
+    },
+    {
+      "id": "monte-vandalino",
+      "site_name": "Monte Vandalino",
+      "location_name": "Val Pellice",
+      "orientation": "S/SE",
+      "elevation_m": 2120,
+      "lat": 44.83671231480542,
+      "lon": 7.173866924055591
+    },
+    {
+      "id": "pian-dell-alpe",
+      "site_name": "Pian dell'Alpe",
+      "location_name": "Val Chisone",
+      "orientation": "S",
+      "elevation_m": 1990,
+      "lat": 45.06396153999711,
+      "lon": 7.028266530872771
+    },
+    {
+      "id": "roletto-piggi",
+      "site_name": "Roletto – Piggi",
+      "location_name": "Pinerolese",
+      "orientation": "S",
+      "elevation_m": 820,
+      "lat": 44.93249288285819,
+      "lon": 7.310959031722244
+    },
+    {
+      "id": "piossasco-monte-s-giorgio",
+      "site_name": "Piossasco",
+      "location_name": "Collina Torinese",
+      "orientation": "S",
+      "elevation_m": 673,
+      "lat": 44.99671840144012,
+      "lon": 7.44800217882953
+    },
+    {
+      "id": "truccetti",
+      "site_name": "Truccetti",
+      "location_name": "Canavese",
+      "orientation": "S",
+      "elevation_m": 900,
+      "lat": 45.07973511679036,
+      "lon": 7.342018342463826
+    },
+    {
+      "id": "val-della-torre",
+      "site_name": "Val della Torre",
+      "location_name": "Val della Torre",
+      "orientation": "S",
+      "elevation_m": 970,
+      "lat": 45.16262748864921,
+      "lon": 7.463716167415302
+    },
+    {
+      "id": "rocca-canavese-m-della-neve",
+      "site_name": "Rocca Canavese",
+      "location_name": "Canavese",
+      "orientation": "S",
+      "elevation_m": 1100,
+      "lat": 45.32757754837493,
+      "lon": 7.572793582322621
+    },
+    {
+      "id": "santa-elisabetta",
+      "site_name": "Santa Elisabetta",
+      "location_name": "Canavese",
+      "orientation": "S",
+      "elevation_m": 1000,
+      "lat": 45.4182733880574,
+      "lon": 7.641945041749434
+    },
+    {
+      "id": "santa-elisabetta-alto",
+      "site_name": "Santa Elisabetta Alto",
+      "location_name": "Canavese",
+      "orientation": "S",
+      "elevation_m": 1400,
+      "lat": 45.44019393073506,
+      "lon": 7.648025947229948
+    },
+    {
+      "id": "monte-cavallaria",
+      "site_name": "Monte Cavallaria",
+      "location_name": "Canavese",
+      "orientation": "S",
+      "elevation_m": 1430,
+      "lat": 45.51729363773779,
+      "lon": 7.798808327293107
+    },
+    {
+      "id": "andrate",
+      "site_name": "Andrate",
+      "location_name": "Canavese",
+      "orientation": "S",
+      "elevation_m": 1000,
+      "lat": 45.55063933418272,
+      "lon": 7.880775591143394
+    }
+  ],
+  "total_sites": 24,
+  "regions": [
+    "Valle Ellero",
+    "Valle Roya/Vermenagna",
+    "Cuneese",
+    "Valle Maira",
+    "Valle Varaita",
+    "Valle Po",
+    "Valle Infernotto",
+    "Val Pellice",
+    "Val Chisone",
+    "Pinerolese",
+    "Collina Torinese",
+    "Canavese",
+    "Val della Torre"
+  ]
+}

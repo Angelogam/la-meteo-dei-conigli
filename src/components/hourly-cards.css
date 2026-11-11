@@ -1,0 +1,432 @@
+/* ═══════════════════════════════════════════════════════════
+   CARD ORARIE INTERATTIVE — famiglia grafica delle card
+   «forecast-day-card-premium»: una card quadrata per ogni ora.
+   ═══════════════════════════════════════════════════════════ */
+
+.hour-cards {
+  display: flex;
+  flex-direction: column;
+  gap: .9rem;
+  padding: 1rem 1rem 1.05rem;
+  border: 1px solid rgba(120, 160, 185, .22);
+  border-radius: 24px;
+  background: linear-gradient(165deg, rgba(23, 42, 58, .5), rgba(10, 22, 34, .55));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05);
+}
+
+/* ── Testata sezione ─────────────────────────────────────── */
+.hour-cards__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .8rem;
+  flex-wrap: wrap;
+  padding-bottom: .8rem;
+  border-bottom: 1px solid rgba(120, 160, 185, .16);
+}
+.hour-cards__header-left { display: flex; align-items: center; gap: .7rem; min-width: 0; }
+.hour-cards__header-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  border: 1px solid rgba(125, 212, 240, .3);
+  border-radius: 12px;
+  background: rgba(56, 145, 190, .16);
+}
+.hour-cards__title {
+  margin: 0;
+  color: #f2f7fa;
+  font: 800 1rem/1.2 var(--font-display, inherit);
+  letter-spacing: -.01em;
+}
+.hour-cards__site { display: inline-flex; align-items: center; gap: .25rem; margin-top: .1rem; color: #6fd8a8; font-size: 11px; font-weight: 700; }
+.hour-cards__header-right { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+.hour-cards__date {
+  padding: .3rem .7rem;
+  border: 1px solid rgba(125, 212, 240, .22);
+  border-radius: 999px;
+  background: rgba(14, 38, 54, .55);
+  color: #b9d4e2;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.hour-cards__sort {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border: 1px solid rgba(125, 212, 240, .22);
+  border-radius: 999px;
+  background: rgba(10, 26, 38, .6);
+}
+.hour-cards__sort button {
+  padding: .28rem .75rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #93b1c2;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background .2s ease, color .2s ease;
+}
+.hour-cards__sort button:hover { color: #dcf0fa; }
+.hour-cards__sort button.is-active { background: rgba(64, 170, 190, .28); color: #d9f4ff; }
+
+/* ── Griglia card ────────────────────────────────────────── */
+.hour-cards__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(206px, 1fr));
+  gap: .8rem;
+}
+
+.hour-card {
+  --edge: rgba(148, 163, 184, .55);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: .55rem;
+  min-width: 0;
+  min-height: 358px;
+  overflow: hidden;
+  padding: .8rem .8rem .7rem;
+  border: 1px solid rgba(164, 196, 209, .2);
+  border-radius: 20px;
+  background:
+    radial-gradient(ellipse at 82% 0%, rgba(52, 126, 158, .15), transparent 42%),
+    linear-gradient(152deg, #1d3444 0%, #142735 58%, #10212d 100%);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, .18), inset 0 1px 0 rgba(255, 255, 255, .055);
+  color: #eef5f8;
+  cursor: pointer;
+  text-align: left;
+  transition: transform .24s ease, border-color .24s ease, box-shadow .24s ease;
+}
+
+/* striscia di stato sul bordo sinistro */
+.hour-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 3px;
+  background: var(--edge);
+  opacity: .85;
+}
+
+.hour-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(159, 211, 227, .45);
+  box-shadow: 0 20px 36px rgba(0, 0, 0, .24), inset 0 1px 0 rgba(255, 255, 255, .08);
+}
+.hour-card:focus-visible { outline: 3px solid rgba(114, 215, 224, .78); outline-offset: 3px; }
+.hour-card.is-selected {
+  border-color: rgba(133, 224, 206, .68);
+  background:
+    radial-gradient(ellipse at 82% 0%, rgba(64, 164, 147, .2), transparent 48%),
+    linear-gradient(152deg, #20434a 0%, #17363c 58%, #122a34 100%);
+  box-shadow: 0 0 0 1px rgba(119, 213, 192, .2), 0 16px 34px rgba(0, 0, 0, .22);
+}
+.hour-card.is-selected::after {
+  content: "";
+  position: absolute;
+  top: .55rem;
+  right: .55rem;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #7fe0c4;
+  box-shadow: 0 0 8px rgba(127, 224, 196, .9);
+}
+
+/* colori di stato (striscia) */
+.hour-card--ottimo, .hour-card--buono { --edge: #34d399; }
+.hour-card--discreto { --edge: #fbbf24; }
+.hour-card--calma { --edge: #38bdf8; }
+.hour-card--rischioso { --edge: #fb923c; }
+.hour-card--non_volabile { --edge: #94a3b8; }
+.hour-card--pioggia { --edge: #60a5fa; }
+.hour-card--temporale { --edge: #a78bfa; }
+
+/* ── Testata card ────────────────────────────────────────── */
+.hour-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+}
+.hour-card__time {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  color: #f6f8f8;
+  font: 800 1.42rem/1 var(--font-display, inherit);
+  letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+}
+.hour-card__now {
+  padding: .12rem .4rem;
+  border-radius: 999px;
+  background: rgba(52, 211, 153, .18);
+  border: 1px solid rgba(52, 211, 153, .5);
+  color: #6ee7b7;
+  font: 800 8.5px/1.2 var(--font-mono, monospace);
+  letter-spacing: .14em;
+  font-style: normal;
+  animation: hour-now-pulse 2.2s ease-in-out infinite;
+}
+@keyframes hour-now-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, .35); }
+  50% { box-shadow: 0 0 0 4px rgba(52, 211, 153, .08); }
+}
+.hour-card__score {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  padding: .3rem .5rem .26rem;
+  border: 1px solid rgba(146, 205, 198, .27);
+  border-radius: 11px;
+  background: rgba(8, 26, 34, .42);
+  color: #c9dedb;
+  font: 700 9.5px var(--font-mono, monospace);
+}
+.hour-card__score strong { color: #9fe3cc; font-size: 16px; line-height: 1; }
+
+/* ── Cielo: icona Meteocons (stessa famiglia delle card giornaliere)
+      + condizione + possibilità di pioggia + temperatura ────────── */
+.hour-card__sky {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .55rem;
+  min-height: 84px;
+  padding: .55rem .6rem .55rem .6rem;
+  overflow: hidden;
+  isolation: isolate;
+  border: 1px solid rgba(189, 220, 232, .16);
+  border-radius: 15px;
+  background:
+    radial-gradient(ellipse at 70% 6%, rgba(151, 221, 255, .24), transparent 52%),
+    linear-gradient(160deg, #397b98, #27546d 66%, #1b4058);
+}
+.hour-card__sky .meteocon {
+  flex: 0 0 auto;
+  width: 56px;
+  height: 56px;
+  filter: drop-shadow(0 3px 10px rgba(0, 0, 0, .35));
+}
+.hour-card__sky-copy {
+  display: flex;
+  flex-direction: column;
+  gap: .2rem;
+  min-width: 0;
+  flex: 1;
+}
+.hour-card__weather {
+  color: #eef8fd;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: .01em;
+  line-height: 1.25;
+}
+.hour-card__rain-chance {
+  display: inline-flex;
+  align-items: center;
+  gap: .26rem;
+  width: fit-content;
+  padding: .14rem .42rem;
+  border-radius: 999px;
+  background: rgba(9, 24, 36, .45);
+  border: 1px solid rgba(150, 200, 225, .28);
+  color: #cfe9f6;
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.hour-card__temp {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: .05rem;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, .45);
+}
+.hour-card__temp strong {
+  color: #fff;
+  font: 800 1.9rem/1 var(--font-display, inherit);
+  letter-spacing: -.03em;
+}
+.hour-card__temp small { color: #d6ecf5; font-size: 10px; font-weight: 700; }
+
+/* ── Verdetto volo ───────────────────────────────────────── */
+.hour-card__verdict {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  width: fit-content;
+  padding: .24rem .6rem;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .02em;
+}
+.hour-card__verdict.is-good { background: rgba(16, 185, 129, .14); border: 1px solid rgba(52, 211, 153, .45); color: #6ee7b7; }
+.hour-card__verdict.is-mid { background: rgba(245, 158, 11, .13); border: 1px solid rgba(251, 191, 36, .45); color: #fcd34d; }
+.hour-card__verdict.is-calm { background: rgba(56, 189, 248, .12); border: 1px solid rgba(56, 189, 248, .4); color: #7dd3fc; }
+.hour-card__verdict.is-bad { background: rgba(100, 116, 139, .16); border: 1px solid rgba(148, 163, 184, .4); color: #cbd5e1; }
+
+/* ── Metriche ────────────────────────────────────────────── */
+.hour-card__metrics {
+  display: flex;
+  flex-direction: column;
+  gap: .42rem;
+  flex: 1;
+}
+.hour-card__metric {
+  display: flex;
+  flex-direction: column;
+  gap: .14rem;
+  padding-bottom: .4rem;
+  border-bottom: 1px dashed rgba(148, 180, 200, .16);
+}
+.hour-card__metric:last-child { border-bottom: 0; padding-bottom: 0; }
+.hour-card__metric--duo {
+  flex-direction: row;
+  gap: .6rem;
+}
+.hour-card__metric--duo > span {
+  display: flex;
+  flex-direction: column;
+  gap: .14rem;
+  flex: 1;
+  min-width: 0;
+}
+.hour-card__metric-label {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  color: #8fa9b8;
+  font: 700 8.5px var(--font-mono, monospace);
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.hour-card__metric-value {
+  display: flex;
+  align-items: baseline;
+  gap: .4rem;
+  min-width: 0;
+}
+.hour-card__metric-value strong {
+  color: #eaf4f9;
+  font-size: 13.5px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.hour-card__metric-value strong.is-rain { color: #93c5fd; }
+.hour-card__metric-value small { color: #90a9b7; font-size: 10px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* barra generica (termiche / UV) */
+.hour-card__bar {
+  position: relative;
+  flex: 1;
+  height: 4px;
+  margin-left: auto;
+  max-width: 64px;
+  border-radius: 999px;
+  background: rgba(148, 180, 200, .16);
+  overflow: hidden;
+}
+.hour-card__bar i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  display: block;
+  border-radius: 999px;
+  transition: width .6s ease;
+}
+.hour-card__bar--uv { max-width: 46px; }
+
+/* strati nuvolosità B/M/A */
+.hour-card__clouds {
+  display: flex;
+  gap: 2px;
+  flex: 1;
+  height: 5px;
+  max-width: 84px;
+  margin-left: auto;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(148, 180, 200, .12);
+}
+.hour-card__clouds i { display: block; height: 100%; border-radius: 999px; }
+.hour-card__clouds i:nth-child(1) { background: rgba(56, 189, 248, .75); }
+.hour-card__clouds i:nth-child(2) { background: rgba(167, 139, 250, .7); }
+.hour-card__clouds i:nth-child(3) { background: rgba(203, 213, 225, .55); }
+
+/* rosa dei venti */
+.hour-card__compass { width: 22px; height: 22px; flex: 0 0 22px; }
+.hour-card__metric--wind { flex-direction: row; align-items: center; justify-content: space-between; gap: .5rem; }
+.hour-card__metric--wind .hour-card__metric-label { flex-direction: column; align-items: flex-start; gap: .18rem; }
+.hour-card__metric--wind .hour-card__metric-value { flex-direction: column; align-items: flex-end; gap: .1rem; text-align: right; }
+
+/* ── Sparkline ───────────────────────────────────────────── */
+.hour-card__spark {
+  width: 100%;
+  height: 26px;
+  margin-top: .1rem;
+  border-top: 1px solid rgba(148, 180, 200, .14);
+  padding-top: 2px;
+}
+
+/* ── Legenda ─────────────────────────────────────────────── */
+.hour-cards__legend {
+  display: flex;
+  align-items: center;
+  gap: .9rem;
+  flex-wrap: wrap;
+  padding-top: .7rem;
+  border-top: 1px solid rgba(120, 160, 185, .16);
+  color: #7e97a6;
+  font-size: 10px;
+  font-weight: 700;
+}
+.hour-cards__legend-item { display: inline-flex; align-items: center; gap: .32rem; }
+.hour-cards__legend-item i {
+  width: 8px;
+  height: 8px;
+  border-radius: 3px;
+  background: #94a3b8;
+}
+.hour-cards__legend-item i.is-good { background: #34d399; }
+.hour-cards__legend-item i.is-mid { background: #fbbf24; }
+.hour-cards__legend-item i.is-calm { background: #38bdf8; }
+.hour-cards__legend-item i.is-bad { background: #64748b; }
+.hour-cards__legend-hint { margin-left: auto; color: #62798a; font-weight: 600; }
+
+/* ── Responsive ──────────────────────────────────────────── */
+@media (max-width: 560px) {
+  .hour-cards__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .6rem; }
+  .hour-card { min-height: 330px; padding: .7rem .65rem .6rem; border-radius: 17px; }
+  .hour-card__time { font-size: 1.18rem; }
+  .hour-card__temp strong { font-size: 1.55rem; }
+  .hour-card__sky { gap: .45rem; padding: .5rem .55rem; }
+  .hour-card__sky .meteocon { width: 46px; height: 46px; }
+  .hour-card__weather { font-size: 10.5px; }
+  .hour-cards__legend-hint { margin-left: 0; width: 100%; }
+}
+@media (max-width: 380px) {
+  .hour-cards__grid { grid-template-columns: 1fr; }
+  .hour-card { min-height: 0; }
+}
+
+/* ── Movimento ridotto ───────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .hour-card, .hour-card * { transition: none !important; }
+  .hour-card:hover { transform: none; }
+  .hour-card__now { animation: none; }
+  .hour-card__bar i { transition: none; }
+}

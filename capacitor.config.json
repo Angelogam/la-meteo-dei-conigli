@@ -1,0 +1,19 @@
+{
+  "appName": "Meteo dei Conigli",
+  "webDir": "dist",
+  "bundleWebRuntime": true,
+  "android": {
+    "buildOptions": {
+      "keystorePath": "keystore/debug.keystore",
+      "keystoreAlias": "androiddebugkey",
+      "keystorePassword": "android",
+      "storePassword": "android"
+    }
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowAfter": 1000,
+      "androidScaleType": "CENTER_CROP"
+    }
+  }
+}
