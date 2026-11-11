@@ -1,12 +1,14 @@
 "use client";
 
 /**
- * DATABASE DECOLLI — Province di Cuneo e Torino
+ * DATABASE DECOLLI — province di Cuneo e Torino
  * Coordinate, quote, esposizioni, club, atterraggi e webcam verificate
  * attraverso l'API ufficiale SpotAir (data.spotair.mobi — provider FFVL,
  * DHV, ParaglidingEarth/Mobispots) incrociata con le fonti locali del club.
  * Ogni campo ereditato da SpotAir è tracciato nel campo `source`.
  */
+
+import { DECOLLI_ESTESI } from "./decolli-estesi";
 
 export interface DecolloClub {
   name: string;
@@ -18,6 +20,8 @@ export interface DecolloLanding {
   quota_m: number;
   lat: number;
   lon: number;
+  /** Distanza decollo→atterraggio in km (se nota). */
+  distKm?: number;
 }
 
 export interface DecolloWebcam {
@@ -34,6 +38,40 @@ export interface DecolloPhoto {
   url: string;
   credit?: string;
 }
+
+/** Codici area: province storiche (CN/TO), macro-regioni italiane e Francia. */
+export type AreaCode =
+  | "CN" | "TO" | "LO" | "LIG" | "AO" | "PIE" | "VEN" | "TAA" | "FVG"
+  | "EMR" | "TOS" | "UMB" | "MAR" | "LAZ" | "ABR" | "MOL" | "CAM"
+  | "PUG" | "BAS" | "CAL" | "SIC" | "SAR"
+  | "FR" | "FRN";
+
+export const AREA_LABELS: Record<AreaCode, string> = {
+  CN: "Cuneo",
+  TO: "Torino",
+  LO: "Lombardia",
+  LIG: "Liguria",
+  AO: "Val d'Aosta",
+  PIE: "Piemonte",
+  VEN: "Veneto",
+  TAA: "Trentino-A.A.",
+  FVG: "Friuli V.G.",
+  EMR: "Emilia-Romagna",
+  TOS: "Toscana",
+  UMB: "Umbria",
+  MAR: "Marche",
+  LAZ: "Lazio",
+  ABR: "Abruzzo",
+  MOL: "Molise",
+  CAM: "Campania",
+  PUG: "Puglia",
+  BAS: "Basilicata",
+  CAL: "Calabria",
+  SIC: "Sicilia",
+  SAR: "Sardegna",
+  FR: "Alpi sud (FR)",
+  FRN: "Savoia & Annecy",
+};
 
 export interface Decollo {
   id: string;
@@ -57,16 +95,35 @@ export interface Decollo {
   altitude: number;
   alt: number;
   // Dati arricchiti (SpotAir + club)
-  province?: "CN" | "TO" | "LO" | "LIG" | "FR";
+  province?: AreaCode;
   club?: DecolloClub;
   landing?: DecolloLanding;
   webcams?: DecolloWebcam[];
   note?: string;
   photo?: DecolloPhoto;
   source?: string;
+  /** Incluso nel batch meteo completo (vetrina = decolli "di casa"). */
+  vetrina?: boolean;
+  /** Nome regione amministrativa (reverse geocoding OSM). */
+  regione?: string;
+  /** Descrizione testuale della fonte (paraglidingspots.com), originale. */
+  description?: string;
+  /** Descrizione in italiano redatta dalla fonte/da noi. */
+  descrizione?: string;
+  /** Galleria foto della fonte (paraglidingspots.com). */
+  photos?: DecolloPhoto[];
+  /** Rating community 0-6 della fonte. */
+  rating?: number;
+  /** Dislivello decollo→atterraggio in m (se noto dalla fonte). */
+  dislivello?: number;
+  /** Frequenza d'uso segnalata dalla fonte (es. "regolarmente usato"). */
+  frequenza?: string;
+  /** ID del placemark paraglidingspots.com. */
+  pspId?: number;
 }
 
-export const DECOLLI: Decollo[] = [
+/** Banca dati storica: Cuneo/Torino, Liguria, Lombardia e Alpi francesi sud (SpotAir + club). */
+const DECOLLI_BASE: Decollo[] = [
   {
     id: "malanotte",
     site_name: "Malanotte",
@@ -4006,19 +4063,18 @@ export const DECOLLI: Decollo[] = [
   },
 ];
 
+/**
+ * DECOLLI COMPLETI: banca dati storica (vetrina, già nel batch meteo) +
+ * estensione ParaglidingSpots a tutta Italia, Val d'Aosta e Savoia/Annecy.
+ */
+export const DECOLLI: Decollo[] = [
+  ...DECOLLI_BASE.map((d) => ({ ...d, vetrina: d.vetrina ?? true })),
+  ...DECOLLI_ESTESI,
+];
+
 export const DECOLLO_MAP = Object.fromEntries(DECOLLI.map(d => [d.id, d]));
 export const DECOLLO_IDS = DECOLLI.map(d => d.id);
 
 if (typeof window !== "undefined") {
-  console.log(`✅ Decolli caricati: ${DECOLLI.length} (CN/TO + Liguria, Lombardia, Francia — SpotAir/ParaglidingSpots)`);
-  console.table(DECOLLI.map(d => ({
-    id: d.id,
-    site_name: d.site_name,
-    location_name: d.location_name,
-    orientation: d.orientation,
-    elevation_m: d.elevation_m,
-    club: d.club?.name ?? "—",
-    atterraggio: d.landing?.name ?? "—",
-    webcam: d.webcams?.length ?? 0,
-  })));
+  console.log(`✅ Decolli caricati: ${DECOLLI.length} (base CN/TO/LIG/LO/FR + estesi tutta Italia, Val d'Aosta, Savoia/Annecy — ParaglidingSpots/SpotAir) · vetrina batch: ${DECOLLI.filter(d => d.vetrina).length}`);
 }

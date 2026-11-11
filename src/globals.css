@@ -4040,6 +4040,8 @@ body,
   min-width: 0;
   margin: 0;
 }
+/* Variante a colonna singola (pagine senza nav rail, es. dettaglio decollo) */
+.flight-app-body.is-single { grid-template-columns: minmax(0, 1fr); }
 .flight-page-column {
   width: 100%;
   max-width: 100%;

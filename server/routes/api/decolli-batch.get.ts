@@ -48,10 +48,19 @@ const DAILY = ["temperature_2m_max", "temperature_2m_min", "cloud_cover_mean", "
  */
 const CHUNK_SIZE = 50;
 
+/**
+ * SITI VETRINA — il batch completo Open-Meteo (43 variabili orarie × 3 giorni) pesa
+ * ~19 KB per sito: con la banca dati estesa a tutta Italia si limita il batch ai siti
+ * con flag `vetrina` (Cuneo/Torino/Liguria/Lombardia + Val d'Aosta + Savoia/Annecy).
+ * Gli altri decolli mostrano la card compatta e caricano il meteo al momento
+ * della selezione (useWeatherData) o dalla pagina di dettaglio.
+ */
+const VETRINA = DECOLLI.filter((d) => d.vetrina);
+
 function coordinateChunks(): { latitude: string; longitude: string }[] {
   const latArr: string[] = [];
   const lonArr: string[] = [];
-  for (const d of DECOLLI) {
+  for (const d of VETRINA) {
     const lat = Number(d.lat);
     const lon = Number(d.lon);
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
@@ -97,15 +106,15 @@ export default defineHandler(async (event) => {
   );
   const results = chunkResults.flat();
 
-  if (results.length !== DECOLLI.length) {
+  if (results.length !== VETRINA.length) {
     throw createError({
       statusCode: 502,
       statusMessage: "Risposta multi-location incompleta",
-      data: { attesi: DECOLLI.length, ricevuti: results.length },
+      data: { attesi: VETRINA.length, ricevuti: results.length },
     });
   }
 
-  const sites = DECOLLI.map((d, i) => {
+  const sites = VETRINA.map((d, i) => {
     const raw = results[i];
     const hourly = (raw?.hourly ?? null) as Record<string, unknown> | null;
     const times = hourly?.time;

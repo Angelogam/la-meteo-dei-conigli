@@ -33,7 +33,7 @@ export function useThreeSourceWeather() {
   const [weatherData, setWeatherData] = useState<Map<string, MeteoDecollo>>(() => {
     // Inizializza con dati stimati per evitare "N/D"
     const m = new Map<string, MeteoDecollo>();
-    DECOLLI.forEach(d => m.set(d.name, offlineFallback(d.name)));
+    DECOLLI.forEach(d => m.set(d.id, offlineFallback(d.name)));
     return m;
   });
   const [loading, setLoading] = useState(true);
@@ -44,7 +44,7 @@ export function useThreeSourceWeather() {
 
   const mergedDecolli = useMemo(() => {
     return DECOLLI.map(d => {
-      let aggressive = weatherData.get(d.name);
+      let aggressive = weatherData.get(d.id);
       if (!aggressive) {
         aggressive = offlineFallback(d.name);
       }

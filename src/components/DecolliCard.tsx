@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   AlertTriangle, Camera, Clock, Cloud, CloudRain, CloudSnow, Flame, Info, Layers, MapPin, Navigation, PlaneLanding, Search, Snowflake, Sun, Thermometer, Users, Wind, Zap,
 } from "lucide-react";
-import type { Decollo } from "@/data/decolli";
+import type { Decollo, AreaCode } from "@/data/decolli";
+import { AREA_LABELS } from "@/data/decolli";
 import { calcolaIndiceVolabilita, esposizioneToGradi } from "@/utils/indiceVolabilita";
 import type { HourlyPoint } from "@/services/threeSourceWeather";
 
@@ -224,13 +226,32 @@ function Compass({ expDeg, dir, relCls }: { expDeg: number; dir: number | null; 
 
 type CardItem = Decollo & { aggressiveWeather?: AggressiveWeatherData | null };
 
-const REGIONI: { key: "ALL" | "CN" | "TO" | "LO" | "LIG" | "FR"; label: string }[] = [
+const REGIONI: { key: "ALL" | AreaCode; label: string }[] = [
   { key: "ALL", label: "Tutti" },
-  { key: "CN", label: "Cuneo" },
-  { key: "TO", label: "Torino" },
-  { key: "LO", label: "Lombardia" },
-  { key: "LIG", label: "Liguria" },
-  { key: "FR", label: "Francia" },
+  { key: "CN", label: AREA_LABELS.CN },
+  { key: "TO", label: AREA_LABELS.TO },
+  { key: "AO", label: AREA_LABELS.AO },
+  { key: "PIE", label: AREA_LABELS.PIE },
+  { key: "LO", label: AREA_LABELS.LO },
+  { key: "LIG", label: AREA_LABELS.LIG },
+  { key: "TAA", label: AREA_LABELS.TAA },
+  { key: "VEN", label: AREA_LABELS.VEN },
+  { key: "FVG", label: AREA_LABELS.FVG },
+  { key: "EMR", label: AREA_LABELS.EMR },
+  { key: "TOS", label: AREA_LABELS.TOS },
+  { key: "UMB", label: AREA_LABELS.UMB },
+  { key: "MAR", label: AREA_LABELS.MAR },
+  { key: "LAZ", label: AREA_LABELS.LAZ },
+  { key: "ABR", label: AREA_LABELS.ABR },
+  { key: "MOL", label: AREA_LABELS.MOL },
+  { key: "CAM", label: AREA_LABELS.CAM },
+  { key: "PUG", label: AREA_LABELS.PUG },
+  { key: "BAS", label: AREA_LABELS.BAS },
+  { key: "CAL", label: AREA_LABELS.CAL },
+  { key: "SIC", label: AREA_LABELS.SIC },
+  { key: "SAR", label: AREA_LABELS.SAR },
+  { key: "FR", label: AREA_LABELS.FR },
+  { key: "FRN", label: AREA_LABELS.FRN },
 ];
 
 function HeadBlock({ item, selected, index }: { item: CardItem; selected: boolean; index: number | null }) {
@@ -316,6 +337,29 @@ function FallbackCard({ item, selected, onSelect, idx }: { item: CardItem; selec
   const freezingLevel = numberOrNull(weather?.freezingLevel);
   const rain = numberOrNull(weather?.rain);
   const cloud = numberOrNull(weather?.cloud);
+
+  /* Siti fuori dal batch vetrina: card compatta — niente griglia di tile "N/D"
+     (533 card leggere invece di pesanti, il meteo arriva al click/dettaglio). */
+  if (!weather || (!wind && !temp && !direction && index === null)) {
+    return (
+      <button
+        type="button"
+        role="listitem"
+        key={item.id}
+        onClick={() => onSelect(item)}
+        aria-pressed={selected}
+        className={"dxc-card dxc-mini" + (selected ? " is-selected" : "")}
+        style={{ "--dxc-i": String(Math.min(idx, 11)) } as React.CSSProperties}
+      >
+        <HeadBlock item={item} selected={selected} index={null} />
+        <div className="dxc-minifoot">
+          <span className="dxc-mini-hint">Tocca per le info e il meteo live</span>
+          <span className="dxc-mini-go"><Info size={12} aria-hidden="true" /></span>
+        </div>
+      </button>
+    );
+  }
+
   return (
     <button
       type="button"
@@ -551,8 +595,19 @@ function LaunchCard({ item, selected, onSelect, selectedDay, dayKey, nowHour, id
 export default function DecolliCard({
   decolli, selectedId, onSelect, selectedDay = 0, isUpdating = false, error,
 }: DecolliCardProps) {
+  const navigate = useNavigate();
   const [query, setQuery] = useState("");
-  const [regione, setRegione] = useState<"ALL" | "CN" | "TO" | "LO" | "LIG" | "FR">("ALL");
+  const [regione, setRegioneState] = useState<"ALL" | AreaCode>(() => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("meteo_regione_filter");
+      if (stored && (stored === "ALL" || stored in AREA_LABELS)) return stored as "ALL" | AreaCode;
+    }
+    return "ALL";
+  });
+  const setRegione = (key: "ALL" | AreaCode) => {
+    setRegioneState(key);
+    if (typeof window !== "undefined") localStorage.setItem("meteo_regione_filter", key);
+  };
   const dt = getDateTime(selectedDay);
   const dayKey = dateKeyFor(selectedDay);
   const nowHour = new Date().getHours();
@@ -566,10 +621,25 @@ export default function DecolliCard({
       ].some((value) => String(value ?? "").toLocaleLowerCase("it-IT").includes(q));
     });
   }, [decolli, query, regione]);
+  /* Rendering a finestre: con 500+ siti il DOM completo può superare la memoria
+     disponibile (crash tab su mobile/dispositivi limitati). Si mostrano i primi
+     PAGE decolli e un pulsante "mostra altri" ne aggiunge progressivamente. */
+  const PAGE = 80;
+  const [visibleCount, setVisibleCount] = useState(PAGE);
+  useEffect(() => { setVisibleCount(PAGE); }, [regione, query]);
+  const visible = filtered.slice(0, visibleCount);
+  const hiddenCount = filtered.length - visible.length;
   const loadedCount = decolli.filter((d) => {
     const status = d.aggressiveWeather?.stato?.toLowerCase();
     return status && !["offline", "errore", "n/d"].includes(status);
   }).length;
+
+  /* Click su una card → pagina dedicata con tutte le info del decollo
+     (la selezione resta sincronizzata per il briefing al ritorno). */
+  const openDecollo = (item: Decollo) => {
+    onSelect(item);
+    navigate(`/decollo/${item.id}`);
+  };
 
   return (
     <section className="dxc-panel" aria-labelledby="dxc-title">
@@ -594,36 +664,48 @@ export default function DecolliCard({
         <span className="dxc-update"><Clock aria-hidden="true" size={12} />{dt.date}</span>
       </div>
       <div className="dxc-regioni" role="group" aria-label="Filtra i decolli per zona">
-        {REGIONI.map((r) => (
-          <button
-            key={r.key}
-            type="button"
-            className={"dxc-region-chip" + (regione === r.key ? " is-active" : "")}
-            aria-pressed={regione === r.key}
-            onClick={() => setRegione(r.key)}
-          >
-            {r.label}
-            <small>{r.key === "ALL" ? decolli.length : decolli.filter((d) => d.province === r.key).length}</small>
-          </button>
-        ))}
+        {REGIONI
+          .map((r) => ({ r, count: r.key === "ALL" ? decolli.length : decolli.filter((d) => d.province === r.key).length }))
+          .filter(({ r, count }) => r.key === "ALL" || count > 0)
+          .map(({ r, count }) => (
+            <button
+              key={r.key}
+              type="button"
+              className={"dxc-region-chip" + (regione === r.key ? " is-active" : "")}
+              aria-pressed={regione === r.key}
+              onClick={() => setRegione(r.key)}
+            >
+              {r.label}
+              <small>{count}</small>
+            </button>
+          ))}
       </div>
       {error && <p className="dxc-message is-error">{error}</p>}
       {!loadedCount && !isUpdating && <p className="dxc-message">I dati comparativi di alcuni siti non sono disponibili in questo momento; le previsioni del sito selezionato restano separate.</p>}
 
       <div className="dxc-rows" role="list" aria-label="Elenco dei decolli">
-        {filtered.map((item, idx) => (
+        {visible.map((item, idx) => (
           <LaunchCard
             key={item.id}
             item={item}
             idx={idx}
             selected={item.id === selectedId}
-            onSelect={onSelect}
+            onSelect={openDecollo}
             selectedDay={selectedDay}
             dayKey={dayKey}
             nowHour={nowHour}
           />
         ))}
         {!filtered.length && <p className="dxc-empty">Nessun decollo corrisponde alla ricerca.</p>}
+        {hiddenCount > 0 && (
+          <button
+            type="button"
+            className="dxc-showmore"
+            onClick={() => setVisibleCount((c) => c + 200)}
+          >
+            Mostra altri {Math.min(hiddenCount, 200)} decolli <small>(su {filtered.length} totali)</small>
+          </button>
+        )}
       </div>
     </section>
   );

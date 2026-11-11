@@ -1,5 +1,12 @@
 "use client";
 
+/**
+ * WEBCAM VICINO AL DECOLLO — card image-first (16:9) con overlay,
+ * badge LIVE, chip distanza e galleria fluida. La prima webcam
+ * è "featured" e spazia su due colonne. Modalità `compact` per
+ * l'embed nella pagina di dettaglio (senza intestazione di sezione).
+ */
+
 import { useEffect, useState } from "react";
 import { Camera, ExternalLink, MapPin, RefreshCw } from "lucide-react";
 
@@ -27,6 +34,7 @@ interface WebcamNearbyProps {
   siteName: string;
   latitude: number;
   longitude: number;
+  compact?: boolean;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -63,7 +71,7 @@ function isWebcamResponse(value: unknown): value is WebcamResponse {
   );
 }
 
-export default function WebcamNearby({ siteId, siteName, latitude, longitude }: WebcamNearbyProps) {
+export default function WebcamNearby({ siteId, siteName, latitude, longitude, compact = false }: WebcamNearbyProps) {
   const [data, setData] = useState<WebcamResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -102,6 +110,90 @@ export default function WebcamNearby({ siteId, siteName, latitude, longitude }: 
 
   const provider = data?.provider ?? "SpotAir + webcam locali verificate";
 
+  const body = loading ? (
+    <div className="wcam-grid" aria-busy="true">
+      {[0, 1, 2].map((i) => (
+        <div key={i} className={"wcam-card is-skeleton" + (i === 0 ? " is-featured" : "")}>
+          <div className="wcam-skeleton" />
+        </div>
+      ))}
+    </div>
+  ) : error ? (
+    <div className="wcam-state wcam-state--notice">
+      <Camera className="h-4 w-4 shrink-0" aria-hidden="true" />
+      <div className="min-w-0">
+        <p className="font-semibold text-slate-200">Elenco webcam non disponibile</p>
+        <p className="mt-1 text-xs text-slate-400">{error}</p>
+        {error.includes("WINDY_WEBCAMS_API_KEY") && (
+          <p className="mt-1 text-xs text-slate-500">
+            La chiave va configurata nelle variabili d’ambiente di Vercel; non inserirla nel frontend.
+          </p>
+        )}
+      </div>
+    </div>
+  ) : data && data.cameras.length > 0 ? (
+    <div className="wcam-grid">
+      {data.cameras.map((camera, idx) => {
+        const location = [camera.city, camera.region].filter(Boolean).join(" · ");
+        const previewImage = camera.imageUrl ?? undefined;
+        const href = camera.detailUrl || windyMapUrl(camera.latitude, camera.longitude);
+        const featured = idx === 0 && data.cameras.length > 1;
+        return (
+          <article key={camera.webcamId} className={"wcam-card" + (featured ? " is-featured" : "")}>
+            <a className="wcam-visual" href={href} target="_blank" rel="noopener noreferrer" aria-label={"Apri la webcam " + camera.title}>
+              {previewImage ? (
+                <img
+                  className="wcam-img"
+                  src={previewImage}
+                  alt={"Webcam " + camera.title}
+                  loading={featured ? "eager" : "lazy"}
+                  referrerPolicy="no-referrer"
+                  onError={(event) => { event.currentTarget.style.display = "none"; }}
+                />
+              ) : (
+                <span className="wcam-placeholder"><Camera aria-hidden="true" /></span>
+              )}
+              <span className="wcam-shade" aria-hidden="true" />
+              {camera.status === "active" && <span className="wcam-live"><i aria-hidden="true" /> LIVE</span>}
+              {camera.distanceKm > 0 && <span className="wcam-km">{camera.distanceKm.toFixed(1)} km</span>}
+              <span className="wcam-caption">
+                <span className="wcam-title">{camera.title}</span>
+                {location && <span className="wcam-loc"><MapPin size={10} aria-hidden="true" /> {location}</span>}
+              </span>
+              <span className="wcam-open"><ExternalLink size={13} aria-hidden="true" /> Apri</span>
+            </a>
+          </article>
+        );
+      })}
+    </div>
+  ) : (
+    <div className="wcam-state">
+      <Camera className="h-4 w-4" aria-hidden="true" />
+      <span>Nessuna webcam verificata vicino a questo decollo.</span>
+      <a className="wcam-link" href={windyMapUrl(latitude, longitude)} target="_blank" rel="noopener noreferrer">
+        Cerca su Windy <ExternalLink className="h-3 w-3" aria-hidden="true" />
+      </a>
+    </div>
+  );
+
+  const footer = !loading && !error && data && data.cameras.length > 0 ? (
+    <div className="wcam-foot">
+      <span>Fonte: {provider} · disponibilità garantita dai gestori</span>
+      <a className="wcam-link" href={windyMapUrl(latitude, longitude)} target="_blank" rel="noopener noreferrer">
+        Mappa webcam a {siteName} <ExternalLink className="h-3 w-3" aria-hidden="true" />
+      </a>
+    </div>
+  ) : null;
+
+  if (compact) {
+    return (
+      <section className="webcam-nearby-section is-compact" aria-label="Webcam vicino al decollo">
+        {body}
+        {footer}
+      </section>
+    );
+  }
+
   return (
     <section className="flight-section webcam-nearby-section">
       <div className="flight-section-heading-row">
@@ -109,110 +201,13 @@ export default function WebcamNearby({ siteId, siteName, latitude, longitude }: 
         <div>
           <h2 className="flight-section-heading">Webcam vicino al decollo</h2>
           <p className="flight-section-subtitle">
-            Webcam verificate e immagini live vicino a {siteName} (fonte SpotAir e gestori locali);
-            la disponibilità dipende dai gestori.
+            Live streaming e snapshot verificati vicino a {siteName} (fonte SpotAir e gestori locali).
           </p>
         </div>
       </div>
 
-      {loading ? (
-        <div className="webcam-state-card" role="status">
-          <RefreshCw className="h-4 w-4 animate-spin" aria-hidden="true" />
-          <span>Ricerca delle webcam nell’area…</span>
-        </div>
-      ) : error ? (
-        <div className="webcam-state-card webcam-state-card--notice">
-          <Camera className="h-4 w-4 shrink-0" aria-hidden="true" />
-          <div className="min-w-0">
-            <p className="font-semibold text-slate-200">Elenco webcam non disponibile</p>
-            <p className="mt-1 text-xs text-slate-400">{error}</p>
-            {error.includes("WINDY_WEBCAMS_API_KEY") && (
-              <p className="mt-1 text-xs text-slate-500">
-                La chiave va configurata nelle variabili d’ambiente di Vercel; non inserirla nel frontend.
-              </p>
-            )}
-          </div>
-        </div>
-      ) : data && data.cameras.length > 0 ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {data.cameras.map((camera) => {
-            const location = [camera.city, camera.region].filter(Boolean).join(" · ");
-            const previewImage = camera.imageUrl ?? undefined;
-            return (
-              <article key={camera.webcamId} className="webcam-camera-card">
-                <div className="webcam-camera-visual" aria-hidden="true">
-                  {previewImage ? (
-                    <img
-                      src={previewImage}
-                      alt={camera.title}
-                      loading="lazy"
-                      referrerPolicy="no-referrer"
-                      style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: 12 }}
-                      onError={(event) => {
-                        event.currentTarget.style.display = "none";
-                      }}
-                    />
-                  ) : (
-                    <Camera className="h-6 w-6" />
-                  )}
-                  {camera.status && <span className={`webcam-status-dot ${camera.status === "active" ? "is-active" : ""}`} />}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="truncate font-bold text-white" title={camera.title}>{camera.title}</h3>
-                    <span className="webcam-distance">{camera.distanceKm.toFixed(1)} km</span>
-                  </div>
-                  <p className="mt-1 flex items-center gap-1 text-xs text-slate-400">
-                    <MapPin className="h-3 w-3 shrink-0" aria-hidden="true" />
-                    {location || "Posizione geolocalizzata"}
-                  </p>
-                  {camera.status && (
-                    <p className="mt-1 text-[10px] text-slate-500">
-                      {camera.status === "active" ? "Live camera disponibile" : "Stato: " + camera.status}
-                    </p>
-                  )}
-                  {camera.detailUrl ? (
-                    <a
-                      className="webcam-open-link"
-                      href={camera.detailUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Apri webcam <ExternalLink className="h-3 w-3" aria-hidden="true" />
-                    </a>
-                  ) : (
-                    <a
-                      className="webcam-open-link"
-                      href={windyMapUrl(camera.latitude, camera.longitude)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Apri mappa Windy <ExternalLink className="h-3 w-3" aria-hidden="true" />
-                    </a>
-                  )}
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="webcam-state-card">
-          <Camera className="h-4 w-4" aria-hidden="true" />
-          <span>Nessuna webcam verificata vicino a questo decollo.</span>
-        </div>
-      )}
-
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
-        <span>Fonte: {provider}</span>
-        <a
-          className="inline-flex items-center gap-1 text-cyan-300 transition-colors hover:text-cyan-200"
-          href={windyMapUrl(latitude, longitude)}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Apri mappa webcam a {siteName} <ExternalLink className="h-3 w-3" aria-hidden="true" />
-        </a>
-      </div>
+      {body}
+      {footer}
     </section>
   );
 }

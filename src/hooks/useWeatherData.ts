@@ -35,7 +35,14 @@ function cacheLastValidData(hourly: MeteoHourly[], daily: MeteoDaily[], current:
 
 export function useWeatherData() {
   const [selectedId, setSelectedId] = useState<string>(() => {
-    if (typeof window !== "undefined") return localStorage.getItem(STORAGE_KEY_SITE) || DECOLLI[0].id;
+    if (typeof window !== "undefined") {
+      // 1) parametro ?site=<id> (dalla pagina di dettaglio), 2) ultimo scelto, 3) primo decollo
+      const fromUrl = new URLSearchParams(window.location.search).get("site");
+      if (fromUrl && DECOLLI.some((d) => d.id === fromUrl)) return fromUrl;
+      const stored = localStorage.getItem(STORAGE_KEY_SITE);
+      if (stored && DECOLLI.some((d) => d.id === stored)) return stored;
+      return DECOLLI[0].id;
+    }
     return DECOLLI[0].id;
   });
 

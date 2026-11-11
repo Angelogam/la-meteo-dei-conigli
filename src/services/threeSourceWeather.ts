@@ -438,21 +438,21 @@ export async function getAllMeteoDecolliAggressivo(): Promise<Map<string, MeteoD
   const results = new Map<string, MeteoDecollo>();
 
   // Concorrenza limitata: evita timeout del browser senza bombardare le API.
-  const queue = [...DECOLLI];
+  const queue = [...DECOLLI.filter((d) => d.vetrina)];
   const worker = async () => {
     while (queue.length) {
       const d = queue.shift();
       if (!d) return;
 
       try {
-        results.set(d.name, await getMeteoDecolloAggressivo({
+        results.set(d.id, await getMeteoDecolloAggressivo({
           name: d.name,
           lat: d.lat,
           lon: d.lon,
           elevation: d.elevation_m,
         }));
       } catch {
-        results.set(d.name, {
+        results.set(d.id, {
           temp: "--",
           rain: "--",
           cloud: "--",
@@ -502,7 +502,7 @@ export async function getAllMeteoDecolliBatch(): Promise<Map<string, MeteoDecoll
   for (const site of sites) {
     const shaped = site.hourly ? shapeOpenMeteo({ hourly: site.hourly, daily: site.daily ?? undefined }) : null;
     if (!shaped) {
-      results.set(site.name, {
+      results.set(site.id, {
         temp: "--", rain: "--", cloud: "--", wind: "--", dir: "--",
         stato: "N/D", baseNubi: "N/D", termiche: "N/D",
         indice: 0, indiceLabel: "N/D",
@@ -515,7 +515,7 @@ export async function getAllMeteoDecolliBatch(): Promise<Map<string, MeteoDecoll
     const baseNubi = baseNubiAggressiva(shaped.cloud);
     const termiche = termicheAggressive(shaped.tMax, shaped.tMin, shaped.cloudDaily, shaped.rainDaily);
     const indice = indiceAffidabilitaStima(shaped.wind, shaped.rain, shaped.cloud, baseNubi, termiche);
-    results.set(site.name, {
+    results.set(site.id, {
       temp: safe(shaped.temp),
       rain: safe(shaped.rain),
       cloud: safe(shaped.cloud),
