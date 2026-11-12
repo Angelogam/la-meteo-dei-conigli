@@ -293,13 +293,18 @@
   height: 20px;
   border-radius: 50%;
   border: 2.5px solid rgba(255, 255, 255, 0.9);
-  box-shadow: 0 0 12px rgba(0, 0, 0, 0.7);
+  background: #ef4444;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.75);
   transition: background 0.45s, box-shadow 0.45s;
 }
-.cmap-marker.is-good .cmap-dot { background: #34d399; box-shadow: 0 0 14px rgba(52, 211, 153, 0.8); }
-.cmap-marker.is-fair .cmap-dot { background: #fbbf24; box-shadow: 0 0 14px rgba(251, 191, 36, 0.75); }
-.cmap-marker.is-bad .cmap-dot { background: #ef4444; box-shadow: 0 0 14px rgba(239, 68, 68, 0.75); }
-.cmap-marker.is-off .cmap-dot { background: #64748b; }
+/* Override conditional classes to force all markers red */
+.cmap-marker.is-good .cmap-dot,
+.cmap-marker.is-fair .cmap-dot,
+.cmap-marker.is-bad .cmap-dot,
+.cmap-marker.is-off .cmap-dot {
+  background: #ef4444;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.75);
+}
 
 .cmap-marker.is-selected .cmap-dot { outline: 2.5px solid #7ce4ff; outline-offset: 4px; }
 
