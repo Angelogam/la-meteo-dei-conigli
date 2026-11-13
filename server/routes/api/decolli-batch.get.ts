@@ -60,7 +60,7 @@ const VETRINA = DECOLLI.filter((d) => d.vetrina);
 function coordinateChunks(): { latitude: string; longitude: string }[] {
   const latArr: string[] = [];
   const lonArr: string[] = [];
-  for (const d of ALL) {
+  for (const d of VETRINA) {
     const lat = Number(d.lat);
     const lon = Number(d.lon);
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
@@ -106,15 +106,15 @@ export default defineHandler(async (event) => {
   );
   const results = chunkResults.flat();
 
-  if (results.length !== ALL.length) {
+  if (results.length !== VETRINA.length) {
     throw createError({
       statusCode: 502,
       statusMessage: "Risposta multi-location incompleta",
-      data: { attesi: ALL.length, ricevuti: results.length },
+      data: { attesi: VETRINA.length, ricevuti: results.length },
     });
   }
 
-  const sites = ALL.map((d, i) => {
+  const sites = VETRINA.map((d, i) => {
     const raw = results[i];
     const hourly = (raw?.hourly ?? null) as Record<string, unknown> | null;
     const times = hourly?.time;
