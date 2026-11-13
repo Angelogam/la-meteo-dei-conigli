@@ -4,6 +4,7 @@
    ============================================================ */
 
 .cmap-panel {
+  position: relative;
   border: 1px solid rgba(113, 217, 244, 0.22);
   border-radius: 16px;
   background: linear-gradient(180deg, rgba(10, 26, 40, 0.92), rgba(6, 15, 25, 0.96));
@@ -66,7 +67,7 @@
   color: #fcd34d;
 }
 
-.cmap-head-tools { display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end; }
+.cmap-head-tools { display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end; position: relative; z-index: 400; }
 
 .cmap-layers { display: flex; gap: 0.3rem; flex-wrap: wrap; justify-content: flex-end; }
 
@@ -384,6 +385,15 @@
 .cmap-speed[data-w="is-w4"] { color: #fca5a5; }
 
 /* --------------------------- pannello dettaglio --------------------------- */
+
+.cmap-panel-overlay {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 800;
+  width: min(406px, calc(100% - 24px));
+  max-height: calc(100% - 24px);
+}
 
 .cmap-panelbox {
   position: static;
@@ -930,6 +940,12 @@
   .cmap-head-tools { align-items: flex-start; }
   .cmap-layers { justify-content: flex-start; }
   .cmap-map { margin: 0 0.5rem; height: 480px; }
+  .cmap-panel-overlay {
+    top: 8px;
+    right: 8px;
+    width: min(380px, calc(100% - 16px));
+    max-height: calc(100% - 16px);
+  }
   .cmap-panelbox {
     width: 100%;
     max-width: none;

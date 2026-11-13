@@ -46,7 +46,7 @@ const DAILY = ["temperature_2m_max", "temperature_2m_min", "cloud_cover_mean", "
  * Con più di ~60 località per richiesta l'URL verso Open-Meteo diventa fragile:
  * si spezza l'elenco in chunk e si fondono le risposte nell'ordine dei decolli.
  */
-const CHUNK_SIZE = 50;
+const CHUNK_SIZE = 60;
 
 /**
  * SITI VETRINA — il batch completo Open-Meteo (43 variabili orarie × 3 giorni) pesa
@@ -60,7 +60,7 @@ const VETRINA = DECOLLI.filter((d) => d.vetrina);
 function coordinateChunks(): { latitude: string; longitude: string }[] {
   const latArr: string[] = [];
   const lonArr: string[] = [];
-  for (const d of VETRINA) {
+  for (const d of ALL) {
     const lat = Number(d.lat);
     const lon = Number(d.lon);
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
@@ -106,15 +106,15 @@ export default defineHandler(async (event) => {
   );
   const results = chunkResults.flat();
 
-  if (results.length !== VETRINA.length) {
+  if (results.length !== ALL.length) {
     throw createError({
       statusCode: 502,
       statusMessage: "Risposta multi-location incompleta",
-      data: { attesi: VETRINA.length, ricevuti: results.length },
+      data: { attesi: ALL.length, ricevuti: results.length },
     });
   }
 
-  const sites = VETRINA.map((d, i) => {
+  const sites = ALL.map((d, i) => {
     const raw = results[i];
     const hourly = (raw?.hourly ?? null) as Record<string, unknown> | null;
     const times = hourly?.time;

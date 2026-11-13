@@ -1083,45 +1083,35 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect, syncDay, s
           )}
         </div>
         <div className="cmap-head-tools">
-          <div className="cmap-layers" role="group" aria-label="Livello meteo della cartina">
-            {LAYER_TABS.map(({ id, label, icon: Icon }) => (
-              <button
-                key={id}
-                type="button"
-                className={"cmap-lbtn" + (layer === id ? " is-active" : "")}
-                aria-pressed={layer === id}
-                onClick={() => setLayer(id)}
-              >
-                <Icon size={14} aria-hidden="true" />
-                <span>{label}</span>
-              </button>
-            ))}
-          </div>
-          <div className="cmap-bases" role="group" aria-label="Base cartografica">
-            {BASE_TABS.map((b) => (
-              <button
-                key={b.id}
-                type="button"
-                className={"cmap-bbtn" + (base === b.id ? " is-active" : "")}
-                aria-pressed={base === b.id}
-                onClick={() => setBase(b.id)}
-              >
-                {b.label}
-              </button>
-            ))}
-          </div>
-          <CartinaPanel
-            snapshot={panelSite}
-            hours={panelHours}
-            hour={hour}
-            onClose={() => setPanelSiteId(null)}
-            onPickHour={setHour}
-            onUse={() => {
-              if (panelSite && onSelect) onSelect(panelSite.item);
-            }}
-          />
+        <div className="cmap-layers" role="group" aria-label="Livello meteo della cartina">
+          {LAYER_TABS.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              className={"cmap-lbtn" + (layer === id ? " is-active" : "")}
+              aria-pressed={layer === id}
+              onClick={() => setLayer(id)}
+            >
+              <Icon size={14} aria-hidden="true" />
+              <span>{label}</span>
+            </button>
+          ))}
         </div>
-      </header>
+        <div className="cmap-bases" role="group" aria-label="Base cartografica">
+          {BASE_TABS.map((b) => (
+            <button
+              key={b.id}
+              type="button"
+              className={"cmap-bbtn" + (base === b.id ? " is-active" : "")}
+              aria-pressed={base === b.id}
+              onClick={() => setBase(b.id)}
+            >
+              {b.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </header>
 
       <div className="cmap-map">
         <div ref={containerRef} className="cmap-leaflet" />
@@ -1218,6 +1208,21 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect, syncDay, s
           )}
         </div>
       </div>
+
+      {panelSite && (
+        <div className="cmap-panel-overlay">
+          <CartinaPanel
+            snapshot={panelSite}
+            hours={panelHours}
+            hour={hour}
+            onClose={() => setPanelSiteId(null)}
+            onPickHour={setHour}
+            onUse={() => {
+              if (panelSite && onSelect) onSelect(panelSite.item);
+            }}
+          />
+        </div>
+      )}
 
       <div className="cmap-timeline">
         <div className="cmap-days" role="group" aria-label="Giorno della previsione">
