@@ -413,6 +413,17 @@ export default function CartinaPanel({ snapshot, hours, hour, onClose, onPickHou
       data-testid="cartina-panel"
       style={floatStyle(pos, size)}
     >
+      {/* X di chiusura sempre visibile in alto a lato: resta a fuoco anche
+          scorrendo il contenuto della scheda */}
+      <button
+        type="button"
+        className="cmap-close cmap-close-float"
+        onClick={onClose}
+        aria-label={"Chiudi la scheda di " + (item.site_name || item.name)}
+        title="Chiudi la scheda"
+      >
+        <X size={14} aria-hidden="true" />
+      </button>
       <span
         className="cmap-rz is-e"
         title="Trascina per allargare o restringere"
@@ -459,14 +470,6 @@ export default function CartinaPanel({ snapshot, hours, hour, onClose, onPickHou
             {quota.toLocaleString("it-IT")} m · Esp. {item.orientation || item.exposure || "N/D"}
           </p>
         </div>
-        <button
-          type="button"
-          className="cmap-close"
-          onClick={onClose}
-          aria-label={"Chiudi la scheda di " + (item.site_name || item.name)}
-        >
-          <X size={14} aria-hidden="true" />
-        </button>
       </header>
 
       {!e ? (

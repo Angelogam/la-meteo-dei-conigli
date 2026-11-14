@@ -521,9 +521,22 @@
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
+  padding-right: 34px; /* spazio per la X flottante in alto a destra */
 }
 .cmap-pb-head:active { cursor: grabbing; }
 .cmap-drag-grip { flex: 0 0 auto; color: #5f7c94; margin-right: 3px; vertical-align: -2px; }
+/* X di chiusura ancorata all'angolo della finestra: sempre visibile anche
+   scorrendo il contenuto della scheda */
+.cmap-close-float {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  z-index: 7;
+  border-color: rgba(251, 191, 36, 0.45);
+  color: #fcd34d;
+  background: rgba(7, 17, 28, 0.82);
+}
+.cmap-close-float:hover { border-color: rgba(251, 191, 36, 0.9); color: #fff; }
 .cmap-pb-title h3 {
   margin: 0;
   font-family: var(--font-display);

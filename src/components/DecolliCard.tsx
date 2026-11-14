@@ -3,12 +3,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  AlertTriangle, Camera, Clock, Cloud, CloudRain, CloudSnow, Flame, Info, Layers, MapPin, Navigation, PlaneLanding, Search, Snowflake, Sun, Thermometer, Users, Wind, Zap,
+  AlertTriangle, Camera, Clock, Cloud, CloudRain, CloudSnow, Flame, Info, Layers, MapPin, Navigation, PlaneLanding, Scale, Search, Snowflake, Sun, Thermometer, Users, Wind, Zap,
 } from "lucide-react";
 import type { Decollo, AreaCode } from "@/data/decolli";
 import { AREA_LABELS } from "@/data/decolli";
 import { calcolaIndiceVolabilita, esposizioneToGradi } from "@/utils/indiceVolabilita";
 import type { HourlyPoint } from "@/services/threeSourceWeather";
+import ConfrontoDecolli from "@/components/ConfrontoDecolli";
 
 export interface AggressiveWeatherData {
   temp: string | number;
@@ -633,6 +634,7 @@ export default function DecolliCard({
 }: DecolliCardProps) {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
+  const [cmpOpen, setCmpOpen] = useState(false);
   const [regione, setRegioneState] = useState<"ALL" | AreaCode>(() => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("meteo_regione_filter");
@@ -691,6 +693,15 @@ export default function DecolliCard({
           <span>decolli</span>
           <small>{loadedCount} con dati</small>
         </div>
+        <button
+          type="button"
+          className="dxc-cmpbtn"
+          onClick={() => setCmpOpen(true)}
+          title="Apri il confronto meteo tra fino a 4 decolli a scelta"
+        >
+          <Scale size={14} aria-hidden="true" />
+          Confronta fino a 4 decolli
+        </button>
       </header>
 
       <div className="dxc-tools">
@@ -745,6 +756,15 @@ export default function DecolliCard({
           </button>
         )}
       </div>
+
+      <ConfrontoDecolli
+        decolli={decolli}
+        open={cmpOpen}
+        onClose={() => setCmpOpen(false)}
+        onSelect={onSelect}
+        onOpenInfo={openInfo}
+        selectedId={selectedId}
+      />
     </section>
   );
 }

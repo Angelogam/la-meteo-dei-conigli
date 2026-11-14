@@ -899,3 +899,171 @@
 }
 .dxc-showmore:hover { background: rgba(56, 189, 248, .13); border-color: rgba(56, 189, 248, .55); color: #bfe7fa; }
 .dxc-showmore small { color: #748ea8; font-weight: 600; }
+
+/* ---------- bottone «Confronta fino a 4 decolli» ---------- */
+.dxc-cmpbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  margin-top: .55rem;
+  padding: .5rem .9rem;
+  border-radius: 999px;
+  border: 1px solid rgba(251, 191, 36, .6);
+  background: linear-gradient(140deg, rgba(251, 191, 36, .18), rgba(251, 191, 36, .08));
+  color: #fcd34d;
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .01em;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+}
+.dxc-cmpbtn:hover { background: linear-gradient(140deg, rgba(251, 191, 36, .3), rgba(251, 191, 36, .14)); border-color: rgba(253, 230, 138, .9); color: #fef3c7; }
+
+/* ---------- finestra di confronto (portal in body) ---------- */
+.cmp-window {
+  position: fixed;
+  top: 6vh;
+  right: 16px;
+  left: auto;
+  z-index: 1400;
+  width: min(940px, calc(100vw - 32px));
+  height: min(620px, calc(100vh - 48px));
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(251, 191, 36, .4);
+  border-radius: 15px;
+  background: rgba(6, 15, 26, .96);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 24px 64px rgba(2, 8, 16, .7);
+}
+.cmp-head {
+  padding: .85rem 3rem .7rem 1.1rem;
+  border-bottom: 1px solid rgba(148, 197, 255, .14);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.cmp-head:active { cursor: grabbing; }
+.cmp-head h3 {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  font-family: var(--font-display);
+  font-size: 1.18rem;
+  font-weight: 800;
+  color: #fde68a;
+  letter-spacing: -0.01em;
+}
+.cmp-head p { margin: .25rem 0 0; color: #9fb6c6; font-size: .76rem; }
+.cmp-body { flex: 1 1 auto; min-height: 0; overflow: auto; padding: .8rem 1.1rem 1rem; display: flex; flex-direction: column; gap: .8rem; }
+
+.cmp-pickers { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .5rem; }
+.cmp-pick { display: flex; flex-direction: column; gap: .25rem; min-width: 0; }
+.cmp-pick span { color: #7f95a9; font-size: .64rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+.cmp-pick select {
+  width: 100%;
+  padding: .42rem .5rem;
+  border-radius: 9px;
+  border: 1px solid rgba(148, 197, 255, .25);
+  background: rgba(10, 24, 40, .9);
+  color: #dbeafe;
+  font-size: .76rem;
+  cursor: pointer;
+}
+.cmp-pick select:focus-visible { outline: 2px solid #fbbf24; outline-offset: 1px; }
+
+.cmp-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .6rem;
+  align-items: stretch;
+}
+.cmp-col {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: .45rem;
+  padding: .8rem .85rem;
+  border: 1px solid rgba(148, 197, 255, .18);
+  border-radius: 13px;
+  background: linear-gradient(172deg, rgba(148, 197, 255, .06), rgba(3, 10, 24, .2));
+  min-width: 0;
+}
+.cmp-col.is-best {
+  border-color: rgba(251, 191, 36, .85);
+  background: linear-gradient(172deg, rgba(251, 191, 36, .14), rgba(251, 191, 36, .05) 45%, rgba(3, 10, 24, .18));
+  box-shadow: 0 0 0 1px rgba(251, 191, 36, .4), 0 10px 30px rgba(120, 82, 6, .3);
+}
+.cmp-best-badge {
+  position: absolute;
+  top: -11px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: .18rem .6rem;
+  border-radius: 999px;
+  background: linear-gradient(140deg, #fbbf24, #f59e0b);
+  color: #42200a;
+  font-size: .62rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+.cmp-name { color: #f2fbff; font-size: .95rem; font-weight: 800; letter-spacing: -0.01em; }
+.cmp-meta { color: #8ba2b6; font-size: .68rem; }
+.cmp-row { display: flex; align-items: center; }
+
+.cmp-index {
+  display: inline-flex;
+  align-items: baseline;
+  gap: .35rem;
+  padding: .3rem .6rem;
+  border-radius: 9px;
+  font-size: .8rem;
+}
+.cmp-index strong { font-weight: 800; }
+.cmp-index em { font-style: normal; font-size: .64rem; opacity: .85; }
+.cmp-index.is-good { color: #6ee7b7; background: rgba(52, 211, 153, .13); border: 1px solid rgba(52, 211, 153, .35); }
+.cmp-index.is-fair { color: #fcd34d; background: rgba(245, 158, 11, .12); border: 1px solid rgba(251, 191, 36, .3); }
+.cmp-index.is-bad { color: #fca5a5; background: rgba(239, 68, 68, .13); border: 1px solid rgba(248, 113, 113, .34); }
+.cmp-index.is-na { color: #8ba2b6; background: rgba(148, 197, 255, .07); border: 1px solid rgba(148, 197, 255, .18); }
+
+.cmp-data { margin: 0; display: flex; flex-direction: column; gap: .3rem; }
+.cmp-data > div { display: flex; justify-content: space-between; gap: .5rem; border-bottom: 1px dashed rgba(148, 197, 255, .1); padding-bottom: .22rem; }
+.cmp-data dt { color: #7f95a9; font-size: .66rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.cmp-data dd { margin: 0; color: #dbeafe; font-size: .76rem; font-weight: 700; text-align: right; }
+
+.cmp-actions { display: flex; flex-direction: column; gap: .35rem; margin-top: auto; }
+.cmp-btn {
+  width: 100%;
+  padding: .42rem .6rem;
+  border-radius: 9px;
+  border: 1px solid rgba(148, 197, 255, .3);
+  background: rgba(148, 197, 255, .09);
+  color: #bfe7fa;
+  font-size: .72rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease;
+}
+.cmp-btn:hover { background: rgba(148, 197, 255, .16); border-color: rgba(148, 197, 255, .5); }
+.cmp-btn.is-info {
+  border-color: rgba(251, 191, 36, .55);
+  background: linear-gradient(140deg, #fbbf24, #f59e0b);
+  color: #42200a;
+}
+.cmp-btn.is-info:hover { background: linear-gradient(140deg, #fcd34d, #fbbf24); border-color: rgba(253, 230, 138, .9); }
+
+.cmp-empty { color: #748ea8; font-size: .74rem; padding: 1.2rem 0; text-align: center; }
+.cmp-note { margin: 0; color: #748ea8; font-size: .68rem; line-height: 1.5; }
+.cmp-note.is-warn { color: #fbbf24; font-weight: 700; }
+
+@media (max-width: 900px) {
+  .cmp-pickers, .cmp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .cmp-pickers, .cmp-grid { grid-template-columns: 1fr; }
+  .cmp-window { width: calc(100vw - 16px); right: 8px; height: calc(100vh - 32px); }
+}
