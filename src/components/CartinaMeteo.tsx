@@ -11,6 +11,7 @@
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { Cloud, CloudRain, Flame, Play, Pause, Wind } from "lucide-react";
@@ -1209,8 +1210,8 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect, syncDay, s
         </div>
       </div>
 
-      {panelSite && (
-        <div className="cmap-panel-overlay">
+      {panelSite &&
+        createPortal(
           <CartinaPanel
             snapshot={panelSite}
             hours={panelHours}
@@ -1220,9 +1221,9 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect, syncDay, s
             onUse={() => {
               if (panelSite && onSelect) onSelect(panelSite.item);
             }}
-          />
-        </div>
-      )}
+          />,
+          document.body,
+        )}
 
       <div className="cmap-timeline">
         <div className="cmap-days" role="group" aria-label="Giorno della previsione">

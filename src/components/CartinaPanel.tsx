@@ -11,7 +11,8 @@
  * Ogni barra del grafico è cliccabile: aggiorna l'ora della cartina e tutti i dati del pannello.
  */
 
-import { AlertTriangle, Flame, MapPin, Sun, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { AlertTriangle, Flame, GripVertical, MapPin, Sun, X } from "lucide-react";
 import type { CartinaDecollo, HourEval } from "@/components/CartinaMeteo";
 import type { HourlyPoint } from "@/services/threeSourceWeather";
 import CartinaSky from "@/components/CartinaSky";
@@ -208,10 +209,85 @@ function bestWindow(hours: PanelHour[]): { start: number; end: number; good: num
 const pad2 = (n: number) => String(n).padStart(2, "0");
 const fmtMs = (v: number) => "+" + v.toFixed(1).replace(".", ",") + " m/s";
 
+/* ---------- Finestra flottante trascinabile ----------
+ * La scheda vive a livello di viewport (portal in document.body): niente contenitori
+ * che la tagliano. Si trascina dalla barra del titolo e la posizione resta salvata. */
+const POS_KEY = "cmap-panel-pos";
+
+function loadPos(): { x: number; y: number } | null {
+  try {
+    const raw = localStorage.getItem(POS_KEY);
+    if (!raw) return null;
+    const p = JSON.parse(raw) as { x?: number; y?: number };
+    if (typeof p.x === "number" && typeof p.y === "number") return { x: p.x, y: p.y };
+  } catch { /* posizione assente o corrotta: si riparte da quella di default */ }
+  return null;
+}
+
+function useDraggableWindow() {
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(loadPos);
+  const boxRef = useRef<HTMLElement | null>(null);
+  const dragRef = useRef<{ dx: number; dy: number } | null>(null);
+
+  const clamp = (x: number, y: number) => {
+    const el = boxRef.current;
+    const w = el?.offsetWidth ?? 406;
+    const h = Math.min(el?.offsetHeight ?? 400, window.innerHeight - 16);
+    return {
+      x: Math.min(Math.max(8, x), Math.max(8, window.innerWidth - w - 8)),
+      y: Math.min(Math.max(8, y), Math.max(8, window.innerHeight - h - 8)),
+    };
+  };
+
+  /* la finestra salvata resta dentro lo schermo anche se la finestra è cambiata */
+  useEffect(() => {
+    const onResize = () => setPos((p) => (p ? clamp(p.x, p.y) : p));
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  const onHandlePointerDown = (ev: React.PointerEvent<HTMLDivElement>) => {
+    if ((ev.target as HTMLElement).closest("button")) return; // il tasto chiudi non trascina
+    const el = boxRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    dragRef.current = { dx: ev.clientX - rect.left, dy: ev.clientY - rect.top };
+    setPos({ x: rect.left, y: rect.top }); // da questo momento la posizione è esplicita
+    ev.currentTarget.setPointerCapture(ev.pointerId);
+    ev.preventDefault();
+  };
+
+  const onHandlePointerMove = (ev: React.PointerEvent<HTMLDivElement>) => {
+    const d = dragRef.current;
+    if (!d) return;
+    setPos(clamp(ev.clientX - d.dx, ev.clientY - d.dy));
+  };
+
+  const onHandlePointerUp = () => {
+    if (!dragRef.current) return;
+    dragRef.current = null;
+    setPos((p) => {
+      if (p) {
+        try { localStorage.setItem(POS_KEY, JSON.stringify(p)); } catch { /* storage pieno/bloccato */ }
+      }
+      return p;
+    });
+  };
+
+  return { boxRef, pos, onHandlePointerDown, onHandlePointerMove, onHandlePointerUp };
+}
+
 export default function CartinaPanel({ snapshot, hours, hour, onClose, onPickHour, onUse }: CartinaPanelProps) {
+  const { boxRef, pos, onHandlePointerDown, onHandlePointerMove, onHandlePointerUp } = useDraggableWindow();
+
   if (!snapshot) {
     return (
-      <aside className="cmap-panelbox is-empty" data-testid="cartina-panel">
+      <aside
+        ref={boxRef}
+        className="cmap-panelbox is-empty"
+        data-testid="cartina-panel"
+        style={pos ? { left: pos.x, top: pos.y, right: "auto" } : undefined}
+      >
         <button type="button" className="cmap-close" onClick={onClose} aria-label="Chiudi il pannello">
           <X size={14} aria-hidden="true" />
         </button>
@@ -252,10 +328,25 @@ export default function CartinaPanel({ snapshot, hours, hour, onClose, onPickHou
   const spread = e?.temp != null && e?.dew != null ? Math.round(e.temp - e.dew) : null;
 
   return (
-    <aside className="cmap-panelbox" data-testid="cartina-panel">
-      <header className="cmap-pb-head">
+    <aside
+      ref={boxRef}
+      className="cmap-panelbox"
+      data-testid="cartina-panel"
+      style={pos ? { left: pos.x, top: pos.y, right: "auto" } : undefined}
+    >
+      <header
+        className="cmap-pb-head"
+        title="Trascina dalla barra del titolo per spostare la scheda"
+        onPointerDown={onHandlePointerDown}
+        onPointerMove={onHandlePointerMove}
+        onPointerUp={onHandlePointerUp}
+        onPointerCancel={onHandlePointerUp}
+      >
         <div className="cmap-pb-title">
-          <h3>{item.site_name || item.name}</h3>
+          <h3>
+            <GripVertical size={14} className="cmap-drag-grip" aria-hidden="true" />
+            {item.site_name || item.name}
+          </h3>
           <p>
             <MapPin size={11} aria-hidden="true" /> {item.location_name || item.valley || "—"} ·{" "}
             {quota.toLocaleString("it-IT")} m · Esp. {item.orientation || item.exposure || "N/D"}

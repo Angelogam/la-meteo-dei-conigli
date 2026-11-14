@@ -384,22 +384,18 @@
 .cmap-speed[data-w="is-w3"] { color: #fb923c; }
 .cmap-speed[data-w="is-w4"] { color: #fca5a5; }
 
-/* --------------------------- pannello dettaglio --------------------------- */
-
-.cmap-panel-overlay {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 800;
-  width: min(406px, calc(100% - 24px));
-  max-height: calc(100% - 24px);
-}
+/* --------------------------- pannello dettaglio ---------------------------
+ * Finestra flottante LIBERA: vive a livello di viewport (portal in body),
+ * trascinabile dalla barra del titolo, mai tagliata dai contenitori. */
 
 .cmap-panelbox {
-  position: static;
-  width: 100%;
-  max-width: 406px;
-  max-height: calc(100% - 24px);
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  left: auto;
+  z-index: 1400;
+  width: min(406px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -417,7 +413,18 @@
 .cmap-empty-title { margin: 0; color: #eafaff; font-size: 0.95rem; font-weight: 800; }
 .cmap-empty-text { margin: 0; color: #9fb6c6; font-size: 0.8rem; line-height: 1.55; }
 
-.cmap-pb-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; }
+.cmap-pb-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.cmap-pb-head:active { cursor: grabbing; }
+.cmap-drag-grip { flex: 0 0 auto; color: #5f7c94; margin-right: 3px; vertical-align: -2px; }
 .cmap-pb-title h3 {
   margin: 0;
   font-family: var(--font-display);
@@ -940,18 +947,11 @@
   .cmap-head-tools { align-items: flex-start; }
   .cmap-layers { justify-content: flex-start; }
   .cmap-map { margin: 0 0.5rem; height: 480px; }
-  .cmap-panel-overlay {
+  .cmap-panelbox {
     top: 8px;
     right: 8px;
-    width: min(380px, calc(100% - 16px));
-    max-height: calc(100% - 16px);
-  }
-  .cmap-panelbox {
-    width: 100%;
-    max-width: none;
-    max-height: none;
-    border-radius: 13px;
-    padding: 0.75rem 0.85rem 0.95rem;
+    width: min(380px, calc(100vw - 16px));
+    max-height: calc(100vh - 16px);
   }
   .cmap-alt { right: 8px; top: 8px; }
   .cmap-readout { bottom: auto; top: 8px; padding: 0.35rem 0.55rem; }
