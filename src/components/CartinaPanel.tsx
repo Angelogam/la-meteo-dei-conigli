@@ -209,27 +209,48 @@ function bestWindow(hours: PanelHour[]): { start: number; end: number; good: num
 const pad2 = (n: number) => String(n).padStart(2, "0");
 const fmtMs = (v: number) => "+" + v.toFixed(1).replace(".", ",") + " m/s";
 
-/* ---------- Finestra flottante trascinabile ----------
+/* ---------- Finestra flottante trascinabile e ridimensionabile ----------
  * La scheda vive a livello di viewport (portal in document.body): niente contenitori
- * che la tagliano. Si trascina dalla barra del titolo e la posizione resta salvata. */
+ * che la tagliano. Si trascina dalla barra del titolo e si allarga/restringe dalle
+ * maniglie sul bordo (lato destro, lato basso, angolo); posizione e dimensione
+ * restano salvate. */
 const POS_KEY = "cmap-panel-pos";
+const SIZE_KEY = "cmap-panel-size";
 
-function loadPos(): { x: number; y: number } | null {
+type XY = { x: number; y: number };
+type WH = { w: number; h: number };
+
+const MIN_W = 280;
+const MIN_H = 220;
+
+function loadPos(): XY | null {
   try {
     const raw = localStorage.getItem(POS_KEY);
     if (!raw) return null;
-    const p = JSON.parse(raw) as { x?: number; y?: number };
+    const p = JSON.parse(raw) as Partial<XY>;
     if (typeof p.x === "number" && typeof p.y === "number") return { x: p.x, y: p.y };
   } catch { /* posizione assente o corrotta: si riparte da quella di default */ }
   return null;
 }
 
-function useDraggableWindow() {
-  const [pos, setPos] = useState<{ x: number; y: number } | null>(loadPos);
+function loadSize(): WH | null {
+  try {
+    const raw = localStorage.getItem(SIZE_KEY);
+    if (!raw) return null;
+    const s = JSON.parse(raw) as Partial<WH>;
+    if (typeof s.w === "number" && typeof s.h === "number") return { w: s.w, h: s.h };
+  } catch { /* dimensione assente o corrotta: si usa quella di default */ }
+  return null;
+}
+
+function useFloatingWindow() {
+  const [pos, setPos] = useState<XY | null>(loadPos);
+  const [size, setSize] = useState<WH | null>(loadSize);
   const boxRef = useRef<HTMLElement | null>(null);
   const dragRef = useRef<{ dx: number; dy: number } | null>(null);
+  const rzRef = useRef<{ dir: "e" | "s" | "se"; x: number; y: number; w: number; h: number } | null>(null);
 
-  const clamp = (x: number, y: number) => {
+  const clampXY = (x: number, y: number) => {
     const el = boxRef.current;
     const w = el?.offsetWidth ?? 406;
     const h = Math.min(el?.offsetHeight ?? 400, window.innerHeight - 16);
@@ -239,13 +260,22 @@ function useDraggableWindow() {
     };
   };
 
-  /* la finestra salvata resta dentro lo schermo anche se la finestra è cambiata */
+  const clampWH = (w: number, h: number) => ({
+    w: Math.min(Math.max(MIN_W, w), Math.max(MIN_W, window.innerWidth - 16)),
+    h: Math.min(Math.max(MIN_H, h), Math.max(MIN_H, window.innerHeight - 16)),
+  });
+
+  /* posizione e dimensione salvate restano dentro lo schermo anche se la finestra cambia */
   useEffect(() => {
-    const onResize = () => setPos((p) => (p ? clamp(p.x, p.y) : p));
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    const onWinResize = () => {
+      setPos((p) => (p ? clampXY(p.x, p.y) : p));
+      setSize((s) => (s ? clampWH(s.w, s.h) : s));
+    };
+    window.addEventListener("resize", onWinResize);
+    return () => window.removeEventListener("resize", onWinResize);
   }, []);
 
+  /* ---- drag dalla barra del titolo ---- */
   const onHandlePointerDown = (ev: React.PointerEvent<HTMLDivElement>) => {
     if ((ev.target as HTMLElement).closest("button")) return; // il tasto chiudi non trascina
     const el = boxRef.current;
@@ -260,7 +290,7 @@ function useDraggableWindow() {
   const onHandlePointerMove = (ev: React.PointerEvent<HTMLDivElement>) => {
     const d = dragRef.current;
     if (!d) return;
-    setPos(clamp(ev.clientX - d.dx, ev.clientY - d.dy));
+    setPos(clampXY(ev.clientX - d.dx, ev.clientY - d.dy));
   };
 
   const onHandlePointerUp = () => {
@@ -274,11 +304,60 @@ function useDraggableWindow() {
     });
   };
 
-  return { boxRef, pos, onHandlePointerDown, onHandlePointerMove, onHandlePointerUp };
+  /* ---- resize dalle maniglie del bordo ---- */
+  const onResizePointerDown = (dir: "e" | "s" | "se") => (ev: React.PointerEvent<HTMLSpanElement>) => {
+    const el = boxRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    rzRef.current = { dir, x: ev.clientX, y: ev.clientY, w: rect.width, h: rect.height };
+    ev.currentTarget.setPointerCapture(ev.pointerId);
+    ev.preventDefault();
+    ev.stopPropagation();
+  };
+
+  const onResizePointerMove = (ev: React.PointerEvent<HTMLSpanElement>) => {
+    const r = rzRef.current;
+    if (!r) return;
+    const dx = ev.clientX - r.x;
+    const dy = ev.clientY - r.y;
+    setSize(clampWH(
+      r.dir === "s" ? r.w : r.w + dx,
+      r.dir === "e" ? r.h : r.h + dy,
+    ));
+  };
+
+  const onResizePointerUp = () => {
+    if (!rzRef.current) return;
+    rzRef.current = null;
+    setSize((s) => {
+      if (s) {
+        try { localStorage.setItem(SIZE_KEY, JSON.stringify(s)); } catch { /* storage pieno/bloccato */ }
+      }
+      return s;
+    });
+  };
+
+  return {
+    boxRef, pos, size,
+    onHandlePointerDown, onHandlePointerMove, onHandlePointerUp,
+    onResizePointerDown, onResizePointerMove, onResizePointerUp,
+  };
+}
+
+/* stile combinato posizione + dimensione (solo i valori effettivamente scelti) */
+function floatStyle(pos: XY | null, size: WH | null): React.CSSProperties {
+  const st: React.CSSProperties = {};
+  if (pos) { st.left = pos.x; st.top = pos.y; st.right = "auto"; }
+  if (size) { st.width = size.w; st.height = size.h; }
+  return st;
 }
 
 export default function CartinaPanel({ snapshot, hours, hour, onClose, onPickHour, onUse }: CartinaPanelProps) {
-  const { boxRef, pos, onHandlePointerDown, onHandlePointerMove, onHandlePointerUp } = useDraggableWindow();
+  const {
+    boxRef, pos, size,
+    onHandlePointerDown, onHandlePointerMove, onHandlePointerUp,
+    onResizePointerDown, onResizePointerMove, onResizePointerUp,
+  } = useFloatingWindow();
 
   if (!snapshot) {
     return (
@@ -286,7 +365,7 @@ export default function CartinaPanel({ snapshot, hours, hour, onClose, onPickHou
         ref={boxRef}
         className="cmap-panelbox is-empty"
         data-testid="cartina-panel"
-        style={pos ? { left: pos.x, top: pos.y, right: "auto" } : undefined}
+        style={floatStyle(pos, null)}
       >
         <button type="button" className="cmap-close" onClick={onClose} aria-label="Chiudi il pannello">
           <X size={14} aria-hidden="true" />
@@ -332,8 +411,36 @@ export default function CartinaPanel({ snapshot, hours, hour, onClose, onPickHou
       ref={boxRef}
       className="cmap-panelbox"
       data-testid="cartina-panel"
-      style={pos ? { left: pos.x, top: pos.y, right: "auto" } : undefined}
+      style={floatStyle(pos, size)}
     >
+      <span
+        className="cmap-rz is-e"
+        title="Trascina per allargare o restringere"
+        aria-hidden="true"
+        onPointerDown={onResizePointerDown("e")}
+        onPointerMove={onResizePointerMove}
+        onPointerUp={onResizePointerUp}
+        onPointerCancel={onResizePointerUp}
+      />
+      <span
+        className="cmap-rz is-s"
+        title="Trascina per allargare o restringere"
+        aria-hidden="true"
+        onPointerDown={onResizePointerDown("s")}
+        onPointerMove={onResizePointerMove}
+        onPointerUp={onResizePointerUp}
+        onPointerCancel={onResizePointerUp}
+      />
+      <span
+        className="cmap-rz is-se"
+        title="Trascina dall'angolo per allargare o restringere"
+        aria-hidden="true"
+        onPointerDown={onResizePointerDown("se")}
+        onPointerMove={onResizePointerMove}
+        onPointerUp={onResizePointerUp}
+        onPointerCancel={onResizePointerUp}
+      />
+      <div className="cmap-panel-scroll">
       <header
         className="cmap-pb-head"
         title="Trascina dalla barra del titolo per spostare la scheda"
@@ -558,6 +665,7 @@ export default function CartinaPanel({ snapshot, hours, hour, onClose, onPickHou
       <button type="button" className="cmap-use" onClick={onUse}>
         <MapPin size={13} aria-hidden="true" /> Vai a questo decollo
       </button>
+      </div>
     </aside>
   );
 }

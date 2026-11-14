@@ -14,7 +14,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Cloud, CloudRain, Flame, Play, Pause, Wind } from "lucide-react";
+import { Cloud, CloudRain, Flame, Mountain, Play, Pause, Wind } from "lucide-react";
 import type { Decollo } from "@/data/decolli";
 import type { HourlyPoint } from "@/services/threeSourceWeather";
 import { calcolaIndiceVolabilita, esposizioneToGradi } from "@/utils/indiceVolabilita";
@@ -308,6 +308,24 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect, syncDay, s
   const baseLayersRef = useRef<Partial<Record<BaseId, L.TileLayer>>>({});
   const baseOverlayRef = useRef<Partial<Record<BaseId, L.TileLayer | null>>>({});
   const rafRef = useRef(0);
+
+  /* Decollo selezionato dalla pagina (card a destra): la liretta lo mostra e la
+     cartina vola su di lui quando esce dall'inquadratura. */
+  const activeDecollo = useMemo(
+    () => (selectedId ? decolli.find((d) => d.id === selectedId) ?? null : null),
+    [decolli, selectedId],
+  );
+  useEffect(() => {
+    const it = activeDecollo;
+    const map = mapRef.current;
+    if (!it || !map) return;
+    const lat = Number(it.lat);
+    const lon = Number(it.lon);
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+    const view = map.getBounds().pad(0.18);
+    if (view.contains([lat, lon])) return; // già inquadrato: nessun salto
+    map.flyTo([lat, lon], Math.max(map.getZoom(), 8.5), { duration: 1.1 });
+  }, [activeDecollo]);
 
   const dayKey = useMemo(() => dateKeyFor(day), [day]);
 
@@ -1116,6 +1134,22 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect, syncDay, s
 
       <div className="cmap-map">
         <div ref={containerRef} className="cmap-leaflet" />
+
+        {/* Liretta del decollo selezionato: il nome resta scritto sulla mappa;
+            un tocco la apre la scheda aerologica (come cliccare il pin). */}
+        {activeDecollo && (
+          <button
+            type="button"
+            className="cmap-activetag"
+            onClick={() => setPanelSiteId(activeDecollo.id)}
+            title={"Apri la scheda aerologica di " + (activeDecollo.site_name || activeDecollo.name)}
+            aria-label={"Scheda aerologica del decollo selezionato: " + (activeDecollo.site_name || activeDecollo.name)}
+          >
+            <Mountain size={12} aria-hidden="true" />
+            <span className="cmap-activetag-name">{activeDecollo.site_name || activeDecollo.name}</span>
+            <span className="cmap-activetag-alt">{(activeDecollo.elevation_m ?? activeDecollo.altitude ?? "—") + " m"}</span>
+          </button>
+        )}
 
         <div className="cmap-readout" aria-live="polite">
           <strong>

@@ -333,10 +333,10 @@ function HeadBlock({ item, selected, index }: { item: CardItem; selected: boolea
 
 /* ---------- Pulsante giallo: apre la pagina dedicata del decollo ---------- */
 
-function InfoButton({ item, onSelect }: { item: CardItem; onSelect: (item: Decollo) => void }) {
+function InfoButton({ item, onOpenInfo }: { item: CardItem; onOpenInfo: (item: Decollo) => void }) {
   const open = (e: React.SyntheticEvent) => {
     e.stopPropagation();
-    onSelect(item);
+    onOpenInfo(item);
   };
   return (
     <span
@@ -355,7 +355,7 @@ function InfoButton({ item, onSelect }: { item: CardItem; onSelect: (item: Decol
 
 /* ---------- Fallback offline: griglia compatta come prima della fase B ---------- */
 
-function FallbackCard({ item, selected, onSelect, idx }: { item: CardItem; selected: boolean; onSelect: (item: Decollo) => void; idx: number }) {
+function FallbackCard({ item, selected, onSelect, onOpenInfo, idx }: { item: CardItem; selected: boolean; onSelect: (item: Decollo) => void; onOpenInfo: (item: Decollo) => void; idx: number }) {
   const weather = item.aggressiveWeather;
   const wind = numberOrNull(weather?.wind);
   const temp = numberOrNull(weather?.temp);
@@ -382,8 +382,8 @@ function FallbackCard({ item, selected, onSelect, idx }: { item: CardItem; selec
       >
         <HeadBlock item={item} selected={selected} index={null} />
         <div className="dxc-minifoot">
-          <span className="dxc-mini-hint">Tocca per le info e il meteo live</span>
-          <InfoButton item={item} onSelect={onSelect} />
+          <span className="dxc-mini-hint">Tocca per selezionare il decollo</span>
+          <InfoButton item={item} onOpenInfo={onOpenInfo} />
         </div>
       </button>
     );
@@ -468,7 +468,7 @@ function FallbackCard({ item, selected, onSelect, idx }: { item: CardItem; selec
         </span>
       </div>
       <div className="dxc-cardfoot">
-        <InfoButton item={item} onSelect={onSelect} />
+        <InfoButton item={item} onOpenInfo={onOpenInfo} />
       </div>
     </button>
   );
@@ -480,13 +480,14 @@ interface LaunchCardProps {
   item: CardItem;
   selected: boolean;
   onSelect: (item: Decollo) => void;
+  onOpenInfo: (item: Decollo) => void;
   selectedDay: number;
   dayKey: string;
   nowHour: number;
   idx: number;
 }
 
-function LaunchCard({ item, selected, onSelect, selectedDay, dayKey, nowHour, idx }: LaunchCardProps) {
+function LaunchCard({ item, selected, onSelect, onOpenInfo, selectedDay, dayKey, nowHour, idx }: LaunchCardProps) {
   const weather = item.aggressiveWeather;
   const quota = Number(item.elevation_m ?? item.altitude ?? 0) || 0;
   const esposizione = item.orientation || item.exposure || "";
@@ -514,7 +515,7 @@ function LaunchCard({ item, selected, onSelect, selectedDay, dayKey, nowHour, id
   }, [evaluated, nowHour]);
 
   if (!weather || !evaluated.length) {
-    return <FallbackCard item={item} selected={selected} onSelect={onSelect} idx={idx} />;
+    return <FallbackCard item={item} selected={selected} onSelect={onSelect} onOpenInfo={onOpenInfo} idx={idx} />;
   }
 
   const activeHour = previewHour ?? (selectedDay === 0 ? nearNow : best?.start ?? nearNow);
@@ -619,7 +620,7 @@ function LaunchCard({ item, selected, onSelect, selectedDay, dayKey, nowHour, id
           </span>
         </div>
         <div className="dxc-cardfoot">
-          <InfoButton item={item} onSelect={onSelect} />
+          <InfoButton item={item} onOpenInfo={onOpenInfo} />
         </div>
       </button>
     );
@@ -669,9 +670,10 @@ export default function DecolliCard({
     return status && !["offline", "errore", "n/d"].includes(status);
   }).length;
 
-  /* Click su una card → pagina dedicata con tutte le info del decollo
-     (la selezione resta sincronizzata per il briefing al ritorno). */
-  const openDecollo = (item: Decollo) => {
+  /* Click su una card → SOLO selezione: aggiorna tutte le mappe e il briefing,
+     senza cambiare pagina. La pagina delle informazioni si apre solo dal
+     pulsante giallo «Informazioni decollo». */
+  const openInfo = (item: Decollo) => {
     onSelect(item);
     navigate(`/decollo/${item.id}`);
   };
@@ -725,7 +727,8 @@ export default function DecolliCard({
             item={item}
             idx={idx}
             selected={item.id === selectedId}
-            onSelect={openDecollo}
+            onSelect={onSelect}
+            onOpenInfo={openInfo}
             selectedDay={selectedDay}
             dayKey={dayKey}
             nowHour={nowHour}

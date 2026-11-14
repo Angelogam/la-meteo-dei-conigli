@@ -384,9 +384,54 @@
 .cmap-speed[data-w="is-w3"] { color: #fb923c; }
 .cmap-speed[data-w="is-w4"] { color: #fca5a5; }
 
+/* liretta del decollo selezionato: scritta sulla mappa, cliccabile */
+.cmap-activetag {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1100;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: min(78%, 420px);
+  padding: 0.42rem 0.8rem;
+  border: 1px solid rgba(251, 191, 36, 0.75);
+  border-radius: 999px;
+  background: linear-gradient(140deg, rgba(66, 46, 8, 0.92), rgba(28, 22, 6, 0.92));
+  color: #fde68a;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(2, 8, 16, 0.55);
+  transition: border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+.cmap-activetag:hover {
+  border-color: rgba(253, 230, 138, 0.95);
+  color: #fef3c7;
+  transform: translateX(-50%) translateY(-1px);
+}
+.cmap-activetag svg { flex: 0 0 auto; }
+.cmap-activetag-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cmap-activetag-alt {
+  flex: 0 0 auto;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(251, 191, 36, 0.16);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
 /* --------------------------- pannello dettaglio ---------------------------
  * Finestra flottante LIBERA: vive a livello di viewport (portal in body),
- * trascinabile dalla barra del titolo, mai tagliata dai contenitori. */
+ * trascinabile dalla barra del titolo e ridimensionabile dalle maniglie
+ * sul bordo (lato destro, lato basso, angolo), mai tagliata dai contenitori. */
 
 .cmap-panelbox {
   position: fixed;
@@ -396,17 +441,71 @@
   z-index: 1400;
   width: min(406px, calc(100vw - 24px));
   max-height: calc(100vh - 24px);
-  overflow-y: auto;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
   padding: 0.8rem;
   border: 1px solid rgba(113, 217, 244, 0.3);
   border-radius: 13px;
   background: rgba(7, 17, 28, 0.94);
   backdrop-filter: blur(10px);
   box-shadow: 0 16px 40px rgba(2, 8, 16, 0.6);
+}
+
+/* contenuto scorrevole dentro la finestra (le maniglie restano sul bordo) */
+.cmap-panel-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
   scrollbar-width: thin;
+}
+
+/* maniglie di ridimensionamento: lato destro, lato basso, angolo in basso a destra */
+.cmap-rz {
+  position: absolute;
+  z-index: 5;
+  touch-action: none;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+.cmap-rz.is-e {
+  top: 14px;
+  right: -3px;
+  bottom: 10px;
+  width: 8px;
+  cursor: ew-resize;
+}
+.cmap-rz.is-s {
+  left: 14px;
+  right: 10px;
+  bottom: -3px;
+  height: 8px;
+  cursor: ns-resize;
+}
+.cmap-rz.is-se {
+  right: -3px;
+  bottom: -3px;
+  width: 18px;
+  height: 18px;
+  cursor: nwse-resize;
+  border-radius: 0 0 13px 0;
+}
+.cmap-rz.is-e:hover, .cmap-rz.is-s:hover { background: rgba(113, 217, 244, 0.22); }
+.cmap-rz.is-se:hover { background: rgba(113, 217, 244, 0.3); }
+/* tacca visibile sull'angolo: qui si capisce che si può tirare */
+.cmap-rz.is-se::after {
+  content: '';
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 9px;
+  height: 9px;
+  border-right: 2px solid rgba(113, 217, 244, 0.55);
+  border-bottom: 2px solid rgba(113, 217, 244, 0.55);
+  border-radius: 0 0 11px 0;
 }
 
 .cmap-panelbox.is-empty { justify-content: center; min-height: 130px; }
@@ -955,6 +1054,8 @@
   }
   .cmap-alt { right: 8px; top: 8px; }
   .cmap-readout { bottom: auto; top: 8px; padding: 0.35rem 0.55rem; }
+  /* su schermi stretti la liretta scende sotto la leggenda per non sovrapporsi */
+  .cmap-activetag { top: 46px; max-width: calc(100% - 16px); }
   .cmap-readout strong { font-size: 0.74rem; }
   .cmap-readout span { white-space: nowrap; font-size: 0.55rem; max-width: 46vw; overflow: hidden; text-overflow: ellipsis; }
   .cmap-legend { left: 8px; bottom: 10px; }
