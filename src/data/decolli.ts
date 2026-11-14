@@ -13,6 +13,12 @@ import { DECOLLI_ESTESI } from "./decolli-estesi";
 export interface DecolloClub {
   name: string;
   url?: string;
+  /** Recapiti pubblici verificati (sito del club / directory ufficiali). */
+  tel?: string;
+  tel2?: string;
+  tel2Label?: string;
+  whatsapp?: string;
+  email?: string;
 }
 
 export interface DecolloLanding {
@@ -143,6 +149,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1741,
     alt: 1741,
     province: "CN",
+    descrizione: "Punto di decollo a 1741 m s.l.m. — Valle Ellero. Esposizioni praticabili su più quadranti (N/NE/E/SE/O/NO). Raccordo all'atterraggio di Malanotte – Borgo San Dalmazzo (507 m s.l.m., dislivello ~1234 m).",
     landing: {
       name: "Malanotte – Borgo San Dalmazzo",
       quota_m: 507,
@@ -170,6 +177,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1887,
     alt: 1887,
     province: "CN",
+    descrizione: "Punto di decollo a 1887 m s.l.m. — Valle Roya/Vermenagna. Esposizione N/S. Raccordo all'atterraggio di Bail-out valle (1763 m s.l.m., dislivello ~124 m).",
     landing: {
       name: "Bail-out valle",
       quota_m: 1763,
@@ -197,7 +205,8 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1060,
     alt: 1060,
     province: "CN",
-    club: { name: "Paradelta Club Cuneo", url: "https://www.paradeltaclubcuneo.com" },
+    descrizione: "Decollo a 1060 m s.l.m. — Cuneese. Esposizione NE/E. Raccordo all'atterraggio di Boves (613 m s.l.m., dislivello ~447 m). Club di riferimento: Para Delta Club Cuneo.",
+    club: { name: "Para Delta Club Cuneo", url: "https://www.paradeltaclubcuneo.it", tel: "+39 338 984 8624", whatsapp: "+39 389 503 0475", email: "staff.paradeltaclubcuneo@gmail.com" },
     landing: {
       name: "Boves",
       quota_m: 613,
@@ -225,7 +234,8 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1130,
     alt: 1130,
     province: "CN",
-    club: { name: "Paradelta Club Cuneo", url: "https://www.paradeltaclubcuneo.com" },
+    descrizione: "Punto di decollo a 1130 m s.l.m. — Valle Maira. Esposizione SE. Raccordo all'atterraggio di Montemale – San Giorgio (665 m s.l.m., dislivello ~465 m). Club di riferimento: Para Delta Club Cuneo.",
+    club: { name: "Para Delta Club Cuneo", url: "https://www.paradeltaclubcuneo.it", tel: "+39 338 984 8624", whatsapp: "+39 389 503 0475", email: "staff.paradeltaclubcuneo@gmail.com" },
     landing: {
       name: "Montemale – San Giorgio",
       quota_m: 665,
@@ -253,7 +263,8 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1074,
     alt: 1074,
     province: "CN",
-    club: { name: "Paradelta Club Cuneo", url: "https://www.paradeltaclubcuneo.com" },
+    descrizione: "Decollo a 1074 m s.l.m. — Valle Maira. Esposizione SE/S. Raccordo all'atterraggio di Monte Liretta (parapendio) (597 m s.l.m., dislivello ~477 m). Club di riferimento: Para Delta Club Cuneo.",
+    club: { name: "Para Delta Club Cuneo", url: "https://www.paradeltaclubcuneo.it", tel: "+39 338 984 8624", whatsapp: "+39 389 503 0475", email: "staff.paradeltaclubcuneo@gmail.com" },
     landing: {
       name: "Monte Liretta (parapendio)",
       quota_m: 597,
@@ -281,6 +292,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1400,
     alt: 1400,
     province: "CN",
+    descrizione: "Sito di volo a 1400 m s.l.m. — Valle Maira. Esposizione S. Atterraggio non mappato dalla fonte: da ricognire in loco prima del volo.",
   },
   {
     id: "monte-birrone",
@@ -301,6 +313,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2131,
     alt: 2131,
     province: "CN",
+    descrizione: "Decollo a 2131 m s.l.m. — Valle Maira. Esposizione S. Atterraggio non mappato dalla fonte: da ricognire in loco prima del volo.",
   },
   {
     id: "colle-dell-agnello",
@@ -321,6 +334,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2730,
     alt: 2730,
     province: "CN",
+    descrizione: "Sito di volo a 2730 m s.l.m. — Valle Varaita. Esposizione N/S. Raccordo all'atterraggio di Colle dell'Agnello – versante Casteldelfino (1793 m s.l.m., dislivello ~937 m).",
     landing: {
       name: "Colle dell'Agnello – versante Casteldelfino",
       quota_m: 1793,
@@ -364,6 +378,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1870,
     alt: 1870,
     province: "CN",
+    descrizione: "Punto di decollo a 1870 m s.l.m. — Valle Po. Esposizione S/SW. Raccordo all'atterraggio di Paesana (570 m s.l.m., dislivello ~1300 m).",
     landing: {
       name: "Paesana",
       quota_m: 570,
@@ -414,6 +429,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1374,
     alt: 1374,
     province: "CN",
+    descrizione: "Sito di volo a 1374 m s.l.m. — Valle Po. Decollo Pian Croesio (DHV): esposizione SE oppure N con brezza moderata. Esposizione SE/S. Raccordo all'atterraggio di Paesana (570 m s.l.m., dislivello ~804 m).",
     note: "Decollo Pian Croesio (DHV): esposizione SE oppure N con brezza moderata.",
     landing: {
       name: "Paesana",
@@ -442,6 +458,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1400,
     alt: 1400,
     province: "CN",
+    descrizione: "Decollo a 1400 m s.l.m. — Valle Po. Esposizione NE. Atterraggio non mappato dalla fonte: da ricognire in loco prima del volo.",
   },
   {
     id: "rucas-alto",
@@ -462,6 +479,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1575,
     alt: 1575,
     province: "CN",
+    descrizione: "Punto di decollo a 1575 m s.l.m. — Valle Infernotto. Grande prato: apertura fino a 8–10 ali contemporaneamente; top landing facile con condizioni adeguate (PGE). Esposizione SE/S. Atterraggio non mappato dalla fonte: da ricognire in loco prima del volo.",
     note: "Grande prato: apertura fino a 8–10 ali contemporaneamente; top landing facile con condizioni adeguate (PGE).",
     webcams: [
       {
@@ -506,6 +524,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1258,
     alt: 1258,
     province: "CN",
+    descrizione: "Punto di decollo a 1258 m s.l.m. — Valle Infernotto. Esposizione SE/SO. Raccordo all'atterraggio di Montoso – Bagnolo Piemonte (378 m s.l.m., dislivello ~880 m).",
     landing: {
       name: "Montoso – Bagnolo Piemonte",
       quota_m: 378,
@@ -556,7 +575,8 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2031,
     alt: 2031,
     province: "CN",
-    club: { name: "Volauvent (Torre Pellice)", url: "http://www.volauvent.it/voli.htm" },
+    descrizione: "Punto di decollo a 2031 m s.l.m. — Val Pellice. Esposizione SO. Raccordo all'atterraggio di Monte Vandalino – valle (574 m s.l.m., dislivello ~1457 m). Club di riferimento: Vol au Vent (Val Pellice).",
+    club: { name: "Vol au Vent (Val Pellice)", url: "https://parapendiovolauvent.it", tel: "+39 347 041 9442", email: "cinmar1987@gmail.com" },
     landing: {
       name: "Monte Vandalino – valle",
       quota_m: 574,
@@ -606,6 +626,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1950,
     alt: 1950,
     province: "TO",
+    descrizione: "Sito di volo a 1950 m s.l.m. — Val Chisone. Decollo ampio e morbido, adatto a 2 ali in preparazione contemporanea; dopo il lancio risalire il pendio a destra per guadagnare quota (PGE). Esposizione S. Raccordo all'atterraggio di Pian dell'Alpe – valle (1402 m s.l.m., dislivello ~548 m).",
     note: "Decollo ampio e morbido, adatto a 2 ali in preparazione contemporanea; dopo il lancio risalire il pendio a destra per guadagnare quota (PGE).",
     landing: {
       name: "Pian dell'Alpe – valle",
@@ -643,6 +664,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 852,
     alt: 852,
     province: "TO",
+    descrizione: "Punto di decollo a 852 m s.l.m. — Pinerolese. Esposizione SE. Raccordo all'atterraggio di Roletto (364 m s.l.m., dislivello ~488 m).",
     landing: {
       name: "Roletto",
       quota_m: 364,
@@ -686,6 +708,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 804,
     alt: 804,
     province: "TO",
+    descrizione: "Punto di decollo a 804 m s.l.m. — Collina Torinese. Accesso al decollo solo con navetta; decollo solo dall'area delimitata dai pali di legno (Parco); mai volare con Foehn; sito volabile oltre 300 giorni l'anno (PGE/DHV). Esposizione SE/S. Raccordo all'atterraggio di Monte San Giorgio – Piossasco (279 m s.l.m., dislivello ~525 m).",
     note: "Accesso al decollo solo con navetta; decollo solo dall'area delimitata dai pali di legno (Parco); mai volare con Foehn; sito volabile oltre 300 giorni l'anno (PGE/DHV).",
     landing: {
       name: "Monte San Giorgio – Piossasco",
@@ -714,6 +737,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 978,
     alt: 978,
     province: "TO",
+    descrizione: "Decollo a 978 m s.l.m. — Val Sangone – Giaveno. Ampio campo in erba: usa NE o SE a seconda del vento · niente Foehn · brezza di valle forte in Val Susa a giugno–luglio · non volare verso Torino oltre Rivoli (CTR Caselle) (PGE). Esposizioni praticabili su più quadranti (NE/E/SE). Raccordo all'atterraggio di Truccetti – Bertassi (Giaveno) (349 m s.l.m., dislivello ~629 m).",
     note: "Ampio campo in erba: usa NE o SE a seconda del vento · niente Foehn · brezza di valle forte in Val Susa a giugno–luglio · non volare verso Torino oltre Rivoli (CTR Caselle) (PGE).",
     landing: {
       name: "Truccetti – Bertassi (Giaveno)",
@@ -751,7 +775,8 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 980,
     alt: 980,
     province: "TO",
-    club: { name: "Velum Volitans", url: "http://www.velumvolitans.org/siti-di-volo/valdellatorre/" },
+    descrizione: "Decollo a 980 m s.l.m. — Val della Torre. Esposizione E/SE/S. Raccordo all'atterraggio di Val della Torre (425 m s.l.m., dislivello ~555 m). Club di riferimento: Velum Volitans (Torino).",
+    club: { name: "Velum Volitans (Torino)", url: "https://www.facebook.com/p/Circolo-parapendio-Torino-Velum-Volitans-100051627879367" },
     landing: {
       name: "Val della Torre",
       quota_m: 425,
@@ -779,6 +804,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 897,
     alt: 897,
     province: "TO",
+    descrizione: "Sito di volo a 897 m s.l.m. — Canavese. Decollo accanto alla chiesetta della Madonna della Neve, ampio e adatto ai principianti; strada sterrata meglio in 4x4; mai volare con Foehn; non volare verso la pianura a est (aeroporto Torino) (PGE). Esposizione SE/S. Raccordo all'atterraggio di Monte Soglio – Corio (392 m s.l.m., dislivello ~505 m).",
     note: "Decollo accanto alla chiesetta della Madonna della Neve, ampio e adatto ai principianti; strada sterrata meglio in 4x4; mai volare con Foehn; non volare verso la pianura a est (aeroporto Torino) (PGE).",
     landing: {
       name: "Monte Soglio – Corio",
@@ -821,7 +847,8 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 952,
     alt: 952,
     province: "TO",
-    club: { name: "VLS E – Volo Libero Santa Elisabetta", url: "http://www.vlse.it/" },
+    descrizione: "Sito di volo a 952 m s.l.m. — Canavese. Decollo del Belice (nome DHV), sopra il santuario di Santa Elisabetta. Esposizione SE/S. Raccordo all'atterraggio di Santa Elisabetta (401 m s.l.m., dislivello ~551 m). Club di riferimento: VLS E – Volo Libero Santa Elisabetta.",
+    club: { name: "VLS E – Volo Libero Santa Elisabetta", url: "https://www.vlse.it", tel: "+39 347 242 4494", tel2: "+39 346 806 7361", tel2Label: "info in inglese (Ezio)", email: "vololibero.santaelisabetta@gmail.com" },
     note: "Decollo del Belice (nome DHV), sopra il santuario di Santa Elisabetta.",
     landing: {
       name: "Santa Elisabetta",
@@ -864,7 +891,8 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1387,
     alt: 1387,
     province: "TO",
-    club: { name: "VLS E – Volo Libero Santa Elisabetta", url: "http://www.vlse.it/" },
+    descrizione: "Sito di volo a 1387 m s.l.m. — Canavese. Esposizione SE/S. Raccordo all'atterraggio di Santa Elisabetta (401 m s.l.m., dislivello ~986 m). Club di riferimento: VLS E – Volo Libero Santa Elisabetta.",
+    club: { name: "VLS E – Volo Libero Santa Elisabetta", url: "https://www.vlse.it", tel: "+39 347 242 4494", tel2: "+39 346 806 7361", tel2Label: "info in inglese (Ezio)", email: "vololibero.santaelisabetta@gmail.com" },
     landing: {
       name: "Santa Elisabetta",
       quota_m: 401,
@@ -906,7 +934,8 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1432,
     alt: 1432,
     province: "TO",
-    club: { name: "Parapendio Cavallaria", url: "https://parapendiocavallaria.jimdo.com/" },
+    descrizione: "Punto di decollo a 1432 m s.l.m. — Canavese. 3 lanci: Cima Cavallaria (1430 m), Manifestazione (1390 m) e Felci · accesso solo con navetta del club, strada privata (sanzioni) · attenzione al Foehn da nord (PGE/DHV). Esposizione SE/S. Raccordo all'atterraggio di Cavallaria LZ (264 m s.l.m., dislivello ~1168 m). Club di riferimento: Parapendio Club Cavallaria.",
+    club: { name: "Parapendio Club Cavallaria", url: "https://parapendiocavallaria.jimdofree.com", tel: "+39 328 379 9390", email: "parapendiocavallaria@gmail.com" },
     note: "3 lanci: Cima Cavallaria (1430 m), Manifestazione (1390 m) e Felci · accesso solo con navetta del club, strada privata (sanzioni) · attenzione al Foehn da nord (PGE/DHV).",
     landing: {
       name: "Cavallaria LZ",
@@ -944,7 +973,8 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1236,
     alt: 1236,
     province: "TO",
-    club: { name: "Parapendio Cavallaria", url: "http://www.parapendiocavallaria.it/" },
+    descrizione: "Sito di volo a 1236 m s.l.m. — Canavese. Esposizione S/SO. Raccordo all'atterraggio di Andrate – Mombarone (256 m s.l.m., dislivello ~980 m). Club di riferimento: Parapendio Club Cavallaria.",
+    club: { name: "Parapendio Club Cavallaria", url: "https://parapendiocavallaria.jimdofree.com", tel: "+39 328 379 9390", email: "parapendiocavallaria@gmail.com" },
     landing: {
       name: "Andrate – Mombarone",
       quota_m: 256,
@@ -981,6 +1011,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2040,
     alt: 2040,
     province: "FR",
+    descrizione: "Sito di volo a 2040 m s.l.m. — Queyras (Francia). Il lancio più comodo del Queyras, sopra Ceillac: ampia esposizione S/SO/O. Atterraggio a Ceillac (1640 m). Raccordo all'atterraggio di Ceillac (1636 m s.l.m., dislivello ~404 m).",
     note: "Il lancio più comodo del Queyras, sopra Ceillac: ampia esposizione S/SO/O. Atterraggio a Ceillac (1640 m).",
     landing: { name: "Ceillac", quota_m: 1636, lat: 44.6647, lon: 6.77861 },
     webcams: [
@@ -1009,6 +1040,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1910,
     alt: 1910,
     province: "FR",
+    descrizione: "Decollo a 1910 m s.l.m. — Queyras (Francia). Lancio alto del Col de Bramousse, volabile anche con N e NO: ottimo per XC nel Queyras. Esposizioni praticabili su più quadranti (N/SO/O/NO). Raccordo all'atterraggio di CEILLAC (1640 m s.l.m., dislivello ~270 m).",
     note: "Lancio alto del Col de Bramousse, volabile anche con N e NO: ottimo per XC nel Queyras.",
     landing: { name: "CEILLAC", quota_m: 1640, lat: 44.66400146, lon: 6.78049994 },
     webcams: [
@@ -1036,6 +1068,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1830,
     alt: 1830,
     province: "FR",
+    descrizione: "Sito di volo a 1830 m s.l.m. — Queyras (Francia). Lancio di Ceillac verso N/NE/O/NO, raggiungibile dalla strada del colle. Raccordo all'atterraggio di CEILLAC (1640 m s.l.m., dislivello ~190 m).",
     note: "Lancio di Ceillac verso N/NE/O/NO, raggiungibile dalla strada del colle.",
     landing: { name: "CEILLAC", quota_m: 1640, lat: 44.66400146, lon: 6.78049994 },
     webcams: [
@@ -1063,6 +1096,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2630,
     alt: 2630,
     province: "FR",
+    descrizione: "Punto di decollo a 2630 m s.l.m. — Queyras (Francia). Ampio lancio d'altura sopra Arvieux (2630 m), esposizione da SE a SO. Esposizioni praticabili su più quadranti (SE/S/SO). Raccordo all'atterraggio di CHEZ MARIUS (1800 m s.l.m., dislivello ~830 m).",
     note: "Ampio lancio d'altura sopra Arvieux (2630 m), esposizione da SE a SO.",
     landing: { name: "CHEZ MARIUS", quota_m: 1800, lat: 44.79142, lon: 6.732825 },
     webcams: [
@@ -1091,6 +1125,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2420,
     alt: 2420,
     province: "FR",
+    descrizione: "Punto di decollo a 2420 m s.l.m. — Queyras (Francia). Lancio panoramico sulla Casse Déserte del Colle d'Izoard, da SE a O. Esposizioni praticabili su più quadranti (SE/S/SO/O). Raccordo all'atterraggio di CHEZ MARIUS (1800 m s.l.m., dislivello ~620 m).",
     note: "Lancio panoramico sulla Casse Déserte del Colle d'Izoard, da SE a O.",
     landing: { name: "CHEZ MARIUS", quota_m: 1800, lat: 44.79142, lon: 6.732825 },
     webcams: [
@@ -1118,6 +1153,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2443,
     alt: 2443,
     province: "FR",
+    descrizione: "Sito di volo a 2443 m s.l.m. — Queyras (Francia). Colle d'Izoard (2443 m): lancio a S sul versante Briançon, classico hike&fly alpino. Raccordo all'atterraggio di CHEZ MARIUS (1800 m s.l.m., dislivello ~643 m).",
     note: "Colle d'Izoard (2443 m): lancio a S sul versante Briançon, classico hike&fly alpino.",
     landing: { name: "CHEZ MARIUS", quota_m: 1800, lat: 44.79142, lon: 6.732825 },
     webcams: [
@@ -1146,6 +1182,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2383,
     alt: 2383,
     province: "FR",
+    descrizione: "Sito di volo a 2383 m s.l.m. — Briançonnais (Francia). Il grande decollo di Briançon dal Prorel (2383 m): esposizione completa da N a SO. Atterraggio Saint-Blaise (1172 m). Esposizioni praticabili su più quadranti (N/NE/E/SE/S/SO). Raccordo all'atterraggio di CHANTEMERLE (1350 m s.l.m., dislivello ~1033 m).",
     note: "Il grande decollo di Briançon dal Prorel (2383 m): esposizione completa da N a SO. Atterraggio Saint-Blaise (1172 m).",
     landing: { name: "CHANTEMERLE", quota_m: 1350, lat: 44.9291, lon: 6.5952 },
     webcams: [
@@ -1174,6 +1211,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2450,
     alt: 2450,
     province: "FR",
+    descrizione: "Decollo a 2450 m s.l.m. — Briançonnais (Francia). Granon alto sopra Saint-Chaffrey: vista su Briançon e sulle Écrins, da SE a O. Esposizioni praticabili su più quadranti (SE/S/SO/O). Raccordo all'atterraggio di TRONCHETS (1960 m s.l.m., dislivello ~490 m).",
     note: "Granon alto sopra Saint-Chaffrey: vista su Briançon e sulle Écrins, da SE a O.",
     landing: { name: "TRONCHETS", quota_m: 1960, lat: 44.9516, lon: 6.5938 },
     webcams: [
@@ -1202,6 +1240,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2250,
     alt: 2250,
     province: "FR",
+    descrizione: "Decollo a 2250 m s.l.m. — Briançonnais (Francia). Lancio d'alta quota sopra Serre-Chevalier 1400 (La Salle-les-Alpes), da SE a O. Esposizioni praticabili su più quadranti (SE/S/SO/O). Raccordo all'atterraggio di TRONCHETS (1960 m s.l.m., dislivello ~290 m).",
     note: "Lancio d'alta quota sopra Serre-Chevalier 1400 (La Salle-les-Alpes), da SE a O.",
     landing: { name: "TRONCHETS", quota_m: 1960, lat: 44.9516, lon: 6.5938 },
     webcams: [
@@ -1229,6 +1268,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2234,
     alt: 2234,
     province: "FR",
+    descrizione: "Sito di volo a 2234 m s.l.m. — Briançonnais (Francia). Lancio nelle Vallons sopra Villard-Laté, esposizione NE–SE. Esposizioni praticabili su più quadranti (NE/E/SE). Raccordo all'atterraggio di PONTILLAS (1684 m s.l.m., dislivello ~550 m).",
     note: "Lancio nelle Vallons sopra Villard-Laté, esposizione NE–SE.",
     landing: { name: "PONTILLAS", quota_m: 1684, lat: 44.9493, lon: 6.5519 },
     webcams: [
@@ -1256,6 +1296,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2195,
     alt: 2195,
     province: "FR",
+    descrizione: "Punto di decollo a 2195 m s.l.m. — Briançonnais (Francia). Lancio nella pineta sopra La Salle-les-Alpes, verso N/NE/NO. Raccordo all'atterraggio di CASSE DU BOEUF (1690 m s.l.m., dislivello ~505 m).",
     note: "Lancio nella pineta sopra La Salle-les-Alpes, verso N/NE/NO.",
     landing: { name: "CASSE DU BOEUF", quota_m: 1690, lat: 44.9433, lon: 6.5604 },
     webcams: [
@@ -1283,6 +1324,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1920,
     alt: 1920,
     province: "FR",
+    descrizione: "Sito di volo a 1920 m s.l.m. — Briançonnais (Francia). I Tronchets sopra Saint-Chaffrey (1920 m), con atterraggio dedicato a 1960 m. Esposizioni praticabili su più quadranti (SE/S/SO). Raccordo all'atterraggio di TRONCHETS (1960 m s.l.m.).",
     note: "I Tronchets sopra Saint-Chaffrey (1920 m), con atterraggio dedicato a 1960 m.",
     landing: { name: "TRONCHETS", quota_m: 1960, lat: 44.9516, lon: 6.5938 },
     webcams: [
@@ -1310,6 +1352,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2100,
     alt: 2100,
     province: "FR",
+    descrizione: "Decollo a 2100 m s.l.m. — Briançonnais (Francia). Plan Lachat sul Colle del Galibier (2100 m), lanci verso N/NE/NO. Atterraggio non mappato dalla fonte: da ricognire in loco prima del volo.",
     note: "Plan Lachat sul Colle del Galibier (2100 m), lanci verso N/NE/NO.",
     webcams: [
       { name: "Webcam du Galibier", imageUrl: "https://api.skaping.com/nmhpc-emfZH-99hV8-B8wwM/media/latest/thumb.jpg", url: "https://www.skaping.com/valloire/galibier/", fonte: "SpotAir · skaping", distKm: 3.4 },
@@ -1337,6 +1380,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2237,
     alt: 2237,
     province: "FR",
+    descrizione: "Decollo a 2237 m s.l.m. — Briançonnais (Francia). Stazione Pelvoux-Vallouise, sommet: esposizione completa, vista sulle Écrins. Esposizioni praticabili su più quadranti (E/SE/S/SO/O/NO). Raccordo all'atterraggio di PELVOUX (1248 m s.l.m., dislivello ~989 m).",
     note: "Stazione Pelvoux-Vallouise, sommet: esposizione completa, vista sulle Écrins.",
     landing: { name: "PELVOUX", quota_m: 1248, lat: 44.8664, lon: 6.4842 },
     webcams: [
@@ -1365,6 +1409,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2579,
     alt: 2579,
     province: "FR",
+    descrizione: "Punto di decollo a 2579 m s.l.m. — Briançonnais (Francia). Hike&fly d'alta quota sul Mont Pelvoux (2579 m) nel cuore delle Écrins: solo piloti esperti. Raccordo all'atterraggio di PELVOUX (1248 m s.l.m., dislivello ~1331 m).",
     note: "Hike&fly d'alta quota sul Mont Pelvoux (2579 m) nel cuore delle Écrins: solo piloti esperti.",
     landing: { name: "PELVOUX", quota_m: 1248, lat: 44.8664, lon: 6.4842 },
     webcams: [
@@ -1392,8 +1437,9 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1666,
     alt: 1666,
     province: "FR",
+    descrizione: "Sito di volo a 1666 m s.l.m. — Briançonnais (Francia). Il celebre decollo di Puy-Aillaud sopra Vallouise: grande prato con tutte le esposizioni, atterraggio a 1156 m. Esposizioni praticabili su più quadranti (NE/E/SE/S/SO/O/NO). Raccordo all'atterraggio di Puy-Aillaud Landeplatz (1156 m s.l.m., dislivello ~510 m). Club di riferimento: Pollen Parapente (Vallouise).",
     note: "Il celebre decollo di Puy-Aillaud sopra Vallouise: grande prato con tutte le esposizioni, atterraggio a 1156 m.",
-    club: { name: "Club di riferimento", url: "http://www.aventureparapente.com" },
+    club: { name: "Pollen Parapente (Vallouise)", url: "https://www.pollenparapente.com", tel: "+33 6 28 05 69 75", email: "contact@pollenparapente.com" },
     landing: { name: "Puy-Aillaud Landeplatz", quota_m: 1156, lat: 44.8419805, lon: 6.489004 },
     webcams: [
       { name: "Vallouise-Pelvoux - Départ Nordique", imageUrl: "https://www.vision-environnement.com/live/modules/timelapse/capture/pelvouxnordic.jpg", url: "https://www.nordicalpesdusud.com/domaines/vallouise-pelvoux-les-vigneaux#section_domaine_tabs", fonte: "SpotAir · mobicams", distKm: 1.3 },
@@ -1421,6 +1467,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2013,
     alt: 2013,
     province: "FR",
+    descrizione: "Decollo a 2013 m s.l.m. — Briançonnais (Francia). Lac du Pontet sopra La Grave (2013 m), lancio SO/O con vista sulla La Meije. Raccordo all'atterraggio di LA GRAVE (1495 m s.l.m., dislivello ~518 m).",
     note: "Lac du Pontet sopra La Grave (2013 m), lancio SO/O con vista sulla La Meije.",
     landing: { name: "LA GRAVE", quota_m: 1495, lat: 45.045881, lon: 6.303245 },
     webcams: [
@@ -1448,6 +1495,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1269,
     alt: 1269,
     province: "FR",
+    descrizione: "Sito di volo a 1269 m s.l.m. — Serre-Ponçon/Embrunais (Francia). Il famoso decollo di Saint-Vincent-les-Forts (1269 m) sul Lac de Serre-Ponçon: lancio a O sul lago, classico d'estate con brezza. Raccordo all'atterraggio di Saint Vincent Les Forts (1262 m s.l.m., dislivello ~7 m).",
     note: "Il famoso decollo di Saint-Vincent-les-Forts (1269 m) sul Lac de Serre-Ponçon: lancio a O sul lago, classico d'estate con brezza.",
     landing: { name: "Saint Vincent Les Forts", quota_m: 1262, lat: 44.4419, lon: 6.3719 },
     webcams: [
@@ -1476,6 +1524,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1603,
     alt: 1603,
     province: "FR",
+    descrizione: "Decollo a 1603 m s.l.m. — Serre-Ponçon/Embrunais (Francia). Mont Guillaume sopra Embrun (1603 m), lancio a SO; atterraggio Pierre-Plate (1256 m). Raccordo all'atterraggio di MT GUILLAUME PIERREPLATE (1256 m s.l.m., dislivello ~347 m).",
     note: "Mont Guillaume sopra Embrun (1603 m), lancio a SO; atterraggio Pierre-Plate (1256 m).",
     landing: { name: "MT GUILLAUME PIERREPLATE", quota_m: 1256, lat: 44.5594, lon: 6.4406 },
     webcams: [
@@ -1503,6 +1552,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1407,
     alt: 1407,
     province: "FR",
+    descrizione: "Punto di decollo a 1407 m s.l.m. — Serre-Ponçon/Embrunais (Francia). Serre-Buzard sopra Châteauroux-les-Alpes (1407 m), lanci da SE a SO sul lago. Esposizioni praticabili su più quadranti (SE/S/SO). Raccordo all'atterraggio di LES CHAMOUSSES (1060 m s.l.m., dislivello ~347 m).",
     note: "Serre-Buzard sopra Châteauroux-les-Alpes (1407 m), lanci da SE a SO sul lago.",
     landing: { name: "LES CHAMOUSSES", quota_m: 1060, lat: 44.6276, lon: 6.5372 },
     webcams: [
@@ -1530,6 +1580,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1301,
     alt: 1301,
     province: "FR",
+    descrizione: "Decollo a 1301 m s.l.m. — Serre-Ponçon/Embrunais (Francia). Pierre-Arnoux sopra Savines-le-Lac (1301 m): lancio SO/O direttamente sul lago di Serre-Ponçon. Raccordo all'atterraggio di Pierre Arnoux - La Voilerie (780 m s.l.m., dislivello ~521 m).",
     note: "Pierre-Arnoux sopra Savines-le-Lac (1301 m): lancio SO/O direttamente sul lago di Serre-Ponçon.",
     landing: { name: "Pierre Arnoux - La Voilerie", quota_m: 780, lat: 44.5241, lon: 6.3975 },
     webcams: [
@@ -1558,6 +1609,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1774,
     alt: 1774,
     province: "FR",
+    descrizione: "Punto di decollo a 1774 m s.l.m. — Serre-Ponçon/Embrunais (Francia). Costias sopra Les Orres (1774 m), lanci a S/SO sopra il bosco. Raccordo all'atterraggio di MONT GUILLAUME (786 m s.l.m., dislivello ~988 m).",
     note: "Costias sopra Les Orres (1774 m), lanci a S/SO sopra il bosco.",
     landing: { name: "MONT GUILLAUME", quota_m: 786, lat: 44.5569, lon: 6.4892 },
     webcams: [
@@ -1586,6 +1638,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2071,
     alt: 2071,
     province: "FR",
+    descrizione: "Punto di decollo a 2071 m s.l.m. — Serre-Ponçon/Embrunais (Francia). Cairn Ouest a Orcières-Merlette 1850 (2071 m), esposizione SO/O/NO. Raccordo all'atterraggio di ORCIERES - BASE DE LOISIRS (1296 m s.l.m., dislivello ~775 m).",
     note: "Cairn Ouest a Orcières-Merlette 1850 (2071 m), esposizione SO/O/NO.",
     landing: { name: "ORCIERES - BASE DE LOISIRS", quota_m: 1296, lat: 44.67839813, lon: 6.31680012 },
     webcams: [
@@ -1614,6 +1667,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2100,
     alt: 2100,
     province: "FR",
+    descrizione: "Decollo a 2100 m s.l.m. — Serre-Ponçon/Embrunais (Francia). Réallon-Chabrières (2100 m), lancio verso E/SE sopra le Gorges de Réallon. Raccordo all'atterraggio di REALLON STATION - LE COURTIER (1500 m s.l.m., dislivello ~600 m).",
     note: "Réallon-Chabrières (2100 m), lancio verso E/SE sopra le Gorges de Réallon.",
     landing: { name: "REALLON STATION - LE COURTIER", quota_m: 1500, lat: 44.5801, lon: 6.3596 },
     webcams: [
@@ -1641,6 +1695,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2130,
     alt: 2130,
     province: "FR",
+    descrizione: "Decollo a 2130 m s.l.m. — Serre-Ponçon/Embrunais (Francia). Col de la Gardette sopra Chorges (2130 m), esposizione S/SO/O. Raccordo all'atterraggio di REALLON STATION - LE COURTIER (1500 m s.l.m., dislivello ~630 m).",
     note: "Col de la Gardette sopra Chorges (2130 m), esposizione S/SO/O.",
     landing: { name: "REALLON STATION - LE COURTIER", quota_m: 1500, lat: 44.5801, lon: 6.3596 },
     webcams: [
@@ -1668,6 +1723,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1776,
     alt: 1776,
     province: "FR",
+    descrizione: "Punto di decollo a 1776 m s.l.m. — Serre-Ponçon/Embrunais (Francia). Le Petit Cordeil (1776 m) sopra Embrun, hike&fly verso la valle della Durance. Atterraggio non mappato dalla fonte: da ricognire in loco prima del volo.",
     note: "Le Petit Cordeil (1776 m) sopra Embrun, hike&fly verso la valle della Durance.",
     source: "SpotAir #69266",
   },
@@ -1690,6 +1746,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1870,
     alt: 1870,
     province: "FR",
+    descrizione: "Punto di decollo a 1870 m s.l.m. — Serre-Ponçon/Embrunais (Francia). Plateau de la Chau a Montclar (1870 m), lanci S/SO/O/NO. Raccordo all'atterraggio di MONTCLAR - COL SAINT JEAN (1331 m s.l.m., dislivello ~539 m).",
     note: "Plateau de la Chau a Montclar (1870 m), lanci S/SO/O/NO.",
     landing: { name: "MONTCLAR - COL SAINT JEAN", quota_m: 1331, lat: 44.4175, lon: 6.3515 },
     webcams: [
@@ -1717,6 +1774,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2459,
     alt: 2459,
     province: "FR",
+    descrizione: "Punto di decollo a 2459 m s.l.m. — Serre-Ponçon/Embrunais (Francia). Dormillouse (2459 m) sopra Montclar-Pontis, lancio a NO sul lago di Serre-Ponçon. Raccordo all'atterraggio di MONTCLAR - COL SAINT JEAN (1331 m s.l.m., dislivello ~1128 m).",
     note: "Dormillouse (2459 m) sopra Montclar-Pontis, lancio a NO sul lago di Serre-Ponçon.",
     landing: { name: "MONTCLAR - COL SAINT JEAN", quota_m: 1331, lat: 44.4175, lon: 6.3515 },
     webcams: [
@@ -1744,6 +1802,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2045,
     alt: 2045,
     province: "FR",
+    descrizione: "Punto di decollo a 2045 m s.l.m. — Serre-Ponçon/Embrunais (Francia). Pra-Loup sopra Uvernet-Fours (2045 m), lancio E/SE verso la valle dell'Ubaye. Raccordo all'atterraggio di LA CHAUP BASSE (1151 m s.l.m., dislivello ~894 m).",
     note: "Pra-Loup sopra Uvernet-Fours (2045 m), lancio E/SE verso la valle dell'Ubaye.",
     landing: { name: "LA CHAUP BASSE", quota_m: 1151, lat: 44.3868, lon: 6.66882 },
     webcams: [
@@ -1771,6 +1830,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1515,
     alt: 1515,
     province: "FR",
+    descrizione: "Punto di decollo a 1515 m s.l.m. — St-André/Ubaye (Francia). Le Chalvet di Saint-André-les-Alpes (1515 m): il grande decollo del Lac de Castillon, lanci SE/S; atterraggio in riva al lago (Aérogliss 912 m). Raccordo all'atterraggio di Issole (912 m s.l.m., dislivello ~603 m).",
     note: "Le Chalvet di Saint-André-les-Alpes (1515 m): il grande decollo del Lac de Castillon, lanci SE/S; atterraggio in riva al lago (Aérogliss 912 m).",
     landing: { name: "Issole", quota_m: 912, lat: 43.9786, lon: 6.5086 },
     photo: { url: "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8c/Strates-calcaires-au-bord-du-lac-dr-Castillon-France-DSC_0429.jpg/1920px-Strates-calcaires-au-bord-du-lac-dr-Castillon-France-DSC_0429.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail", credit: "Wikimedia Commons · Strates-calcaires-au-bord-du-lac-dr-Castillon-France-DSC 0429.jpg" },
@@ -1795,6 +1855,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1601,
     alt: 1601,
     province: "FR",
+    descrizione: "Punto di decollo a 1601 m s.l.m. — St-André/Ubaye (Francia). Faucon-de-Barcelonnette (1601 m), lancio S/SO sulla valle dell'Ubaye. Raccordo all'atterraggio di LA CHAUP BASSE (1151 m s.l.m., dislivello ~450 m).",
     note: "Faucon-de-Barcelonnette (1601 m), lancio S/SO sulla valle dell'Ubaye.",
     landing: { name: "LA CHAUP BASSE", quota_m: 1151, lat: 44.3868, lon: 6.66882 },
     webcams: [
@@ -1823,6 +1884,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1550,
     alt: 1550,
     province: "FR",
+    descrizione: "Sito di volo a 1550 m s.l.m. — St-André/Ubaye (Francia). Chabanon les Clots tra Seyne e Selonnet (1550 m), lancio E/SE. Raccordo all'atterraggio di CHABANON SELONNET (1066 m s.l.m., dislivello ~484 m).",
     note: "Chabanon les Clots tra Seyne e Selonnet (1550 m), lancio E/SE.",
     landing: { name: "CHABANON SELONNET", quota_m: 1066, lat: 44.36750031, lon: 6.31500006 },
     source: "SpotAir #79155",
@@ -1846,6 +1908,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1030,
     alt: 1030,
     province: "FR",
+    descrizione: "Sito di volo a 1030 m s.l.m. — St-André/Ubaye (Francia). Soleil Boeuf sopra Barcelonnette (1030 m), lancio a valle con tutte le esposizioni. Esposizioni praticabili su più quadranti (N/NE/E/SE/S/SO/O/NO). Raccordo all'atterraggio di LA CHAUP BASSE (1151 m s.l.m.).",
     note: "Soleil Boeuf sopra Barcelonnette (1030 m), lancio a valle con tutte le esposizioni.",
     landing: { name: "LA CHAUP BASSE", quota_m: 1151, lat: 44.3868, lon: 6.66882 },
     webcams: [
@@ -1873,6 +1936,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2973,
     alt: 2973,
     province: "LO",
+    descrizione: "Punto di decollo a 2973 m s.l.m. — Valtellina. Decollo alto di Bormio (2973 m) verso N/NO, vista su Valdidentro e Ortles; atterraggio a Bormio (1181 m). Raccordo all'atterraggio di Confinale Landeplatz 1 (1409 m s.l.m., dislivello ~1564 m).",
     note: "Decollo alto di Bormio (2973 m) verso N/NO, vista su Valdidentro e Ortles; atterraggio a Bormio (1181 m).",
     landing: { name: "Confinale Landeplatz 1", quota_m: 1409, lat: 46.455472, lon: 10.432678 },
     webcams: [
@@ -1900,6 +1964,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1932,
     alt: 1932,
     province: "LO",
+    descrizione: "Sito di volo a 1932 m s.l.m. — Valtellina. Secondo lancio di Bormio (1932 m), stesso atterraggio a valle. Esposizione N/NO. Raccordo all'atterraggio di Reit Landeplatz (1267 m s.l.m., dislivello ~665 m).",
     note: "Secondo lancio di Bormio (1932 m), stesso atterraggio a valle.",
     landing: { name: "Reit Landeplatz", quota_m: 1267, lat: 46.465939, lon: 10.392517 },
     webcams: [
@@ -1927,6 +1992,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2772,
     alt: 2772,
     province: "LO",
+    descrizione: "Punto di decollo a 2772 m s.l.m. — Valtellina. Carosello 3000 a Livigno (2772 m), lanci N/S dall'alta quota; atterraggio a Livigno (1881 m). Raccordo all'atterraggio di Carosello 3000 (Livigno) (1892 m s.l.m., dislivello ~880 m).",
     note: "Carosello 3000 a Livigno (2772 m), lanci N/S dall'alta quota; atterraggio a Livigno (1881 m).",
     landing: { name: "Carosello 3000 (Livigno)", quota_m: 1892, lat: 46.5191, lon: 10.1212 },
     webcams: [
@@ -1955,6 +2021,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2363,
     alt: 2363,
     province: "LO",
+    descrizione: "Punto di decollo a 2363 m s.l.m. — Valtellina. Mottolino a Livigno (2363 m), lanci SO/NO sopra gli impianti. Raccordo all'atterraggio di Landeplatz (1820 m s.l.m., dislivello ~543 m).",
     note: "Mottolino a Livigno (2363 m), lanci SO/NO sopra gli impianti.",
     landing: { name: "Landeplatz", quota_m: 1820, lat: 46.538611, lon: 10.139722 },
     webcams: [
@@ -1982,6 +2049,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2203,
     alt: 2203,
     province: "LO",
+    descrizione: "Decollo a 2203 m s.l.m. — Valtellina. Confinale sopra Bormio (2203 m), lancio a SO verso la Valdidentro. Raccordo all'atterraggio di Confinale Landeplatz 1 (1409 m s.l.m., dislivello ~794 m).",
     note: "Confinale sopra Bormio (2203 m), lancio a SO verso la Valdidentro.",
     landing: { name: "Confinale Landeplatz 1", quota_m: 1409, lat: 46.455472, lon: 10.432678 },
     webcams: [
@@ -2009,6 +2077,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1942,
     alt: 1942,
     province: "LO",
+    descrizione: "Decollo a 1942 m s.l.m. — Valtellina. Plator in Valdidentro (1942 m), lancio a S con atterraggio dedicato (1339 m). Raccordo all'atterraggio di Plator Landeplatz (1339 m s.l.m., dislivello ~603 m).",
     note: "Plator in Valdidentro (1942 m), lancio a S con atterraggio dedicato (1339 m).",
     landing: { name: "Plator Landeplatz", quota_m: 1339, lat: 46.488172, lon: 10.303381 },
     source: "SpotAir #50972",
@@ -2032,6 +2101,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1408,
     alt: 1408,
     province: "LO",
+    descrizione: "Punto di decollo a 1408 m s.l.m. — Valtellina. Reit sopra Bormio (1408 m), lancio a S comodo d'estate; atterraggio Bormio (1267 m). Raccordo all'atterraggio di Reit Landeplatz (1267 m s.l.m., dislivello ~141 m).",
     note: "Reit sopra Bormio (1408 m), lancio a S comodo d'estate; atterraggio Bormio (1267 m).",
     landing: { name: "Reit Landeplatz", quota_m: 1267, lat: 46.465939, lon: 10.392517 },
     webcams: [
@@ -2059,6 +2129,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2257,
     alt: 2257,
     province: "LO",
+    descrizione: "Decollo a 2257 m s.l.m. — Valtellina. Pizzo della Pieve sulla Grigna (2257 m): hike&fly sopra il Valsassina. Raccordo all'atterraggio di Alpe Giumello (429 m s.l.m., dislivello ~1828 m).",
     note: "Pizzo della Pieve sulla Grigna (2257 m): hike&fly sopra il Valsassina.",
     landing: { name: "Alpe Giumello", quota_m: 429, lat: 46.013911, lon: 9.367807 },
     webcams: [
@@ -2086,6 +2157,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2192,
     alt: 2192,
     province: "LO",
+    descrizione: "Punto di decollo a 2192 m s.l.m. — Valtellina. Zucco di Cam in Val Gerola (2192 m), hike&fly verso la valle. Atterraggio non mappato dalla fonte: da ricognire in loco prima del volo.",
     note: "Zucco di Cam in Val Gerola (2192 m), hike&fly verso la valle.",
     webcams: [
       { name: "Barzio - Chiavello", imageUrl: "https://live-image.panomax.com/cams/4650/recent_hd.jpg", url: "https://pianidibobbio.panomax.com/chiavello", fonte: "SpotAir · panomax", distKm: 3.7 },
@@ -2112,6 +2184,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2091,
     alt: 2091,
     province: "LO",
+    descrizione: "Decollo a 2091 m s.l.m. — Valtellina. Prato Valentino sopra Chiuro (2091 m), lancio a S sulla Valtellina. Raccordo all'atterraggio di Castionetto Landeplatz (367 m s.l.m., dislivello ~1724 m).",
     note: "Prato Valentino sopra Chiuro (2091 m), lancio a S sulla Valtellina.",
     landing: { name: "Castionetto Landeplatz", quota_m: 367, lat: 46.167289, lon: 9.993753 },
     webcams: [
@@ -2139,6 +2212,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2121,
     alt: 2121,
     province: "LO",
+    descrizione: "Decollo a 2121 m s.l.m. — Valtellina. Monte Padrio sopra Corteno Golgi (2121 m), lanci SE/S verso la Val Camonica. Raccordo all'atterraggio di Corteno Golgi (905 m s.l.m., dislivello ~1216 m).",
     note: "Monte Padrio sopra Corteno Golgi (2121 m), lanci SE/S verso la Val Camonica.",
     landing: { name: "Corteno Golgi", quota_m: 905, lat: 46.16642733, lon: 10.25271667 },
     webcams: [
@@ -2166,6 +2240,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2409,
     alt: 2409,
     province: "LO",
+    descrizione: "Decollo a 2409 m s.l.m. — Valsassina/Lecco. Grigna Settentrionale (2409 m): il classico hike&fly del Grignone sopra il Valsassina. Raccordo all'atterraggio di Alpe Giumello (429 m s.l.m., dislivello ~1980 m).",
     note: "Grigna Settentrionale (2409 m): il classico hike&fly del Grignone sopra il Valsassina.",
     landing: { name: "Alpe Giumello", quota_m: 429, lat: 46.013911, lon: 9.367807 },
     webcams: [
@@ -2194,6 +2269,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1241,
     alt: 1241,
     province: "LO",
+    descrizione: "Decollo a 1241 m s.l.m. — Valsassina/Lecco. Monte Magnodeno sopra Lecco (1241 m), lanci verso il Valsassina e il lago. Atterraggio non mappato dalla fonte: da ricognire in loco prima del volo.",
     note: "Monte Magnodeno sopra Lecco (1241 m), lanci verso il Valsassina e il lago.",
     source: "SpotAir #74177",
   },
@@ -2216,8 +2292,9 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1168,
     alt: 1168,
     province: "LO",
+    descrizione: "Sito di volo a 1168 m s.l.m. — Valsassina/Lecco. Cornizzolo (1168 m): il decollo più frequentato del Lecchese, esposizioni SE/S/SO/O. Raccordo all'atterraggio di Monte Cornizzolo Landeplatz 2 (228 m s.l.m., dislivello ~940 m). Club di riferimento: Aero Club Monte Cornizzolo.",
     note: "Cornizzolo (1168 m): il decollo più frequentato del Lecchese, esposizioni SE/S/SO/O.",
-    club: { name: "Club di riferimento", url: "https://www.cornizzolo.com" },
+    club: { name: "Aero Club Monte Cornizzolo", url: "https://www.cornizzolo.com", tel: "+39 339 504 1615" },
     landing: { name: "Monte Cornizzolo Landeplatz 2", quota_m: 228, lat: 45.8172165, lon: 9.3195015 },
     webcams: [
       { name: "Sormano", imageUrl: "https://www.fripon.org/IMG/jpg/stations/RT_ITLO02.jpg", url: "https://www.fripon.org", fonte: "SpotAir · fripon", distKm: 7.8 },
@@ -2243,6 +2320,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1559,
     alt: 1559,
     province: "LO",
+    descrizione: "Punto di decollo a 1559 m s.l.m. — Valsassina/Lecco. Piani di Bobbio sopra Barzio (1559 m), lancio a SO con i servizi della stazione. Atterraggio non mappato dalla fonte: da ricognire in loco prima del volo.",
     note: "Piani di Bobbio sopra Barzio (1559 m), lancio a SO con i servizi della stazione.",
     webcams: [
       { name: "Barzio - Piani di Bobbio", imageUrl: "https://live-image.panomax.com/cams/1390/recent_hd.jpg", url: "https://pianidibobbio.panomax.com", fonte: "SpotAir · panomax", distKm: 0.7 },
@@ -2270,6 +2348,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1546,
     alt: 1546,
     province: "LO",
+    descrizione: "Sito di volo a 1546 m s.l.m. — Valsassina/Lecco. Alpe Giumello sopra Taceno (1546 m), lancio con esposizione completa. Esposizioni praticabili su più quadranti (E/SE/S/SO/O). Raccordo all'atterraggio di Alpe Giumello (429 m s.l.m., dislivello ~1117 m).",
     note: "Alpe Giumello sopra Taceno (1546 m), lancio con esposizione completa.",
     landing: { name: "Alpe Giumello", quota_m: 429, lat: 46.013911, lon: 9.367807 },
     webcams: [
@@ -2296,6 +2375,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1746,
     alt: 1746,
     province: "LO",
+    descrizione: "Punto di decollo a 1746 m s.l.m. — Val Seriana/Brembana. Monte Avaro sopra Cusio, Val Seriana (1746 m), lancio a S sulle Orobie. Raccordo all'atterraggio di Cusio - Monte Avaro (898 m s.l.m., dislivello ~848 m).",
     note: "Monte Avaro sopra Cusio, Val Seriana (1746 m), lancio a S sulle Orobie.",
     landing: { name: "Cusio - Monte Avaro", quota_m: 898, lat: 45.9811, lon: 9.61888 },
     webcams: [
@@ -2323,6 +2403,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1619,
     alt: 1619,
     province: "LO",
+    descrizione: "Decollo a 1619 m s.l.m. — Val Seriana/Brembana. Monte Scanapa sopra Castione della Presolana (1619 m), lanci SO/O; atterraggio dedicato (1197 m). Raccordo all'atterraggio di Monte Scanapa Landeplatz (1197 m s.l.m., dislivello ~422 m).",
     note: "Monte Scanapa sopra Castione della Presolana (1619 m), lanci SO/O; atterraggio dedicato (1197 m).",
     landing: { name: "Monte Scanapa Landeplatz", quota_m: 1197, lat: 45.929901, lon: 10.081758 },
     webcams: [
@@ -2351,6 +2432,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1345,
     alt: 1345,
     province: "LO",
+    descrizione: "Sito di volo a 1345 m s.l.m. — Val Seriana/Brembana. Monte Rambasi sopra Valbondione (1345 m), lancio O/NO sulle Orobie. Raccordo all'atterraggio di Monte Rambasi Landeplatz (923 m s.l.m., dislivello ~422 m).",
     note: "Monte Rambasi sopra Valbondione (1345 m), lancio O/NO sulle Orobie.",
     landing: { name: "Monte Rambasi Landeplatz", quota_m: 923, lat: 46.040269, lon: 10.013669 },
     webcams: [
@@ -2377,6 +2459,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1302,
     alt: 1302,
     province: "LO",
+    descrizione: "Punto di decollo a 1302 m s.l.m. — Val Seriana/Brembana. Monte Blum sopra Clusone/Rovetta (1302 m), lanci S/SO. Raccordo all'atterraggio di Monte Blum - Clusone (633 m s.l.m., dislivello ~669 m).",
     note: "Monte Blum sopra Clusone/Rovetta (1302 m), lanci S/SO.",
     landing: { name: "Monte Blum - Clusone", quota_m: 633, lat: 45.8883625, lon: 9.9814595 },
     webcams: [
@@ -2404,6 +2487,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1161,
     alt: 1161,
     province: "LO",
+    descrizione: "Sito di volo a 1161 m s.l.m. — Val Seriana/Brembana. Monte Farno in Val Gandino (1161 m), lanci da E a O: sito didattico dei club bergamaschi. Esposizioni praticabili su più quadranti (E/SE/S/SO/O). Raccordo all'atterraggio di Monte Farno Landeplatz 3 (607 m s.l.m., dislivello ~554 m).",
     note: "Monte Farno in Val Gandino (1161 m), lanci da E a O: sito didattico dei club bergamaschi.",
     landing: { name: "Monte Farno Landeplatz 3", quota_m: 607, lat: 45.8168, lon: 9.910486 },
     webcams: [
@@ -2430,6 +2514,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1278,
     alt: 1278,
     province: "LO",
+    descrizione: "Sito di volo a 1278 m s.l.m. — Val Seriana/Brembana. Colli di San Fermo (1278 m) sopra Casazza, lancio a SO sul monte omonimo. Raccordo all'atterraggio di Colli Di San Fermo (casazza) (339 m s.l.m., dislivello ~939 m).",
     note: "Colli di San Fermo (1278 m) sopra Casazza, lancio a SO sul monte omonimo.",
     landing: { name: "Colli Di San Fermo (casazza)", quota_m: 339, lat: 45.756489, lon: 9.9155545 },
     source: "SpotAir #64940",
@@ -2453,6 +2538,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 975,
     alt: 975,
     province: "LO",
+    descrizione: "Decollo a 975 m s.l.m. — Val Seriana/Brembana. Chiesa Sant'Antonio sopra Zogno (975 m), lancio a SO in Val Brembana. Raccordo all'atterraggio di Chiesa S. Antonio Landeplatz (293 m s.l.m., dislivello ~682 m).",
     note: "Chiesa Sant'Antonio sopra Zogno (975 m), lancio a SO in Val Brembana.",
     landing: { name: "Chiesa S. Antonio Landeplatz", quota_m: 293, lat: 45.789919, lon: 9.643956 },
     webcams: [
@@ -2480,6 +2566,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1099,
     alt: 1099,
     province: "LO",
+    descrizione: "Sito di volo a 1099 m s.l.m. — Val Seriana/Brembana. Decollo d'Albino (1099 m), lanci S/SO comodi dalla Val Seriana bassa. Raccordo all'atterraggio di Albino Landeplatz (387 m s.l.m., dislivello ~712 m).",
     note: "Decollo d'Albino (1099 m), lanci S/SO comodi dalla Val Seriana bassa.",
     landing: { name: "Albino Landeplatz", quota_m: 387, lat: 45.7676235, lon: 9.7978545 },
     webcams: [
@@ -2506,6 +2593,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2128,
     alt: 2128,
     province: "LO",
+    descrizione: "Decollo a 2128 m s.l.m. — Val Seriana/Brembana. Scermendone sopra i Piani (2128 m), lancio a S d'alta quota. Raccordo all'atterraggio di Scermendone Landeplatz (263 m s.l.m., dislivello ~1865 m).",
     note: "Scermendone sopra i Piani (2128 m), lancio a S d'alta quota.",
     landing: { name: "Scermendone Landeplatz", quota_m: 263, lat: 46.165686, lon: 9.675919 },
     source: "SpotAir #47178",
@@ -2529,6 +2617,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1881,
     alt: 1881,
     province: "LO",
+    descrizione: "Sito di volo a 1881 m s.l.m. — Lario/Valchiavenna. Monte Berlinghera sopra Gera Lario (1881 m), lancio di vetta SO/O sul Lario alto. Raccordo all'atterraggio di Monte Berlinghera Landeplatz 2 (201 m s.l.m., dislivello ~1680 m).",
     note: "Monte Berlinghera sopra Gera Lario (1881 m), lancio di vetta SO/O sul Lario alto.",
     landing: { name: "Monte Berlinghera Landeplatz 2", quota_m: 201, lat: 46.170195, lon: 9.380533 },
     photo: { url: "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1f/Monte_Berlinghera_from_Novate_Mezzola_%281%29.jpg/1920px-Monte_Berlinghera_from_Novate_Mezzola_%281%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail", credit: "Wikimedia Commons · Monte Berlinghera from Novate Mezzola (1).jpg" },
@@ -2553,6 +2642,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1758,
     alt: 1758,
     province: "LO",
+    descrizione: "Punto di decollo a 1758 m s.l.m. — Lario/Valchiavenna. Monte Mezzo sopra Gera Lario (1758 m), lancio SE/O sul lago di Como nord. Raccordo all'atterraggio di Monte Berlinghera Landeplatz (200 m s.l.m., dislivello ~1558 m).",
     note: "Monte Mezzo sopra Gera Lario (1758 m), lancio SE/O sul lago di Como nord.",
     landing: { name: "Monte Berlinghera Landeplatz", quota_m: 200, lat: 46.168793, lon: 9.3730525 },
     photo: { url: "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/fb/Gera_Lario_Vista_sul_Lago_di_Como_4.jpg/1920px-Gera_Lario_Vista_sul_Lago_di_Como_4.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail", credit: "Wikimedia Commons · Gera Lario Vista sul Lago di Como 4.jpg" },
@@ -2577,6 +2667,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1672,
     alt: 1672,
     province: "LO",
+    descrizione: "Sito di volo a 1672 m s.l.m. — Lario/Valchiavenna. Monte Galbiga sopra Porlezza (1672 m), lancio a NO. Raccordo all'atterraggio di Monte Gnino Landeplatz (280 m s.l.m., dislivello ~1392 m).",
     note: "Monte Galbiga sopra Porlezza (1672 m), lancio a NO.",
     landing: { name: "Monte Gnino Landeplatz", quota_m: 280, lat: 46.035231, lon: 9.130428 },
     source: "SpotAir #54636",
@@ -2600,6 +2691,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1656,
     alt: 1656,
     province: "LO",
+    descrizione: "Decollo a 1656 m s.l.m. — Lario/Valchiavenna. Monte Tremezzo sopra Tremezzina (1656 m), lancio E/SE sul lago di Como. Raccordo all'atterraggio di Monte Tremezzo Landeplatz (346 m s.l.m., dislivello ~1310 m).",
     note: "Monte Tremezzo sopra Tremezzina (1656 m), lancio E/SE sul lago di Como.",
     landing: { name: "Monte Tremezzo Landeplatz", quota_m: 346, lat: 45.993839, lon: 9.229353 },
     source: "SpotAir #50893",
@@ -2623,6 +2715,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1641,
     alt: 1641,
     province: "LO",
+    descrizione: "Sito di volo a 1641 m s.l.m. — Lario/Valchiavenna. Monte Crocione sopra Tremezzina (1641 m), classico lancio estivo sul Lario. Raccordo all'atterraggio di Monte Tremezzo Landeplatz (346 m s.l.m., dislivello ~1295 m).",
     note: "Monte Crocione sopra Tremezzina (1641 m), classico lancio estivo sul Lario.",
     landing: { name: "Monte Tremezzo Landeplatz", quota_m: 346, lat: 45.993839, lon: 9.229353 },
     source: "SpotAir #74167",
@@ -2646,6 +2739,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1686,
     alt: 1686,
     province: "LO",
+    descrizione: "Punto di decollo a 1686 m s.l.m. — Lario/Valchiavenna. Monte San Primo sopra Bellagio (1686 m), lancio con vista sui tre rami del lago. Raccordo all'atterraggio di Tremezzo-Crocione-Bellagio (233 m s.l.m., dislivello ~1453 m).",
     note: "Monte San Primo sopra Bellagio (1686 m), lancio con vista sui tre rami del lago.",
     landing: { name: "Tremezzo-Crocione-Bellagio", quota_m: 233, lat: 45.9768, lon: 9.2557 },
     webcams: [
@@ -2672,6 +2766,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 958,
     alt: 958,
     province: "LO",
+    descrizione: "Punto di decollo a 958 m s.l.m. — Lario/Valchiavenna. Samolaco in Valchiavenna (958 m), lancio a E sopra il piano. Raccordo all'atterraggio di Monte Berlinghera Landeplatz 2 (201 m s.l.m., dislivello ~757 m).",
     note: "Samolaco in Valchiavenna (958 m), lancio a E sopra il piano.",
     landing: { name: "Monte Berlinghera Landeplatz 2", quota_m: 201, lat: 46.170195, lon: 9.380533 },
     source: "SpotAir #51003",
@@ -2695,6 +2790,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1330,
     alt: 1330,
     province: "LO",
+    descrizione: "Punto di decollo a 1330 m s.l.m. — Lario/Valchiavenna. Germasino sopra Dongo (1330 m), lancio E/SE sull'alto lago di Como. Atterraggio non mappato dalla fonte: da ricognire in loco prima del volo.",
     note: "Germasino sopra Dongo (1330 m), lancio E/SE sull'alto lago di Como.",
     source: "SpotAir #51000",
   },
@@ -2717,6 +2813,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1397,
     alt: 1397,
     province: "LO",
+    descrizione: "Decollo a 1397 m s.l.m. — Lario/Valchiavenna. Monte Sertore sopra Pigra (1397 m), lanci SO/O sul Ramo di Como. Raccordo all'atterraggio di Pigra Landeplatz (602 m s.l.m., dislivello ~795 m).",
     note: "Monte Sertore sopra Pigra (1397 m), lanci SO/O sul Ramo di Como.",
     landing: { name: "Pigra Landeplatz", quota_m: 602, lat: 45.957269, lon: 9.083611 },
     source: "SpotAir #50896",
@@ -2740,6 +2837,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2015,
     alt: 2015,
     province: "LO",
+    descrizione: "Punto di decollo a 2015 m s.l.m. — Val Camonica/Garda. Dos del Curù sopra Cevo (2015 m), lanci SE/SO in Val Camonica. Raccordo all'atterraggio di Dos Del Curu Landeplatz (801 m s.l.m., dislivello ~1214 m).",
     note: "Dos del Curù sopra Cevo (2015 m), lanci SE/SO in Val Camonica.",
     landing: { name: "Dos Del Curu Landeplatz", quota_m: 801, lat: 46.071139, lon: 10.400767 },
     photo: { url: "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/99/Val_Camonica_aerial.jpg/1920px-Val_Camonica_aerial.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail", credit: "Wikimedia Commons · Val Camonica aerial.jpg" },
@@ -2764,6 +2862,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1207,
     alt: 1207,
     province: "LO",
+    descrizione: "Decollo a 1207 m s.l.m. — Val Camonica/Garda. Monte Pizzocolo sopra Gardone Riviera (1207 m), lanci multipli sul Lago di Garda. Esposizioni praticabili su più quadranti (E/SE/SO/O). Raccordo all'atterraggio di Landing Monte Pizzocolo 1 (395 m s.l.m., dislivello ~812 m).",
     note: "Monte Pizzocolo sopra Gardone Riviera (1207 m), lanci multipli sul Lago di Garda.",
     landing: { name: "Landing Monte Pizzocolo 1", quota_m: 395, lat: 45.641428, lon: 10.5502375 },
     photo: { url: "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/96/Iseo_lake_%28Lago_iseo%29_from_Paratico_lungolago_%282021%29.jpg/1920px-Iseo_lake_%28Lago_iseo%29_from_Paratico_lungolago_%282021%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail", credit: "Wikimedia Commons · Iseo lake (Lago iseo) from Paratico lungolago (2021).jpg" },
@@ -2788,6 +2887,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1019,
     alt: 1019,
     province: "LO",
+    descrizione: "Punto di decollo a 1019 m s.l.m. — Val Camonica/Garda. Gole sopra Sale Marasino (1019 m): il decollo classico del Garda bresciano, attenzione alla brezza del lago. Esposizione SO/O. Raccordo all'atterraggio di DECOLLO GOLE (1023 m s.l.m.).",
     note: "Gole sopra Sale Marasino (1019 m): il decollo classico del Garda bresciano, attenzione alla brezza del lago.",
     landing: { name: "DECOLLO GOLE", quota_m: 1023, lat: 45.6899, lon: 10.134 },
     source: "SpotAir #47149",
@@ -2811,6 +2911,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 631,
     alt: 631,
     province: "LO",
+    descrizione: "Punto di decollo a 631 m s.l.m. — Val Camonica/Garda. Monte Maddalena sopra Brescia (631 m), lancio S/SO comodo dalla città. Raccordo all'atterraggio di Monte Maddalena Landeplatz (124 m s.l.m., dislivello ~507 m).",
     note: "Monte Maddalena sopra Brescia (631 m), lancio S/SO comodo dalla città.",
     landing: { name: "Monte Maddalena Landeplatz", quota_m: 124, lat: 45.524943, lon: 10.2583805 },
     photo: { url: "https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d2/Chiesa_di_Santa_Maria_Maddalena_sul_Monte_Brescia.jpg/1920px-Chiesa_di_Santa_Maria_Maddalena_sul_Monte_Brescia.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail", credit: "Wikimedia Commons · Chiesa di Santa Maria Maddalena sul Monte Brescia.jpg" },
@@ -2835,6 +2936,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1346,
     alt: 1346,
     province: "LO",
+    descrizione: "Sito di volo a 1346 m s.l.m. — Val Camonica/Garda. Monte Stino sopra Anfo/Bagolino (1346 m), lancio sul Lago d'Idro. Raccordo all'atterraggio di Alpo di Storo Landeplatz (368 m s.l.m., dislivello ~978 m).",
     note: "Monte Stino sopra Anfo/Bagolino (1346 m), lancio sul Lago d'Idro.",
     landing: { name: "Alpo di Storo Landeplatz", quota_m: 368, lat: 45.806161, lon: 10.528247 },
     source: "SpotAir #62203",
@@ -2858,6 +2960,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1166,
     alt: 1166,
     province: "LO",
+    descrizione: "Punto di decollo a 1166 m s.l.m. — Varesotto/Lago Maggiore. Campo dei Fiori sopra Varese (1166 m), lanci SE/S/SO sul Sacro Monte. Raccordo all'atterraggio di Campo Dei Fiorri (373 m s.l.m., dislivello ~793 m).",
     note: "Campo dei Fiori sopra Varese (1166 m), lanci SE/S/SO sul Sacro Monte.",
     landing: { name: "Campo Dei Fiorri", quota_m: 373, lat: 45.8298, lon: 8.77935 },
     source: "SpotAir #70102",
@@ -2881,6 +2984,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1079,
     alt: 1079,
     province: "LO",
+    descrizione: "Punto di decollo a 1079 m s.l.m. — Varesotto/Lago Maggiore. Laveno – Monte Nudo (1079 m), lancio E/SE/S/SO sul Lago Maggiore. Raccordo all'atterraggio di Null (213 m s.l.m., dislivello ~866 m).",
     note: "Laveno – Monte Nudo (1079 m), lancio E/SE/S/SO sul Lago Maggiore.",
     landing: { name: "Null", quota_m: 213, lat: 45.897388, lon: 8.63892067 },
     source: "SpotAir #50661",
@@ -2904,6 +3008,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1049,
     alt: 1049,
     province: "LO",
+    descrizione: "Sito di volo a 1049 m s.l.m. — Varesotto/Lago Maggiore. Laveno – Sasso del Ferro (1049 m), lancio SE/S con funivia e vista lago. Raccordo all'atterraggio di Null (213 m s.l.m., dislivello ~836 m).",
     note: "Laveno – Sasso del Ferro (1049 m), lancio SE/S con funivia e vista lago.",
     landing: { name: "Null", quota_m: 213, lat: 45.897388, lon: 8.63892067 },
     photo: { url: "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/10/Laveno-Mombello%2C_Italia.jpg/1920px-Laveno-Mombello%2C_Italia.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail", credit: "Wikimedia Commons · Laveno-Mombello, Italia.jpg" },
@@ -2928,6 +3033,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 430,
     alt: 430,
     province: "LO",
+    descrizione: "Punto di decollo a 430 m s.l.m. — Oltrepò Pavese. Montalto Pavese (430 m) nell'Oltrepò: lancio a O per voli invernali collinari. Raccordo all'atterraggio di Montalto Pavese Landeplatz (370 m s.l.m., dislivello ~60 m).",
     note: "Montalto Pavese (430 m) nell'Oltrepò: lancio a O per voli invernali collinari.",
     landing: { name: "Montalto Pavese Landeplatz", quota_m: 370, lat: 44.968558, lon: 9.225175 },
     webcams: [
@@ -2954,6 +3060,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 891,
     alt: 891,
     province: "LIG",
+    descrizione: "Decollo a 891 m s.l.m. — Riviera dei Fiori. Ospedaletti alto (891 m): il grande decollo della Riviera dei Fiori, lanci E/SE. Raccordo all'atterraggio di Ospedaletti Landeplatz 1 (5 m s.l.m., dislivello ~886 m).",
     note: "Ospedaletti alto (891 m): il grande decollo della Riviera dei Fiori, lanci E/SE.",
     landing: { name: "Ospedaletti Landeplatz 1", quota_m: 5, lat: 43.80029633, lon: 7.70941967 },
     webcams: [
@@ -2982,6 +3089,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 329,
     alt: 329,
     province: "LIG",
+    descrizione: "Punto di decollo a 329 m s.l.m. — Riviera dei Fiori. Ospedaletti basso (329 m), lancio E/SE per il volo coastal invernale. Raccordo all'atterraggio di Ospedaletti Landeplatz 1 (5 m s.l.m., dislivello ~324 m).",
     note: "Ospedaletti basso (329 m), lancio E/SE per il volo coastal invernale.",
     landing: { name: "Ospedaletti Landeplatz 1", quota_m: 5, lat: 43.80029633, lon: 7.70941967 },
     webcams: [
@@ -3009,6 +3117,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 531,
     alt: 531,
     province: "LIG",
+    descrizione: "Punto di decollo a 531 m s.l.m. — Riviera dei Fiori. Monte Nero sopra Ospedaletti (531 m), lancio E/SE/S verso il mare. Raccordo all'atterraggio di Ospedaletti Landeplatz 1 (5 m s.l.m., dislivello ~526 m).",
     note: "Monte Nero sopra Ospedaletti (531 m), lancio E/SE/S verso il mare.",
     landing: { name: "Ospedaletti Landeplatz 1", quota_m: 5, lat: 43.80029633, lon: 7.70941967 },
     webcams: [
@@ -3036,6 +3145,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 205,
     alt: 205,
     province: "LIG",
+    descrizione: "Decollo a 205 m s.l.m. — Riviera dei Fiori. Capo Mele (205 m): il coastal classico sopra Andora/Laigueglia, lanci N/NE/E, atterraggio in spiaggia. Raccordo all'atterraggio di Capo Mele Landeplatz (9 m s.l.m., dislivello ~196 m).",
     note: "Capo Mele (205 m): il coastal classico sopra Andora/Laigueglia, lanci N/NE/E, atterraggio in spiaggia.",
     landing: { name: "Capo Mele Landeplatz", quota_m: 9, lat: 43.9698735, lon: 8.1615585 },
     webcams: [
@@ -3064,6 +3174,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 587,
     alt: 587,
     province: "LIG",
+    descrizione: "Punto di decollo a 587 m s.l.m. — Riviera dei Fiori. Alassio – Monte Pisciavino (587 m), lancio SE/S sul mare. Raccordo all'atterraggio di Monte Pisciavino Landeplatz (4 m s.l.m., dislivello ~583 m).",
     note: "Alassio – Monte Pisciavino (587 m), lancio SE/S sul mare.",
     landing: { name: "Monte Pisciavino Landeplatz", quota_m: 4, lat: 44.012872, lon: 8.180872 },
     webcams: [
@@ -3091,6 +3202,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 179,
     alt: 179,
     province: "LIG",
+    descrizione: "Sito di volo a 179 m s.l.m. — Riviera dei Fiori. Alassio – Puerta del Sol (179 m), lancio NE per il coastal invernale. Raccordo all'atterraggio di Alassio - Puerta Del Sol (4 m s.l.m., dislivello ~175 m).",
     note: "Alassio – Puerta del Sol (179 m), lancio NE per il coastal invernale.",
     landing: { name: "Alassio - Puerta Del Sol", quota_m: 4, lat: 43.9967735, lon: 8.165511 },
     webcams: [
@@ -3118,6 +3230,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 436,
     alt: 436,
     province: "LIG",
+    descrizione: "Sito di volo a 436 m s.l.m. — Riviera dei Fiori. Bevera sopra Ventimiglia (436 m), lancio E/SO; atterraggio a valle (33 m). Raccordo all'atterraggio di Bevera (33 m s.l.m., dislivello ~403 m).",
     note: "Bevera sopra Ventimiglia (436 m), lancio E/SO; atterraggio a valle (33 m).",
     landing: { name: "Bevera", quota_m: 33, lat: 43.8222875, lon: 7.577697 },
     webcams: [
@@ -3145,6 +3258,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 695,
     alt: 695,
     province: "LIG",
+    descrizione: "Sito di volo a 695 m s.l.m. — Riviera dei Fiori. Isolabona (695 m), lancio SE/S/SO sulla Val Nervia. Raccordo all'atterraggio di Isolabona (88 m s.l.m., dislivello ~607 m).",
     note: "Isolabona (695 m), lancio SE/S/SO sulla Val Nervia.",
     landing: { name: "Isolabona", quota_m: 88, lat: 43.8718, lon: 7.6276 },
     webcams: [
@@ -3171,6 +3285,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 451,
     alt: 451,
     province: "LIG",
+    descrizione: "Decollo a 451 m s.l.m. — Riviera dei Fiori. Taggia (451 m), lancio a SO sul mare; atterraggio (34 m). Raccordo all'atterraggio di Taggia Landeplatz (34 m s.l.m., dislivello ~417 m).",
     note: "Taggia (451 m), lancio a SO sul mare; atterraggio (34 m).",
     landing: { name: "Taggia Landeplatz", quota_m: 34, lat: 43.862394, lon: 7.855217 },
     webcams: [
@@ -3198,6 +3313,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 476,
     alt: 476,
     province: "LIG",
+    descrizione: "Punto di decollo a 476 m s.l.m. — Riviera di Ponente. Toirano (476 m), lancio SE/S sopra il centro; atterraggio (85 m). Raccordo all'atterraggio di Toirano (85 m s.l.m., dislivello ~391 m).",
     note: "Toirano (476 m), lancio SE/S sopra il centro; atterraggio (85 m).",
     landing: { name: "Toirano", quota_m: 85, lat: 44.129575, lon: 8.2025015 },
     webcams: [
@@ -3224,6 +3340,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 273,
     alt: 273,
     province: "LIG",
+    descrizione: "Punto di decollo a 273 m s.l.m. — Riviera di Ponente. Finale Ligure (273 m), lancio SE/S/SO: uno dei coastal più volati d'Italia. Raccordo all'atterraggio di Finale Ligure (4 m s.l.m., dislivello ~269 m).",
     note: "Finale Ligure (273 m), lancio SE/S/SO: uno dei coastal più volati d'Italia.",
     landing: { name: "Finale Ligure", quota_m: 4, lat: 44.1810375, lon: 8.387497 },
     webcams: [
@@ -3252,6 +3369,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 273,
     alt: 273,
     province: "LIG",
+    descrizione: "Sito di volo a 273 m s.l.m. — Riviera di Ponente. Borgio Verezzi (273 m), lancio SE/S tra Finale e Pietra Ligure. Raccordo all'atterraggio di Borgio Verezzi Landeplatz (2 m s.l.m., dislivello ~271 m).",
     note: "Borgio Verezzi (273 m), lancio SE/S tra Finale e Pietra Ligure.",
     landing: { name: "Borgio Verezzi Landeplatz", quota_m: 2, lat: 44.157825, lon: 8.311264 },
     webcams: [
@@ -3279,6 +3397,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 409,
     alt: 409,
     province: "LIG",
+    descrizione: "Sito di volo a 409 m s.l.m. — Riviera di Ponente. Spotorno (409 m), lancio a S sul mare. Raccordo all'atterraggio di Spotorno Landeplatz (6 m s.l.m., dislivello ~403 m).",
     note: "Spotorno (409 m), lancio a S sul mare.",
     landing: { name: "Spotorno Landeplatz", quota_m: 6, lat: 44.231714, lon: 8.42625 },
     webcams: [
@@ -3307,6 +3426,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 276,
     alt: 276,
     province: "LIG",
+    descrizione: "Sito di volo a 276 m s.l.m. — Riviera di Ponente. Noli (276 m), lancio a NE sul Capo Noli: coastal d'inverno, atterraggio a Noli (16 m). Raccordo all'atterraggio di Noli (4 m s.l.m., dislivello ~272 m).",
     note: "Noli (276 m), lancio a NE sul Capo Noli: coastal d'inverno, atterraggio a Noli (16 m).",
     landing: { name: "Noli", quota_m: 4, lat: 44.2008, lon: 8.41639 },
     webcams: [
@@ -3335,6 +3455,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 280,
     alt: 280,
     province: "LIG",
+    descrizione: "Sito di volo a 280 m s.l.m. — Riviera di Ponente. Bergeggi (280 m), lancio SE/S/SO sull'isola; atterraggio in spiaggia (7 m). Raccordo all'atterraggio di Bergeggi Landeplatz (7 m s.l.m., dislivello ~273 m).",
     note: "Bergeggi (280 m), lancio SE/S/SO sull'isola; atterraggio in spiaggia (7 m).",
     landing: { name: "Bergeggi Landeplatz", quota_m: 7, lat: 44.248161, lon: 8.4462 },
     webcams: [
@@ -3363,6 +3484,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 390,
     alt: 390,
     province: "LIG",
+    descrizione: "Punto di decollo a 390 m s.l.m. — Riviera di Ponente. Varazze (390 m), lancio SE/S/SO sopra la Riviera savonese. Raccordo all'atterraggio di Varazze Landeplatz (4 m s.l.m., dislivello ~386 m).",
     note: "Varazze (390 m), lancio SE/S/SO sopra la Riviera savonese.",
     landing: { name: "Varazze Landeplatz", quota_m: 4, lat: 44.360461, lon: 8.590075 },
     webcams: [
@@ -3391,6 +3513,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 998,
     alt: 998,
     province: "LIG",
+    descrizione: "Sito di volo a 998 m s.l.m. — Riviera di Ponente. Monte Beigua (998 m): il grande sito d'entroterra savonese, lancio a S per XC sull'Appennino. Raccordo all'atterraggio di Beigua (5 m s.l.m., dislivello ~993 m).",
     note: "Monte Beigua (998 m): il grande sito d'entroterra savonese, lancio a S per XC sull'Appennino.",
     landing: { name: "Beigua", quota_m: 5, lat: 44.3905, lon: 8.664 },
     webcams: [
@@ -3419,6 +3542,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 354,
     alt: 354,
     province: "LIG",
+    descrizione: "Sito di volo a 354 m s.l.m. — Riviera di Ponente. Andora – Rollo (354 m), lancio NE/E/SE verso il mare. Raccordo all'atterraggio di Andora -Rollo (6 m s.l.m., dislivello ~348 m).",
     note: "Andora – Rollo (354 m), lancio NE/E/SE verso il mare.",
     landing: { name: "Andora -Rollo", quota_m: 6, lat: 43.945257, lon: 8.138746 },
     webcams: [
@@ -3446,6 +3570,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 946,
     alt: 946,
     province: "LIG",
+    descrizione: "Sito di volo a 946 m s.l.m. — Riviera di Ponente. Monte Maggio sopra Casella (946 m), lanci SE/S sull'Appennino genovese; atterraggio (402 m). Raccordo all'atterraggio di Monte Maggio Landeplatz (402 m s.l.m., dislivello ~544 m).",
     note: "Monte Maggio sopra Casella (946 m), lanci SE/S sull'Appennino genovese; atterraggio (402 m).",
     landing: { name: "Monte Maggio Landeplatz", quota_m: 402, lat: 44.532694, lon: 8.998922 },
     source: "SpotAir #51045",
@@ -3469,6 +3594,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 901,
     alt: 901,
     province: "LIG",
+    descrizione: "Punto di decollo a 901 m s.l.m. — Riviera di Ponente. Monte Banca sopra Montoggio (901 m), lancio a O; atterraggio (432 m). Raccordo all'atterraggio di Monte Banca Landeplatz (432 m s.l.m., dislivello ~469 m).",
     note: "Monte Banca sopra Montoggio (901 m), lancio a O; atterraggio (432 m).",
     landing: { name: "Monte Banca Landeplatz", quota_m: 432, lat: 44.51515, lon: 9.029317 },
     source: "SpotAir #51049",
@@ -3492,6 +3618,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 614,
     alt: 614,
     province: "LIG",
+    descrizione: "Sito di volo a 614 m s.l.m. — Riviera di Ponente. Creto sopra Genova (614 m), lancio SE/S/SO; atterraggio Creto (262 m). Raccordo all'atterraggio di Creto (262 m s.l.m., dislivello ~352 m).",
     note: "Creto sopra Genova (614 m), lancio SE/S/SO; atterraggio Creto (262 m).",
     landing: { name: "Creto", quota_m: 262, lat: 44.4756, lon: 8.9955 },
     webcams: [
@@ -3519,6 +3646,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 869,
     alt: 869,
     province: "LIG",
+    descrizione: "Decollo a 869 m s.l.m. — Riviera di Ponente. Praglia (869 m), lancio E/SE verso lo Scrivia; atterraggio (385 m). Raccordo all'atterraggio di Praglia (385 m s.l.m., dislivello ~484 m).",
     note: "Praglia (869 m), lancio E/SE verso lo Scrivia; atterraggio (385 m).",
     landing: { name: "Praglia", quota_m: 385, lat: 44.5273, lon: 8.8515 },
     source: "SpotAir #66591",
@@ -3542,6 +3670,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1058,
     alt: 1058,
     province: "LIG",
+    descrizione: "Sito di volo a 1058 m s.l.m. — Riviera di Ponente. Leco (1058 m), lanci SE/S/SO; atterraggio (563 m). Raccordo all'atterraggio di Leco (563 m s.l.m., dislivello ~495 m).",
     note: "Leco (1058 m), lanci SE/S/SO; atterraggio (563 m).",
     landing: { name: "Leco", quota_m: 563, lat: 44.5515, lon: 8.8676 },
     source: "SpotAir #64105",
@@ -3565,6 +3694,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 924,
     alt: 924,
     province: "LIG",
+    descrizione: "Punto di decollo a 924 m s.l.m. — Riviera di Ponente. Biscia (924 m), lancio S/SO/O nell'entroterra polceveresco. Atterraggio non mappato dalla fonte: da ricognire in loco prima del volo.",
     note: "Biscia (924 m), lancio S/SO/O nell'entroterra polceveresco.",
     webcams: [
       { name: "Castiglione Chiavarese", imageUrl: "https://live-image.panomax.com/cams/12266/recent_hd.jpg", url: "https://castiglionechiavarese.panomax.com", fonte: "SpotAir · panomax", distKm: 11.5 },
@@ -3590,6 +3720,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 632,
     alt: 632,
     province: "LIG",
+    descrizione: "Punto di decollo a 632 m s.l.m. — Riviera di Ponente. Monte San Giacomo – Breccanecca (632 m), lancio S/SO sul mare di Cogoleto; atterraggio (14 m). Raccordo all'atterraggio di Monte San Giacomo - Breccanecca (14 m s.l.m., dislivello ~618 m).",
     note: "Monte San Giacomo – Breccanecca (632 m), lancio S/SO sul mare di Cogoleto; atterraggio (14 m).",
     landing: { name: "Monte San Giacomo - Breccanecca", quota_m: 14, lat: 44.3461, lon: 9.3608 },
     webcams: [
@@ -3616,6 +3747,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1235,
     alt: 1235,
     province: "LIG",
+    descrizione: "Punto di decollo a 1235 m s.l.m. — Alpi Liguri/Appennino. Mendatica (1235 m), lancio a SE nell'Alta Val Tanaro; atterraggio (706 m). Raccordo all'atterraggio di Mendatica Landeplatz (706 m s.l.m., dislivello ~529 m).",
     note: "Mendatica (1235 m), lancio a SE nell'Alta Val Tanaro; atterraggio (706 m).",
     landing: { name: "Mendatica Landeplatz", quota_m: 706, lat: 44.078128, lon: 7.809661 },
     photo: { url: "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7f/Mendatica-panorama4.jpg/1920px-Mendatica-panorama4.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail", credit: "Wikimedia Commons · Mendatica-panorama4.jpg" },
@@ -3640,6 +3772,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1882,
     alt: 1882,
     province: "LIG",
+    descrizione: "Sito di volo a 1882 m s.l.m. — Alpi Liguri/Appennino. La Penna sopra Mendatica (1882 m), lancio E/S d'alta quota sulle Alpi Liguri. Raccordo all'atterraggio di Mendatica Landeplatz (706 m s.l.m., dislivello ~1176 m).",
     note: "La Penna sopra Mendatica (1882 m), lancio E/S d'alta quota sulle Alpi Liguri.",
     landing: { name: "Mendatica Landeplatz", quota_m: 706, lat: 44.078128, lon: 7.809661 },
     source: "SpotAir #51075",
@@ -3663,6 +3796,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1242,
     alt: 1242,
     province: "LIG",
+    descrizione: "Punto di decollo a 1242 m s.l.m. — Alpi Liguri/Appennino. Alto – Caprauna (1242 m), lancio verso la val Tanaro; atterraggio (611 m). Raccordo all'atterraggio di Alto (611 m s.l.m., dislivello ~631 m).",
     note: "Alto – Caprauna (1242 m), lancio verso la val Tanaro; atterraggio (611 m).",
     landing: { name: "Alto", quota_m: 611, lat: 44.108, lon: 8.00671 },
     source: "SpotAir #66776",
@@ -3686,6 +3820,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 811,
     alt: 811,
     province: "LIG",
+    descrizione: "Punto di decollo a 811 m s.l.m. — Alpi Liguri/Appennino. Monte San Nicolao (811 m), lancio a SO sulla Fontanabuona. Atterraggio non mappato dalla fonte: da ricognire in loco prima del volo.",
     note: "Monte San Nicolao (811 m), lancio a SO sulla Fontanabuona.",
     webcams: [
       { name: "Castiglione Chiavarese", imageUrl: "https://live-image.panomax.com/cams/12266/recent_hd.jpg", url: "https://castiglionechiavarese.panomax.com", fonte: "SpotAir · panomax", distKm: 2.9 },
@@ -3712,6 +3847,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1746,
     alt: 1746,
     province: "LIG",
+    descrizione: "Punto di decollo a 1746 m s.l.m. — Alpi Liguri/Appennino. Monte Bue – Santo Stefano d'Aveto (1746 m), lanci SO/O sull'Aveto; atterraggio (1164 m). Raccordo all'atterraggio di Monte Bue - S.Stefano d' Aveto (1164 m s.l.m., dislivello ~582 m).",
     note: "Monte Bue – Santo Stefano d'Aveto (1746 m), lanci SO/O sull'Aveto; atterraggio (1164 m).",
     landing: { name: "Monte Bue - S.Stefano d' Aveto", quota_m: 1164, lat: 44.5484, lon: 9.4662 },
     photo: { url: "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/68/Castello_%28Santo_Stefano_d%27Aveto%29_-_facciata_1_2022-06-07.jpg/1920px-Castello_%28Santo_Stefano_d%27Aveto%29_-_facciata_1_2022-06-07.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail", credit: "Wikimedia Commons · Castello (Santo Stefano d'Aveto) - facciata 1 2022-06-07.jpg" },
@@ -3736,6 +3872,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1630,
     alt: 1630,
     province: "LIG",
+    descrizione: "Decollo a 1630 m s.l.m. — Alpi Liguri/Appennino. Monte Ragola (1630 m) sopra Santo Stefano d'Aveto, lanci SE/S/SO. Raccordo all'atterraggio di Chiodo Fisso - Passo Del Chiodo (1043 m s.l.m., dislivello ~587 m).",
     note: "Monte Ragola (1630 m) sopra Santo Stefano d'Aveto, lanci SE/S/SO.",
     landing: { name: "Chiodo Fisso - Passo Del Chiodo", quota_m: 1043, lat: 44.5252, lon: 9.52943 },
     webcams: [
@@ -3762,6 +3899,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1478,
     alt: 1478,
     province: "LIG",
+    descrizione: "Decollo a 1478 m s.l.m. — Alpi Liguri/Appennino. Monte Pelpi (1478 m), lancio a SO sulla Val Taro; atterraggio (472 m). Raccordo all'atterraggio di Monte Pelpi Landeplatz (472 m s.l.m., dislivello ~1006 m).",
     note: "Monte Pelpi (1478 m), lancio a SO sulla Val Taro; atterraggio (472 m).",
     landing: { name: "Monte Pelpi Landeplatz", quota_m: 472, lat: 44.489336, lon: 9.657756 },
     webcams: [
@@ -3788,6 +3926,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1356,
     alt: 1356,
     province: "LIG",
+    descrizione: "Sito di volo a 1356 m s.l.m. — Alpi Liguri/Appennino. Chiodo Fisso – Passo del Chiodo (1356 m), lancio E/SE al passo; atterraggio (1043 m). Raccordo all'atterraggio di Chiodo Fisso - Passo Del Chiodo (1043 m s.l.m., dislivello ~313 m).",
     note: "Chiodo Fisso – Passo del Chiodo (1356 m), lancio E/SE al passo; atterraggio (1043 m).",
     landing: { name: "Chiodo Fisso - Passo Del Chiodo", quota_m: 1043, lat: 44.5252, lon: 9.52943 },
     webcams: [
@@ -3814,6 +3953,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 841,
     alt: 841,
     province: "LIG",
+    descrizione: "Punto di decollo a 841 m s.l.m. — Alpi Liguri/Appennino. Mombarcaro (841 m), lanci E/SE/S sull'alto Monferrato ligure; atterraggi (347/351 m). Raccordo all'atterraggio di Mombarcaro (347 m s.l.m., dislivello ~494 m).",
     note: "Mombarcaro (841 m), lanci E/SE/S sull'alto Monferrato ligure; atterraggi (347/351 m).",
     landing: { name: "Mombarcaro", quota_m: 347, lat: 44.4719265, lon: 8.114573 },
     webcams: [
@@ -3841,6 +3981,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 500,
     alt: 500,
     province: "LIG",
+    descrizione: "Decollo a 500 m s.l.m. — Alpi Liguri/Appennino. Castelletto d'Erro (500 m), lancio a NE; atterraggio (216 m). Raccordo all'atterraggio di Castelletto Landing (216 m s.l.m., dislivello ~284 m).",
     note: "Castelletto d'Erro (500 m), lancio a NE; atterraggio (216 m).",
     landing: { name: "Castelletto Landing", quota_m: 216, lat: 44.611, lon: 8.40227 },
     webcams: [
@@ -3867,6 +4008,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1504,
     alt: 1504,
     province: "LIG",
+    descrizione: "Punto di decollo a 1504 m s.l.m. — Alpi Liguri/Appennino. Pobbio – Cabella Ligure (1504 m), lanci S/SO/O/NO sul Borbera; atterraggio (457 m). Raccordo all'atterraggio di Monte Chiappo Landeplatz (1007 m s.l.m., dislivello ~497 m).",
     note: "Pobbio – Cabella Ligure (1504 m), lanci S/SO/O/NO sul Borbera; atterraggio (457 m).",
     landing: { name: "Monte Chiappo Landeplatz", quota_m: 1007, lat: 44.674403, lon: 9.174053 },
     webcams: [
@@ -3893,6 +4035,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1668,
     alt: 1668,
     province: "LIG",
+    descrizione: "Decollo a 1668 m s.l.m. — Alpi Liguri/Appennino. Monte Chiappo (1668 m) sopra Aie Cosola: il grande XC dell'Appennino ligure-piemontese, lancio O/NO; atterraggio (1007 m). Raccordo all'atterraggio di Monte Chiappo Landeplatz (1007 m s.l.m., dislivello ~661 m).",
     note: "Monte Chiappo (1668 m) sopra Aie Cosola: il grande XC dell'Appennino ligure-piemontese, lancio O/NO; atterraggio (1007 m).",
     landing: { name: "Monte Chiappo Landeplatz", quota_m: 1007, lat: 44.674403, lon: 9.174053 },
     webcams: [
@@ -3920,6 +4063,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1635,
     alt: 1635,
     province: "LIG",
+    descrizione: "Sito di volo a 1635 m s.l.m. — Alpi Liguri/Appennino. Monte Lesima (1635 m), lancio NE: XC verso la pianura o il mare; atterraggio Lama (1187 m). Raccordo all'atterraggio di Monte Lesima Landeplatz 1 (1187 m s.l.m., dislivello ~448 m).",
     note: "Monte Lesima (1635 m), lancio NE: XC verso la pianura o il mare; atterraggio Lama (1187 m).",
     landing: { name: "Monte Lesima Landeplatz 1", quota_m: 1187, lat: 44.695561, lon: 9.263444 },
     webcams: [
@@ -3947,6 +4091,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 565,
     alt: 565,
     province: "LIG",
+    descrizione: "Punto di decollo a 565 m s.l.m. — Alpi Liguri/Appennino. Soglio – Orero (565 m), lancio SE/S/SO sulla val Graveglia; atterraggio (44 m). Raccordo all'atterraggio di Soglio - Orero (50 m s.l.m., dislivello ~515 m).",
     note: "Soglio – Orero (565 m), lancio SE/S/SO sulla val Graveglia; atterraggio (44 m).",
     landing: { name: "Soglio - Orero", quota_m: 50, lat: 44.3872, lon: 9.2796 },
     webcams: [
@@ -3974,6 +4119,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 2630,
     alt: 2630,
     province: "FR",
+    descrizione: "Punto di decollo a 2630 m s.l.m. — Monginevro (Francia). Monte Jafferau sopra Bardonecchia: lancio W/NW dal forte omonimo, panorama su Val Susa e Monginevro. Atterraggio non mappato dalla fonte: da ricognire in loco prima del volo.",
     note: "Monte Jafferau sopra Bardonecchia: lancio W/NW dal forte omonimo, panorama su Val Susa e Monginevro.",
     webcams: [
       { name: "Valfréjus - Punta Bagna", imageUrl: "https://api.skaping.com/0S0B-Z208-AhJW-k9Ky-6q5k/media/latest/thumb.jpg", url: "https://www.skaping.com/valfrejus/puntabagna", fonte: "SpotAir · skaping", distKm: 9.6 },
@@ -4001,6 +4147,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 3112,
     alt: 3112,
     province: "FR",
+    descrizione: "Decollo a 3112 m s.l.m. — Monginevro (Francia). Il Mont Chaberton (3130 m) domina il Monginevro: lancio W/SO d'alta quota, hike&fly solo con condizioni stabili. Atterraggio non mappato dalla fonte: da ricognire in loco prima del volo.",
     note: "Il Mont Chaberton (3130 m) domina il Monginevro: lancio W/SO d'alta quota, hike&fly solo con condizioni stabili.",
     webcams: [
       { name: "Montgenèvre - Sommet Chalvet", imageUrl: "https://www.trinum.com/ibox/ftpcam/montgenevre_sommet-chalvet.jpg", url: "https://m.webcam-hd.com/montgenevre/sommet-chalvet", fonte: "SpotAir · mobicams", distKm: 3.7 },
@@ -4028,6 +4175,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 3082,
     alt: 3082,
     province: "TO",
+    descrizione: "Decollo a 3082 m s.l.m. — Monginevro. Cesana Torinese – Terra Nera: lancio ai piedi del Monginevro, esposizione variabile secondo il vento. Atterraggio non mappato dalla fonte: da ricognire in loco prima del volo.",
     note: "Cesana Torinese – Terra Nera: lancio ai piedi del Monginevro, esposizione variabile secondo il vento.",
     webcams: [
       { name: "Vialattea - Colle Bercia", imageUrl: "https://live-image.panomax.com/cams/5706/recent_hd.jpg", url: "https://collebercia.panomax.com", fonte: "SpotAir · panomax", distKm: 9.2 },
@@ -4054,6 +4202,7 @@ const DECOLLI_BASE: Decollo[] = [
     altitude: 1750,
     alt: 1750,
     province: "TO",
+    descrizione: "Punto di decollo a 1750 m s.l.m. — Monginevro. Grange Sises sopra Cesana: lancio a O verso il vallone del Monginevro. Esposizione W. Atterraggio non mappato dalla fonte: da ricognire in loco prima del volo.",
     note: "Grange Sises sopra Cesana: lancio a O verso il vallone del Monginevro.",
     webcams: [
       { name: "Vialattea - Tappeti Jolly", imageUrl: "https://live-image.panomax.com/cams/5861/recent_hd.jpg", url: "https://tappetijolly.panomax.com", fonte: "SpotAir · panomax", distKm: 2.0 },

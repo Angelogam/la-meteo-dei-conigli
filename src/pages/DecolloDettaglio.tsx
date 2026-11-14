@@ -2,21 +2,24 @@
 
 /**
  * PAGINA DETTAGLIO DECOLLO — /decollo/:id
- * Tutte le informazioni del decollo in una pagina dedicata (non nel pannello
- * laterale, per non appesantire la finestra principale): foto della fonte,
- * descrizione in italiano, dati operativi, atterraggio, galleria, webcam
- * verificate e sintesi meteo a 3 giorni.
+ * Layout personalizzato a sfondo chiaro (indipendente dal tema scuro del sito):
+ * - hero con foto, dati chiave e rosa delle esposizioni;
+ * - colonna contenuti (descrizione reale, dati operativi, sintesi meteo);
+ * - colonna laterale con CARTINA Leaflet per arrivarci, CLUB con telefono
+ *   (recapiti pubblici verificati) e box "come arrivare";
+ * - isola scura webcam; crediti fonti.
  */
 
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
-  ArrowLeft, Camera, ExternalLink, Flag, Layers, MapPin, Mountain,
-  Navigation, PlaneLanding, Star, Thermometer, Users, Wind, Zap,
+  ArrowLeft, Camera, Check, Copy, ExternalLink, Flag, Layers, Mail, MapPin,
+  MessageCircle, Mountain, Navigation, Phone, PlaneLanding, Star, Thermometer,
+  Users, Wind,
 } from "lucide-react";
 import { DECOLLO_MAP, AREA_LABELS, type Decollo } from "@/data/decolli";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
+import { clubContattoForName, clubPiuVicino } from "@/data/club-contatti";
+import CartinaDecollo from "@/components/CartinaDecollo";
 import WebcamNearby from "@/components/WebcamNearby";
 import "../decpl-dettaglio.css";
 
@@ -64,12 +67,61 @@ function espostaGiudizio(d: Decollo): string {
   return "Sito poco documentato";
 }
 
+function toDMS(v: number, isLat: boolean): string {
+  const dir = isLat ? (v >= 0 ? "N" : "S") : (v >= 0 ? "E" : "O");
+  const abs = Math.abs(v);
+  const d = Math.floor(abs);
+  const mF = (abs - d) * 60;
+  const m = Math.floor(mF);
+  const s = Math.round((mF - m) * 60);
+  return `${d}°${String(m).padStart(2, "0")}'${String(s).padStart(2, "0")}" ${dir}`;
+}
+
+const SETTORI: Record<string, number> = {
+  N: 0, NNE: 22.5, NE: 45, ENE: 67.5, E: 90, ESE: 112.5, SE: 135, SSE: 157.5,
+  S: 180, SSO: 202.5, SO: 225, SSW: 202.5, SW: 225, WSW: 247.5, O: 270, W: 270,
+  WNW: 292.5, NO: 315, NW: 315, NNO: 337.5, NNW: 337.5,
+};
+
+/** Rosa delle esposizioni: evidenzia i quadranti aperti al decollo. */
+function RosaEsposizione({ orient, size = 30 }: { orient: string; size?: number }) {
+  const tokens = orient.split(/[/\s]+/).map((t) => t.trim().toUpperCase()).filter((t) => t in SETTORI);
+  const active = new Set(tokens.map((t) => SETTORI[t]));
+  const wedge = (center: number) => {
+    const r = 15.5;
+    const a1 = ((center - 22.5) * Math.PI) / 180;
+    const a2 = ((center + 22.5) * Math.PI) / 180;
+    const x1 = 18 + r * Math.sin(a1), y1 = 18 - r * Math.cos(a1);
+    const x2 = 18 + r * Math.sin(a2), y2 = 18 - r * Math.cos(a2);
+    return `M18 18 L${x1.toFixed(2)} ${y1.toFixed(2)} A${r} ${r} 0 0 1 ${x2.toFixed(2)} ${y2.toFixed(2)} Z`;
+  };
+  return (
+    <svg viewBox="0 0 36 36" width={size} height={size} aria-hidden="true" className="dxd-rose">
+      {Array.from({ length: 8 }, (_, i) => i * 45).map((c) => (
+        <path key={c} d={wedge(c)} className={active.has(c) ? "is-on" : ""} />
+      ))}
+      <circle cx="18" cy="18" r="2.1" className="dxd-rose-dot" />
+    </svg>
+  );
+}
+
+function telHref(tel: string): string {
+  return "tel:" + tel.replace(/[^+\d]/g, "");
+}
+function waHref(tel: string): string {
+  const digits = tel.replace(/\D/g, "");
+  const intl = digits.startsWith("39") ? digits : "39" + digits;
+  return "https://wa.me/" + intl;
+}
+
 export default function DecolloDettaglio() {
   const { id } = useParams<{ id: string }>();
   const site = id ? DECOLLO_MAP[id] : undefined;
 
   const [meteo, setMeteo] = useState<MiniMeteo | null>(null);
   const [meteoState, setMeteoState] = useState<"loading" | "ok" | "error">("loading");
+  const [copied, setCopied] = useState(false);
+  const [heroFail, setHeroFail] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!site) return;
@@ -113,20 +165,26 @@ export default function DecolloDettaglio() {
 
   const gallery = useMemo(() => site?.photos ?? (site?.photo ? [site.photo] : []), [site]);
 
+  const copyCoords = () => {
+    if (!site) return;
+    const text = `${site.lat.toFixed(5)}, ${site.lon.toFixed(5)}`;
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        setCopied(true);
+        window.setTimeout(() => setCopied(false), 1600);
+      }).catch(() => {});
+    }
+  };
+
   if (!site) {
     return (
-      <div className="flight-website-shell min-h-screen">
-        <Header />
-        <div className="flight-app-body is-single">
-          <div className="flight-page-column">
-            <main className="dcd-main">
-              <div className="dcd-missing">
-                <Mountain aria-hidden="true" />
-                <h1>Decollo non trovato</h1>
-                <p>Il decollo «{id}» non è presente nella banca dati.</p>
-                <Link to="/" className="dcd-cta is-primary"><ArrowLeft aria-hidden="true" /> Torna al meteo</Link>
-              </div>
-            </main>
+      <div className="dxd-page min-h-screen">
+        <div className="dxd-main">
+          <div className="dxd-missing">
+            <Mountain aria-hidden="true" />
+            <h1>Decollo non trovato</h1>
+            <p>Il decollo «{id}» non è presente nella banca dati.</p>
+            <Link to="/" className="dxd-btn is-primary"><ArrowLeft aria-hidden="true" /> Torna al meteo</Link>
           </div>
         </div>
       </div>
@@ -138,197 +196,334 @@ export default function DecolloDettaglio() {
   const orient = site.orientation || site.exposure || "";
   const landing = site.landing;
   const rating = site.rating ?? null;
+  const origDesc = (site.description ?? "").trim();
+
+  // club: contatti verificati dal registro, con fallback «club più vicino»
+  const contatto = clubContattoForName(site.club?.name);
+  const clubName = contatto?.name ?? site.club?.name;
+  const clubUrl = contatto?.url ?? site.club?.url;
+  const vicino = !site.club && !contatto ? clubPiuVicino(site.lat, site.lon) : undefined;
+
+  const heroImgUrl = gallery[0]?.url;
+  const heroImg = heroImgUrl && !heroFail.has(heroImgUrl) ? heroImgUrl : undefined;
+  const quotaTxt = quota != null ? quota.toLocaleString("it-IT") + " m s.l.m." : "quota N/D";
 
   return (
-    <div className="flight-website-shell min-h-screen">
-      <Header />
-      <div className="flight-app-body is-single">
-        <div className="flight-page-column">
-          <main className="dcd-main app-main flight-page w-full min-w-0 mx-auto px-3 sm:px-4 xl:px-6 py-4 space-y-4">
-            <nav className="dcd-topbar" aria-label="Navigazione">
-              <Link to="/" className="dcd-back"><ArrowLeft size={15} aria-hidden="true" /> Torna al meteo</Link>
-              <span className="dcd-crumb">{area ?? "Decollo"} · dettaglio</span>
-            </nav>
+    <div className="dxd-page min-h-screen">
+      {/* HEADER CHIARO PERSONALIZZATO */}
+      <header className="dxd-header">
+        <Link to="/" className="dxd-brand">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3 19 L10 6 L14 13 L16 10 L21 19 Z" fill="currentColor" opacity=".9" /></svg>
+          La Meteo dei Conigli
+        </Link>
+        <nav className="dxd-header-nav" aria-label="Navigazione sito">
+          <Link to="/" className="dxd-header-link">Briefing meteo</Link>
+          <Link to="/termiche" className="dxd-header-link is-secondary">Cartina termiche</Link>
+        </nav>
+      </header>
 
-            {/* HERO */}
-            <section className={"dcd-hero" + (gallery.length ? "" : " dcd-hero--nophoto")}>
-              {gallery[0] && (
-                <img className="dcd-hero-img" src={gallery[0].url} alt={"Foto del decollo " + site.site_name} referrerPolicy="no-referrer" />
+      <main className="dxd-main">
+        <nav className="dxd-topbar" aria-label="Navigazione">
+          <Link to="/" className="dxd-back"><ArrowLeft size={15} aria-hidden="true" /> Torna al meteo</Link>
+          <span className="dxd-crumb">{area ?? "Decollo"} · dettaglio</span>
+        </nav>
+
+        {/* HERO */}
+        <section className={"dxd-hero" + (heroImg ? " has-photo" : "")}>
+          {heroImg && (
+            <img className="dxd-hero-img" src={heroImg} alt={"Foto del decollo " + (site.site_name || site.name)} referrerPolicy="no-referrer" onError={() => setHeroFail((prev) => new Set(prev).add(heroImg))} />
+          )}
+          {!heroImg && (
+            <svg className="dxd-hero-art" viewBox="0 0 600 300" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+              <path d="M0 300 L90 170 L150 240 L230 120 L320 300 Z" fill="#0e7a5f" opacity=".08" />
+              <path d="M180 300 L300 90 L380 210 L440 150 L560 300 Z" fill="#0e7a5f" opacity=".12" />
+              <path d="M420 300 L500 180 L600 260 L600 300 Z" fill="#12a37c" opacity=".10" />
+            </svg>
+          )}
+          <div className="dxd-hero-inner">
+            <p className="dxd-hero-kicker">
+              <MapPin size={13} aria-hidden="true" />
+              {site.location_name || site.valle || site.regione || "Località non indicata"}
+              {area && <span className="dxd-hero-area">{area}</span>}
+            </p>
+            <h1 className="dxd-hero-title">{site.site_name || site.name}</h1>
+            <div className="dxd-hero-facts">
+              <span className="dxd-hero-chip"><Mountain size={13} aria-hidden="true" /> {quotaTxt}</span>
+              {orient && (
+                <span className="dxd-hero-chip is-rose" title={"Esposizione " + orient}>
+                  <RosaEsposizione orient={orient} size={22} />
+                  Esposizione {orient}
+                </span>
               )}
-              <div className="dcd-hero-scrim" aria-hidden="true" />
-              <div className="dcd-hero-inner">
-                <p className="dcd-hero-kicker">
-                  <MapPin size={12} aria-hidden="true" />
-                  {site.location_name || site.valle || site.regione || "Località non indicata"}
-                  {area && <span className="dcd-hero-area">{area}</span>}
-                </p>
-                <h1 className="dcd-hero-title">{site.site_name || site.name}</h1>
-                <div className="dcd-hero-facts">
-                  <span className="dcd-hero-chip"><Mountain size={13} aria-hidden="true" /> {quota.toLocaleString("it-IT")} m s.l.m.</span>
-                  {orient && <span className="dcd-hero-chip"><Navigation size={13} aria-hidden="true" /> Esposizione {orient}</span>}
-                  {rating != null && rating > 0 && (
-                    <span className="dcd-hero-chip is-rating" title={espostaGiudizio(site)}>
-                      <Star size={13} aria-hidden="true" /> {rating}/6 · {espostaGiudizio(site)}
-                    </span>
-                  )}
-                  {site.frequenza && <span className="dcd-hero-chip"><Users size={13} aria-hidden="true" /> {site.frequenza}</span>}
+              {rating != null && rating > 0 && (
+                <span className="dxd-hero-chip is-rating" title={espostaGiudizio(site)}>
+                  <Star size={13} aria-hidden="true" /> {rating}/6 · {espostaGiudizio(site)}
+                </span>
+              )}
+              {site.frequenza && <span className="dxd-hero-chip"><Users size={13} aria-hidden="true" /> {site.frequenza}</span>}
+            </div>
+            <div className="dxd-hero-actions">
+              <Link to={"/?site=" + site.id} className="dxd-btn is-primary"><Wind aria-hidden="true" /> Briefing meteo completo</Link>
+              <a
+                className="dxd-btn"
+                href={`https://www.google.com/maps/dir/?api=1&destination=${site.lat},${site.lon}`}
+                target="_blank" rel="noopener noreferrer"
+              ><Flag aria-hidden="true" /> Indicazioni stradali</a>
+            </div>
+          </div>
+        </section>
+
+        <div className="dxd-layout">
+          {/* ------- COLONNA CONTENUTI ------- */}
+          <div className="dxd-content">
+            {/* DESCRIZIONE */}
+            <section className="dxd-card">
+              <div className="dxd-card-head"><h2>Il decollo</h2></div>
+              <p className="dxd-desc">{site.descrizione ?? site.note ?? "Descrizione non disponibile: consulta le fonti locali."}</p>
+              {origDesc && (
+                <details className="dxd-orig">
+                  <summary>Testo originale della fonte (paraglidingspots.com)</summary>
+                  <p>«{origDesc}»</p>
+                </details>
+              )}
+              {gallery.length > 1 && (
+                <div className="dxd-gallery">
+                  {gallery.slice(1, 7).map((p, i) => (
+                    <a key={p.url} className="dxd-gallery-item" href={p.url} target="_blank" rel="noopener noreferrer">
+                      <img src={p.url} alt={"Foto " + (i + 2) + " del decollo " + (site.site_name || site.name)} loading="lazy" referrerPolicy="no-referrer" />
+                    </a>
+                  ))}
                 </div>
-                <div className="dcd-hero-actions">
-                  <Link to={"/?site=" + site.id} className="dcd-cta is-primary"><Wind aria-hidden="true" /> Apri il briefing meteo completo</Link>
-                  <a
-                    className="dcd-cta"
-                    href={`https://www.google.com/maps/dir/?api=1&destination=${site.lat},${site.lon}`}
-                    target="_blank" rel="noopener noreferrer"
-                  ><Flag aria-hidden="true" /> Indicazioni stradali</a>
-                </div>
-              </div>
+              )}
             </section>
 
             {/* DATI OPERATIVI */}
-            <section className="dcd-section">
-              <div className="dcd-section-head"><h2>Dati operativi</h2></div>
-              <div className="dcd-factgrid">
-                <div className="dcd-fact">
-                  <span className="dcd-fact-icon"><Mountain aria-hidden="true" /></span>
-                  <span className="dcd-fact-label">Quota decollo</span>
-                  <span className="dcd-fact-value">{quota.toLocaleString("it-IT")} m</span>
+            <section className="dxd-card">
+              <div className="dxd-card-head"><h2>Dati operativi</h2><small>fonte: {site.source ?? "ParaglidingSpots"}</small></div>
+              <div className="dxd-factgrid">
+                <div className="dxd-fact">
+                  <span className="dxd-fact-icon"><Mountain aria-hidden="true" /></span>
+                  <span className="dxd-fact-label">Quota decollo</span>
+                  <span className="dxd-fact-value">{quota != null ? quota.toLocaleString("it-IT") + " m" : "N/D"}</span>
                 </div>
-                <div className="dcd-fact">
-                  <span className="dcd-fact-icon"><Navigation aria-hidden="true" /></span>
-                  <span className="dcd-fact-label">Esposizione</span>
-                  <span className="dcd-fact-value">{orient || "variabile"}</span>
+                <div className="dxd-fact">
+                  <span className="dxd-fact-icon"><Navigation aria-hidden="true" /></span>
+                  <span className="dxd-fact-label">Esposizione</span>
+                  <span className="dxd-fact-value is-flex">{orient ? <RosaEsposizione orient={orient} size={26} /> : null}{orient || "variabile"}</span>
                 </div>
-                <div className="dcd-fact">
-                  <span className="dcd-fact-icon"><MapPin aria-hidden="true" /></span>
-                  <span className="dcd-fact-label">Coordinate</span>
-                  <span className="dcd-fact-value is-mono">{site.lat.toFixed(4)}, {site.lon.toFixed(4)}</span>
-                </div>
-                <div className="dcd-fact">
-                  <span className="dcd-fact-icon"><Flag aria-hidden="true" /></span>
-                  <span className="dcd-fact-label">Area</span>
-                  <span className="dcd-fact-value">
+                <div className="dxd-fact">
+                  <span className="dxd-fact-icon"><Flag aria-hidden="true" /></span>
+                  <span className="dxd-fact-label">Area</span>
+                  <span className="dxd-fact-value">
                     {area ?? "—"}
                     {site.regione && area && site.regione.toLowerCase() !== area.toLowerCase() ? ` · ${site.regione}` : ""}
                     {!area && site.regione ? site.regione : ""}
                   </span>
                 </div>
-                <div className={"dcd-fact" + (landing ? "" : " is-missing")}>
-                  <span className="dcd-fact-icon"><PlaneLanding aria-hidden="true" /></span>
-                  <span className="dcd-fact-label">Atterraggio</span>
-                  <span className="dcd-fact-value">
+                <div className={"dxd-fact" + (landing ? "" : " is-missing")}>
+                  <span className="dxd-fact-icon"><PlaneLanding aria-hidden="true" /></span>
+                  <span className="dxd-fact-label">Atterraggio</span>
+                  <span className="dxd-fact-value">
                     {landing ? (
                       <>
                         {landing.name}{landing.quota_m ? ` · ${landing.quota_m.toLocaleString("it-IT")} m` : ""}
                         {landing.distKm != null && <small> {landing.distKm} km dal decollo</small>}
-                        {landing.quota_m && landing.quota_m < quota && <small> dislivello ~{(quota - landing.quota_m).toLocaleString("it-IT")} m</small>}
+                        {landing.quota_m && quota != null && landing.quota_m < quota && <small> dislivello ~{(quota - landing.quota_m).toLocaleString("it-IT")} m</small>}
                       </>
                     ) : "da verificare in loco"}
                   </span>
                 </div>
-                <div className="dcd-fact">
-                  <span className="dcd-fact-icon"><Layers aria-hidden="true" /></span>
-                  <span className="dcd-fact-label">Fonte dati</span>
-                  <span className="dcd-fact-value">{site.source ?? "ParaglidingSpots"}</span>
+                <div className="dxd-fact">
+                  <span className="dxd-fact-icon"><MapPin aria-hidden="true" /></span>
+                  <span className="dxd-fact-label">Coordinate decollo</span>
+                  <span className="dxd-fact-value is-mono">{site.lat.toFixed(4)}, {site.lon.toFixed(4)}</span>
+                </div>
+                <div className="dxd-fact">
+                  <span className="dxd-fact-icon"><Layers aria-hidden="true" /></span>
+                  <span className="dxd-fact-label">Fonte dati</span>
+                  <span className="dxd-fact-value">{site.source ?? "ParaglidingSpots"}</span>
                 </div>
               </div>
             </section>
 
-            {/* DESCRIZIONE */}
-            <section className="dcd-section">
-              <div className="dcd-section-head"><h2>Descrizione del decollo</h2></div>
-              <p className="dcd-desc">{site.descrizione ?? site.note ?? "Descrizione non disponibile: consulta le fonti locali."}</p>
-              {site.description && (
-                <details className="dcd-orig">
-                  <summary>Testo originale della fonte (paraglidingspots.com)</summary>
-                  <p>{site.description}</p>
-                </details>
-              )}
-            </section>
-
-            {/* GALLERIA */}
-            {gallery.length > 1 && (
-              <section className="dcd-section">
-                <div className="dcd-section-head"><h2>Photo gallery</h2><small>{gallery.length} foto dalla fonte</small></div>
-                <div className="dcd-gallery">
-                  {gallery.slice(1, 7).map((p, i) => (
-                    <a key={p.url} className="dcd-gallery-item" href={p.url} target="_blank" rel="noopener noreferrer">
-                      <img src={p.url} alt={"Foto " + (i + 2) + " del decollo " + site.site_name} loading="lazy" referrerPolicy="no-referrer" />
-                    </a>
-                  ))}
-                </div>
-              </section>
-            )}
-
             {/* SINTESI METEO */}
-            <section className="dcd-section">
-              <div className="dcd-section-head">
+            <section className="dxd-card">
+              <div className="dxd-card-head">
                 <h2>Sintesi meteo a 3 giorni</h2>
                 <small>Open-Meteo · modello grigliato sul punto decollo</small>
               </div>
-              {meteoState === "loading" && <div className="dcd-meteo-state">Carico il modello meteo…</div>}
-              {meteoState === "error" && <div className="dcd-meteo-state">Modello non disponibile: apri il briefing completo per il dettaglio orario.</div>}
+              {meteoState === "loading" && <div className="dxd-meteo-state">Carico il modello meteo…</div>}
+              {meteoState === "error" && <div className="dxd-meteo-state">Modello non disponibile: apri il briefing completo per il dettaglio orario.</div>}
               {meteoState === "ok" && meteo && (
                 <>
-                  <div className="dcd-now">
-                    <span className="dcd-now-icon">{CODE_ICON[meteo.current.code ?? 3] ?? "☁"}</span>
-                    <span className="dcd-now-temp">{meteo.current.temperature != null ? Math.round(meteo.current.temperature) + "°C" : "—"}</span>
-                    <span className="dcd-now-wind">
+                  <div className="dxd-now">
+                    <span className="dxd-now-icon">{CODE_ICON[meteo.current.code ?? 3] ?? "☁"}</span>
+                    <span className="dxd-now-temp">{meteo.current.temperature != null ? Math.round(meteo.current.temperature) + "°C" : "—"}</span>
+                    <span className="dxd-now-wind">
                       <Wind size={13} aria-hidden="true" />
                       {meteo.current.windSpeed != null ? Math.round(meteo.current.windSpeed) + " km/h " + dirCardinale(meteo.current.windDir) : "vento N/D"}
                       {meteo.current.windGusts != null && <small> raffiche {Math.round(meteo.current.windGusts)}</small>}
                     </span>
-                    <span className="dcd-now-live">ora corrente sul decollo</span>
+                    <span className="dxd-now-live">ora corrente sul decollo</span>
                   </div>
-                  <div className="dcd-days">
+                  <div className="dxd-days">
                     {meteo.days.map((g, i) => {
                       const v = verdictDay(g);
                       const label = new Date(g.date + "T12:00").toLocaleDateString("it-IT", { weekday: "short", day: "numeric", month: "short" });
                       return (
-                        <div key={g.date} className={"dcd-day " + v.cls}>
-                          <span className="dcd-day-name">{i === 0 ? "Oggi" : i === 1 ? "Domani" : label}</span>
-                          <span className="dcd-day-temp">
+                        <div key={g.date} className={"dxd-day " + v.cls}>
+                          <span className="dxd-day-name">{i === 0 ? "Oggi" : i === 1 ? "Domani" : label}</span>
+                          <span className="dxd-day-temp">
                             {g.tMax != null ? Math.round(g.tMax) + "°" : "—"}
                             {g.tMin != null ? <small> / {Math.round(g.tMin)}°</small> : null}
                           </span>
-                          <span className="dcd-day-wind">
+                          <span className="dxd-day-wind">
                             <Wind size={11} aria-hidden="true" />
                             {g.wind != null ? Math.round(g.wind) : "—"} km/h {dirCardinale(g.dir)}
                             {g.gusts != null && <small> r.{Math.round(g.gusts)}</small>}
                           </span>
-                          <span className="dcd-day-rain">{(g.rain ?? 0) > 0 ? (g.rain as number).toFixed(1) + " mm" : "asciutto"}</span>
-                          <span className="dcd-day-verdict">{v.label}</span>
+                          <span className="dxd-day-rain">{(g.rain ?? 0) > 0 ? (g.rain as number).toFixed(1) + " mm" : "asciutto"}</span>
+                          <span className="dxd-day-verdict">{v.label}</span>
                         </div>
                       );
                     })}
                   </div>
                 </>
               )}
-              <div className="dcd-meteo-foot">
-                <Link to={"/?site=" + site.id} className="dcd-cta is-primary is-small">
+              <div className="dxd-meteo-foot">
+                <Link to={"/?site=" + site.id} className="dxd-btn is-primary is-small">
                   <Thermometer aria-hidden="true" /> Briefing completo: orari, windgram, termiche
                 </Link>
               </div>
             </section>
 
-            {/* WEBCAM */}
-            <section className="dcd-section">
-              <div className="dcd-section-head"><h2>Webcam e mappe</h2></div>
+            {/* WEBCAM — isola scura (componente nativo scuro) */}
+            <section className="dxd-dark">
+              <div className="dxd-dark-head">
+                <h2><Camera size={16} aria-hidden="true" /> Webcam della zona</h2>
+                <a href={`https://www.windy.com/?${site.lat},${site.lon},12`} target="_blank" rel="noopener noreferrer" className="dxd-dark-link">
+                  Windy al decollo <ExternalLink size={12} aria-hidden="true" />
+                </a>
+              </div>
               <WebcamNearby siteId={site.id} siteName={site.site_name ?? site.name} latitude={site.lat} longitude={site.lon} compact />
-              <div className="dcd-maplinks">
-                <a href={`https://www.windy.com/?${site.lat},${site.lon},12`} target="_blank" rel="noopener noreferrer" className="dcd-cta is-small"><Camera aria-hidden="true" /> Windy al decollo</a>
-                <a href={`https://www.openstreetmap.org/?mlat=${site.lat}&mlon=${site.lon}#map=14/${site.lat}/${site.lon}`} target="_blank" rel="noopener noreferrer" className="dcd-cta is-small"><MapPin aria-hidden="true" /> OpenStreetMap</a>
+            </section>
+          </div>
+
+          {/* ------- COLONNA LATERALE ------- */}
+          <aside className="dxd-rail">
+            {/* CARTINA */}
+            <section className="dxd-card">
+              <div className="dxd-card-head"><h2>Cartina per arrivarci</h2></div>
+              <CartinaDecollo
+                lat={site.lat}
+                lon={site.lon}
+                name={site.site_name || site.name}
+                landing={landing ? { name: landing.name, lat: landing.lat, lon: landing.lon, quota_m: landing.quota_m } : null}
+              />
+              <div className="dxd-btnrow">
+                <a
+                  className="dxd-btn is-primary is-small"
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${site.lat},${site.lon}`}
+                  target="_blank" rel="noopener noreferrer"
+                ><Flag aria-hidden="true" /> Indicazioni stradali</a>
+                <a
+                  className="dxd-btn is-small"
+                  href={`https://www.openstreetmap.org/?mlat=${site.lat}&mlon=${site.lon}#map=14/${site.lat}/${site.lon}`}
+                  target="_blank" rel="noopener noreferrer"
+                ><MapPin aria-hidden="true" /> OpenStreetMap</a>
               </div>
             </section>
 
-            {/* CREDITI */}
-            <section className="dcd-credits">
-              <span><Zap size={12} aria-hidden="true" /> Dati e foto: paraglidingspots.com{site.pspId ? ` (placemark #${site.pspId})` : ""} · quote OpenTopoData (EU-DEM) · geocodifica OpenStreetMap/Nominatim</span>
-              {site.club?.name && <span>Club di riferimento: {site.club.name}</span>}
+            {/* CLUB */}
+            <section className="dxd-card is-club">
+              <div className="dxd-card-head"><h2>Club di riferimento</h2><Users size={15} aria-hidden="true" className="dxd-head-ico" /></div>
+              {clubName ? (
+                <>
+                  <p className="dxd-club-name">{clubName}</p>
+                  {contatto && <p className="dxd-club-zona">{contatto.zona}</p>}
+                  <div className="dxd-club-actions">
+                    {(contatto?.tel || site.club?.tel) && (
+                      <a className="dxd-btn is-primary" href={telHref(contatto?.tel ?? site.club?.tel ?? "")}>
+                        <Phone aria-hidden="true" /> {contatto?.tel ?? site.club?.tel}
+                      </a>
+                    )}
+                    {(contatto?.tel2 || site.club?.tel2) && (
+                      <a className="dxd-btn" href={telHref(contatto?.tel2 ?? site.club?.tel2 ?? "")}>
+                        <Phone aria-hidden="true" /> {contatto?.tel2 ?? site.club?.tel2}
+                        {(contatto?.tel2Label ?? site.club?.tel2Label) && <em>{contatto?.tel2Label ?? site.club?.tel2Label}</em>}
+                      </a>
+                    )}
+                    {(contatto?.whatsapp || site.club?.whatsapp) && (
+                      <a className="dxd-btn is-whatsapp" href={waHref(contatto?.whatsapp ?? site.club?.whatsapp ?? "")} target="_blank" rel="noopener noreferrer">
+                        <MessageCircle aria-hidden="true" /> WhatsApp
+                      </a>
+                    )}
+                    {(contatto?.email || site.club?.email) && (
+                      <a className="dxd-btn" href={"mailto:" + (contatto?.email ?? site.club?.email)}>
+                        <Mail aria-hidden="true" /> Email
+                      </a>
+                    )}
+                    {clubUrl && (
+                      <a className="dxd-btn" href={clubUrl} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink aria-hidden="true" /> Sito del club
+                      </a>
+                    )}
+                  </div>
+                  {contatto && <p className="dxd-club-fonte">Recapiti pubblici verificati: {contatto.fonte}</p>}
+                </>
+              ) : vicino ? (
+                <>
+                  <p className="dxd-club-note">Nessun club ufficiale mappato per questo decollo: il club con contatti pubblici più vicino è</p>
+                  <p className="dxd-club-name">{vicino.club.name}</p>
+                  <p className="dxd-club-zona">{vicino.club.zona} · ~{Math.round(vicino.distKm)} km in linea d'aria</p>
+                  <div className="dxd-club-actions">
+                    {vicino.club.tel && <a className="dxd-btn is-primary" href={telHref(vicino.club.tel)}><Phone aria-hidden="true" /> {vicino.club.tel}</a>}
+                    {vicino.club.whatsapp && <a className="dxd-btn is-whatsapp" href={waHref(vicino.club.whatsapp)} target="_blank" rel="noopener noreferrer"><MessageCircle aria-hidden="true" /> WhatsApp</a>}
+                    {vicino.club.url && <a className="dxd-btn" href={vicino.club.url} target="_blank" rel="noopener noreferrer"><ExternalLink aria-hidden="true" /> Sito del club</a>}
+                  </div>
+                  <p className="dxd-club-fonte">Recapiti pubblici verificati: {vicino.club.fonte}</p>
+                </>
+              ) : (
+                <p className="dxd-club-note">
+                  Nessun club con contatti pubblici noto per questo decollo: prima del volo informati presso una scuola di volo locale o la federazione della zona.
+                </p>
+              )}
             </section>
-          </main>
-          <Footer />
+
+            {/* COME ARRIVARE */}
+            <section className="dxd-card">
+              <div className="dxd-card-head"><h2>Come arrivare</h2></div>
+              <div className="dxd-coord">
+                <span className="dxd-coord-label">Coordinate decimali</span>
+                <span className="dxd-coord-value is-mono">{site.lat.toFixed(5)}, {site.lon.toFixed(5)}</span>
+                <button type="button" className="dxd-copy" onClick={copyCoords} aria-label="Copia le coordinate">
+                  {copied ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
+                  {copied ? "Copiato!" : "Copia"}
+                </button>
+              </div>
+              <div className="dxd-coord">
+                <span className="dxd-coord-label">Gradi-minuti-secondi</span>
+                <span className="dxd-coord-value is-mono">{toDMS(site.lat, true)} · {toDMS(site.lon, false)}</span>
+              </div>
+              {landing && Number.isFinite(landing.lat) && (
+                <div className="dxd-coord">
+                  <span className="dxd-coord-label">Atterraggio · {landing.name}</span>
+                  <span className="dxd-coord-value is-mono">{landing.lat.toFixed(5)}, {landing.lon.toFixed(5)}</span>
+                </div>
+              )}
+              <p className="dxd-hint">
+                L'ultimo tratto è spesso una pista rurale: usa la cartina per il punto esatto e chiedi in locale l'accesso consentito.
+              </p>
+            </section>
+          </aside>
         </div>
-      </div>
+
+        {/* CREDITI */}
+        <footer className="dxd-credits">
+          <span>Dati e foto: paraglidingspots.com{site.pspId ? ` (placemark #${site.pspId})` : ""} · quote OpenTopoData (EU-DEM) · geocodifica OpenStreetMap/Nominatim · cartina Leaflet + tile OpenStreetMap/OpenTopoMap</span>
+          <span>La Meteo dei Conigli · volo libero in Italia e Alpi</span>
+        </footer>
+      </main>
     </div>
   );
 }
