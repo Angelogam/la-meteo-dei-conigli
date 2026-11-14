@@ -507,6 +507,57 @@
 }
 .dxd-dark-link:hover { color: #d7efe3; }
 
+/* ---------- foto della zona (Wikimedia Commons) ---------- */
+.dxd-zona-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: .7rem;
+}
+.dxd-zona-item {
+  display: block;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid #e0e9e3;
+  background: #f2f7f4;
+  text-decoration: none;
+  transition: border-color .15s ease, transform .15s ease, box-shadow .15s ease;
+}
+.dxd-zona-item:hover { border-color: #12a37c; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(14, 122, 95, .14); }
+.dxd-zona-item img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.dxd-zona-item span {
+  display: block;
+  padding: .45rem .6rem;
+  color: #5a6f66;
+  font-size: .7rem;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- decolli vicini ---------- */
+.dxd-vicini { display: flex; flex-direction: column; gap: .45rem; }
+.dxd-vicino {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  padding: .55rem .75rem;
+  border-radius: 12px;
+  border: 1px solid #e3ece6;
+  background: #f7fbf8;
+  text-decoration: none;
+  transition: border-color .15s ease, background .15s ease;
+}
+.dxd-vicino:hover { border-color: #0e7a5f; background: #eef7f1; }
+.dxd-vicino-name { color: #17251f; font-weight: 800; font-size: .88rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dxd-vicino-meta { color: #6c8177; font-size: .74rem; font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dxd-vicino-km { color: #0e7a5f; font-weight: 800; font-size: .78rem; white-space: nowrap; }
+
+/* ---------- approfondisci ---------- */
+.dxd-btnrow.is-col { flex-direction: column; }
+.dxd-btnrow.is-col .dxd-btn { width: 100%; }
+
 /* ---------- crediti ---------- */
 .dxd-credits {
   display: flex;

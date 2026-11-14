@@ -17,7 +17,7 @@ import {
   MessageCircle, Mountain, Navigation, Phone, PlaneLanding, Star, Thermometer,
   Users, Wind,
 } from "lucide-react";
-import { DECOLLO_MAP, AREA_LABELS, type Decollo } from "@/data/decolli";
+import { DECOLLO_MAP, DECOLLI, AREA_LABELS, type Decollo } from "@/data/decolli";
 import { clubContattoForName, clubPiuVicino } from "@/data/club-contatti";
 import CartinaDecollo from "@/components/CartinaDecollo";
 import WebcamNearby from "@/components/WebcamNearby";
@@ -43,6 +43,91 @@ interface MiniMeteo {
 }
 
 const CODE_ICON: Record<number, string> = { 0: "☀", 1: "🌤", 2: "⛅", 3: "☁", 45: "🌫", 48: "🌫", 51: "🌦", 53: "🌦", 55: "🌦", 61: "🌧", 63: "🌧", 65: "🌧", 71: "🌨", 73: "🌨", 75: "❄", 80: "🌦", 81: "🌧", 82: "🌧", 95: "⛈", 96: "⛈", 99: "⛈" };
+
+/* ---------- Foto della zona da Wikimedia Commons (API pubblica, CORS aperto) ---------- */
+
+interface CommonsPhoto { url: string; title: string; page: string }
+interface CommonsPage {
+  title: string;
+  index?: number;
+  imageinfo?: { thumburl?: string; url?: string; descriptionurl?: string; width?: number }[];
+}
+const commonsCache = new Map<string, CommonsPhoto[]>();
+
+const BAD_PHOTO = /(mappa|map|kart|plan_?general|schema|logo|icon|bandiera|flag|stemma|coat|diagram|chart|scudo|city hall|hôtel de ville|interni|interior)/i;
+
+function tokensOf(text: string): string[] {
+  return (text ?? "")
+    .toLowerCase()
+    .split(/[^a-zà-ù]+/)
+    .filter((t) => t.length >= 5);
+}
+
+/** Accetta solo foto il cui titolo cita davvero il sito o la località. */
+function parseCommons(j: unknown, subjectTokens: string[]): CommonsPhoto[] {
+  const pages: CommonsPage[] = [];
+  const q = (j as { query?: { pages?: Record<string, CommonsPage> } })?.query?.pages;
+  if (q) pages.push(...Object.values(q));
+  return pages
+    .sort((a, b) => (a.index ?? 99) - (b.index ?? 99))
+    .map((p) => ({
+      url: p.imageinfo?.[0]?.thumburl ?? p.imageinfo?.[0]?.url ?? "",
+      title: p.title.replace(/^File:/, ""),
+      page: p.imageinfo?.[0]?.descriptionurl ?? "https://commons.wikimedia.org",
+      w: p.imageinfo?.[0]?.width ?? 0,
+    }))
+    .filter((p) => {
+      if (!p.url || p.w < 500) return false;
+      if (BAD_PHOTO.test(p.title)) return false;
+      const t = p.title.toLowerCase();
+      return subjectTokens.some((tok) => t.includes(tok));
+    })
+    .slice(0, 6)
+    .map(({ url, title, page }) => ({ url, title, page }));
+}
+
+function useZonaPhotos(site: Decollo | undefined): CommonsPhoto[] | null {
+  const [photos, setPhotos] = useState<CommonsPhoto[] | null>(null);
+  useEffect(() => {
+    if (!site) return;
+    let alive = true;
+    setPhotos(null);
+    const cached = commonsCache.get(site.id);
+    if (cached) { setPhotos(cached); return; }
+    const name = site.site_name ?? site.name ?? "";
+    const loc = site.location_name ?? site.valle ?? "";
+    const subject = [...tokensOf(name), ...tokensOf(loc)];
+    // catena: titolo che cita il nome → nome+località → località; il filtro
+    // sui token nel titolo scarta le foto fuori tema (niente città hall casuali)
+    const attempts = [
+      `intitle:${name}`,
+      [name, loc].filter(Boolean).join(" "),
+      loc,
+    ].filter((q) => q.length > 2);
+    (async () => {
+      for (const gsrsearch of attempts) {
+        try {
+          const params = new URLSearchParams({
+            action: "query", generator: "search", gsrsearch: gsrsearch + " filetype:bitmap",
+            gsrnamespace: "6", gsrlimit: "12", prop: "imageinfo",
+            iiprop: "url|size", iiurlwidth: "800", format: "json", origin: "*",
+          });
+          const r = await fetch("https://commons.wikimedia.org/w/api.php?" + params.toString());
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          const photos = parseCommons(await r.json(), subject);
+          if (photos.length) {
+            commonsCache.set(site.id, photos);
+            if (alive) setPhotos(photos);
+            return;
+          }
+        } catch { /* prossimo tentativo / sezione vuota */ }
+      }
+      if (alive) setPhotos([]);
+    })();
+    return () => { alive = false; };
+  }, [site]);
+  return photos;
+}
 
 function dirCardinale(deg: number | null | undefined): string {
   if (deg == null || !Number.isFinite(deg)) return "—";
@@ -122,6 +207,7 @@ export default function DecolloDettaglio() {
   const [meteoState, setMeteoState] = useState<"loading" | "ok" | "error">("loading");
   const [copied, setCopied] = useState(false);
   const [heroFail, setHeroFail] = useState<Set<string>>(new Set());
+  const zonaPhotos = useZonaPhotos(site);
 
   useEffect(() => {
     if (!site) return;
@@ -164,6 +250,24 @@ export default function DecolloDettaglio() {
   }, [site]);
 
   const gallery = useMemo(() => site?.photos ?? (site?.photo ? [site.photo] : []), [site]);
+
+  /* Decolli vicini: i 4 più prossimi in linea d'aria (dati reali della banca dati) */
+  const vicini = useMemo(() => {
+    if (!site) return [] as { d: Decollo; km: number }[];
+    const R = 6371;
+    const hav = (aLat: number, aLon: number, bLat: number, bLon: number) => {
+      const dLat = ((bLat - aLat) * Math.PI) / 180;
+      const dLon = ((bLon - aLon) * Math.PI) / 180;
+      const s = Math.sin(dLat / 2) ** 2 +
+        Math.cos((aLat * Math.PI) / 180) * Math.cos((bLat * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+      return 2 * R * Math.asin(Math.sqrt(s));
+    };
+    return DECOLLI
+      .filter((d) => d.id !== site.id && Number.isFinite(d.lat) && Number.isFinite(d.lon))
+      .map((d) => ({ d, km: hav(site.lat, site.lon, d.lat, d.lon) }))
+      .sort((a, b) => a.km - b.km)
+      .slice(0, 4);
+  }, [site]);
 
   const copyCoords = () => {
     if (!site) return;
@@ -297,6 +401,25 @@ export default function DecolloDettaglio() {
               )}
             </section>
 
+            {/* FOTO DELLA ZONA — Wikimedia Commons (informazioni reali dal web) */}
+            <section className="dxd-card">
+              <div className="dxd-card-head"><h2>Foto della zona</h2><small>Wikimedia Commons · clicca per la pagina della foto</small></div>
+              {zonaPhotos === null && <div className="dxd-meteo-state">Cerco le foto della zona su Wikimedia Commons…</div>}
+              {zonaPhotos !== null && zonaPhotos.length === 0 && (
+                <div className="dxd-meteo-state">Nessuna foto pubblica trovata su Wikimedia Commons per questa zona.</div>
+              )}
+              {zonaPhotos !== null && zonaPhotos.length > 0 && (
+                <div className="dxd-zona-grid">
+                  {zonaPhotos.map((p) => (
+                    <a key={p.title} className="dxd-zona-item" href={p.page} target="_blank" rel="noopener noreferrer" title={p.title}>
+                      <img src={p.url} alt={p.title} loading="lazy" referrerPolicy="no-referrer" onError={(e) => { const el = e.currentTarget.closest(".dxd-zona-item"); if (el) (el as HTMLElement).style.display = "none"; }} />
+                      <span>{p.title}</span>
+                    </a>
+                  ))}
+                </div>
+              )}
+            </section>
+
             {/* DATI OPERATIVI */}
             <section className="dxd-card">
               <div className="dxd-card-head"><h2>Dati operativi</h2><small>fonte: {site.source ?? "ParaglidingSpots"}</small></div>
@@ -396,6 +519,25 @@ export default function DecolloDettaglio() {
                 </Link>
               </div>
             </section>
+
+            {/* DECOLLI VICINI */}
+            {vicini.length > 0 && (
+              <section className="dxd-card">
+                <div className="dxd-card-head">
+                  <h2>Decolli vicini</h2>
+                  <small>linea d'aria dal punto decollo</small>
+                </div>
+                <div className="dxd-vicini">
+                  {vicini.map(({ d, km }) => (
+                    <Link key={d.id} to={"/decollo/" + d.id} className="dxd-vicino">
+                      <span className="dxd-vicino-name">{d.site_name || d.name}</span>
+                      <span className="dxd-vicino-meta">{(d.elevation_m ?? d.altitude) != null ? ((d.elevation_m ?? d.altitude) as number).toLocaleString("it-IT") + " m" : "quota N/D"} · {d.location_name || d.valle}</span>
+                      <span className="dxd-vicino-km">{km < 10 ? km.toFixed(1).replace(".", ",") : Math.round(km)} km</span>
+                    </Link>
+                  ))}
+                </div>
+              </section>
+            )}
 
             {/* WEBCAM — isola scura (componente nativo scuro) */}
             <section className="dxd-dark">
@@ -514,6 +656,31 @@ export default function DecolloDettaglio() {
               <p className="dxd-hint">
                 L'ultimo tratto è spesso una pista rurale: usa la cartina per il punto esatto e chiedi in locale l'accesso consentito.
               </p>
+            </section>
+
+            {/* APPROFONDISCI SUL WEB */}
+            <section className="dxd-card">
+              <div className="dxd-card-head"><h2>Approfondisci sul web</h2></div>
+              <div className="dxd-btnrow is-col">
+                <a
+                  className="dxd-btn is-small"
+                  href={"https://it.wikipedia.org/w/index.php?search=" + encodeURIComponent((site.site_name || site.name) + " " + (site.location_name || site.valle || ""))}
+                  target="_blank" rel="noopener noreferrer"
+                ><ExternalLink aria-hidden="true" /> Wikipedia: {site.site_name || site.name}</a>
+                <a
+                  className="dxd-btn is-small"
+                  href={"https://www.google.com/search?q=" + encodeURIComponent((site.site_name || site.name) + " parapendio " + (site.location_name || site.valle || ""))}
+                  target="_blank" rel="noopener noreferrer"
+                ><ExternalLink aria-hidden="true" /> Ricerca web «{site.site_name || site.name} parapendio»</a>
+                {site.pspId ? (
+                  <a
+                    className="dxd-btn is-small"
+                    href="https://paraglidingspots.com/online/"
+                    target="_blank" rel="noopener noreferrer"
+                    title={"Placemark #" + site.pspId} 
+                  ><ExternalLink aria-hidden="true" /> Scheda sulla mappa ParaglidingSpots (#{site.pspId})</a>
+                ) : null}
+              </div>
             </section>
           </aside>
         </div>

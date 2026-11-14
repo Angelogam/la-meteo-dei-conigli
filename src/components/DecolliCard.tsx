@@ -260,7 +260,7 @@ function HeadBlock({ item, selected, index }: { item: CardItem; selected: boolea
   const hasCoords = Number.isFinite(lat) && Number.isFinite(lon);
   return (
     <div className="dxc-card-head">
-      {item.photo && item.photo.url && (
+      {item.photo && item.photo.url ? (
         <img
           className="dxc-photo"
           src={item.photo.url}
@@ -270,6 +270,13 @@ function HeadBlock({ item, selected, index }: { item: CardItem; selected: boolea
           title={item.photo.credit || "Wikimedia Commons"}
           onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
         />
+      ) : (
+        <span className="dxc-photo is-ph" aria-hidden="true" title="Foto del sito non disponibile">
+          <svg viewBox="0 0 64 48">
+            <path d="M4 42 L20 16 L31 32 L39 24 L60 42 Z" />
+            <circle cx="46" cy="10" r="5" />
+          </svg>
+        </span>
       )}
       <div className="dxc-site-block">
         <span className="dxc-site-name">{item.site_name || item.name}</span>
@@ -324,6 +331,28 @@ function HeadBlock({ item, selected, index }: { item: CardItem; selected: boolea
   );
 }
 
+/* ---------- Pulsante giallo: apre la pagina dedicata del decollo ---------- */
+
+function InfoButton({ item, onSelect }: { item: CardItem; onSelect: (item: Decollo) => void }) {
+  const open = (e: React.SyntheticEvent) => {
+    e.stopPropagation();
+    onSelect(item);
+  };
+  return (
+    <span
+      className="dxc-infobtn"
+      role="button"
+      tabIndex={0}
+      onClick={open}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); open(e); } }}
+      aria-label={"Apri la pagina con tutte le informazioni del decollo " + (item.site_name || item.name)}
+    >
+      <Info size={12} aria-hidden="true" />
+      Informazioni decollo
+    </span>
+  );
+}
+
 /* ---------- Fallback offline: griglia compatta come prima della fase B ---------- */
 
 function FallbackCard({ item, selected, onSelect, idx }: { item: CardItem; selected: boolean; onSelect: (item: Decollo) => void; idx: number }) {
@@ -354,7 +383,7 @@ function FallbackCard({ item, selected, onSelect, idx }: { item: CardItem; selec
         <HeadBlock item={item} selected={selected} index={null} />
         <div className="dxc-minifoot">
           <span className="dxc-mini-hint">Tocca per le info e il meteo live</span>
-          <span className="dxc-mini-go"><Info size={12} aria-hidden="true" /></span>
+          <InfoButton item={item} onSelect={onSelect} />
         </div>
       </button>
     );
@@ -437,6 +466,9 @@ function FallbackCard({ item, selected, onSelect, idx }: { item: CardItem; selec
             <span className="dxc-label">Zero termico</span>
           </span>
         </span>
+      </div>
+      <div className="dxc-cardfoot">
+        <InfoButton item={item} onSelect={onSelect} />
       </div>
     </button>
   );
@@ -578,17 +610,20 @@ function LaunchCard({ item, selected, onSelect, selectedDay, dayKey, nowHour, id
             <span className="dxc-label">Pioggia</span>
           </span>
         </span>
-        <span className="dxc-tile">
-          <span className="dxc-chip dxc-chip-cloud"><Cloud aria-hidden="true" /></span>
-          <span className="dxc-tile-text">
-            <span className="dxc-value dxc-fade" key={"tc" + active.hour}>{active.cloud === null ? "N/D" : Math.round(active.cloud) + "%"}</span>
-            <span className="dxc-label">Nubi</span>
+          <span className="dxc-tile">
+            <span className="dxc-chip dxc-chip-cloud"><Cloud aria-hidden="true" /></span>
+            <span className="dxc-tile-text">
+              <span className="dxc-value dxc-fade" key={"tc" + active.hour}>{active.cloud === null ? "N/D" : Math.round(active.cloud) + "%"}</span>
+              <span className="dxc-label">Nubi</span>
+            </span>
           </span>
-        </span>
-      </div>
-    </button>
-  );
-}
+        </div>
+        <div className="dxc-cardfoot">
+          <InfoButton item={item} onSelect={onSelect} />
+        </div>
+      </button>
+    );
+  }
 
 /* ---------- Pannello "Confronta i decolli" ---------- */
 
