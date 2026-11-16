@@ -8,7 +8,6 @@ import DecolliCard from "@/components/DecolliCard";
 import SiteHeader from "@/components/SiteHeader";
 import HeroFotografico from "@/components/HeroFotografico";
 import UpdateTimer from "@/components/UpdateTimer";
-import HourlyCards from "@/components/HourlyCards";
 import SponsorStrip from "@/components/SponsorStrip";
 import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
 import WebcamNearby from "@/components/WebcamNearby";
@@ -357,21 +356,15 @@ export default function Index() {
                       )}
                     </section>
 
-                    <section className="flight-hourly-section min-w-0">
-                      <div className="flight-subsection-heading">
-                        <div><span>DETTAGLIO ORARIO</span><h2>Previsioni ora per ora</h2></div>
-                        <button
-                          type="button"
-                          className="dxc-cmpbtn"
-                          onClick={() => { setActiveTab("meteo"); document.getElementById("details-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
-                          title="Apri il report completo della giornata: copertura nuvole, base cumuli, termiche, venti in quota a step di 250 m e consiglio di volo"
-                        >
-                          Report della giornata
-                        </button>
-                        <small>{dateLabel}</small>
-                      </div>
-                      <HourlyCards dayData={filteredDayData} altitude={site.elevation_m} selectedHour={selectedHour} onHourSelect={setSelectedHour} dayLabel={dateLabel} siteName={site.site_name} />
-                    </section>
+                    <div className="flight-report-cta">
+                      <span>Il meteogram orario — vento, raffiche, termiche, nuvole, umidità, UV e indice di volabilità ora per ora — è nella scheda Report</span>
+                      <button
+                        type="button"
+                        onClick={() => { setActiveTab("meteo"); document.getElementById("details-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
+                      >
+                        Apri il report della giornata
+                      </button>
+                    </div>
                   </>
                 )}
               </div>

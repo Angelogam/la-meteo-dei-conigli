@@ -40,3 +40,30 @@
 .read-the-docs {
   color: #888;
 }
+/* CTA discreta al posto del dettaglio orario (le card orarie vivono nel meteogram della tab Report) */
+.flight-report-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: .7rem 1rem;
+  border: 1px solid rgba(148, 197, 255, .14);
+  border-radius: 12px;
+  background: rgba(148, 197, 255, .04);
+}
+.flight-report-cta span { color: #8ba2b6; font-size: .8rem; }
+.flight-report-cta button {
+  padding: .45rem .95rem;
+  border-radius: 999px;
+  border: 1px solid rgba(251, 191, 36, .5);
+  background: linear-gradient(140deg, rgba(251, 191, 36, .16), rgba(251, 191, 36, .06));
+  color: #fcd34d;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: .82rem;
+  letter-spacing: .03em;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease;
+}
+.flight-report-cta button:hover { background: rgba(251, 191, 36, .22); border-color: #fbbf24; }

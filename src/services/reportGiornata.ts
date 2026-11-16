@@ -19,6 +19,7 @@ const BASE_PARAMS = [
   "cloud_cover", "cloud_cover_low", "cloud_cover_mid", "cloud_cover_high",
   "wind_speed_10m", "wind_direction_10m", "wind_gusts_10m",
   "cape", "lifted_index", "weather_code", "freezing_level_height",
+  "relative_humidity_2m", "uv_index", "surface_pressure",
 ];
 
 export const REPORT_HOURLY_PARAMS = [
@@ -32,6 +33,7 @@ export interface ReportOra {
   hour: number;
   temp: number | null;
   dew: number | null;
+  apparent: number | null;
   rain: number | null;
   cloud: number | null;
   cloudLow: number | null;
@@ -49,6 +51,9 @@ export interface ReportOra {
   indice: number | null;
   indiceLabel: string | null;
   windRel: string | null;
+  humidity: number | null;
+  uv: number | null;
+  pressure: number | null;
 }
 
 export interface ProfileRow {
@@ -219,6 +224,10 @@ export async function fetchReportGiornata(
     hours.push({
       hour,
       temp, dew, rain, cloud,
+      apparent: at("apparent_temperature", i),
+      humidity: at("relative_humidity_2m", i),
+      uv: at("uv_index", i),
+      pressure: at("surface_pressure", i),
       cloudLow: at("cloud_cover_low", i),
       cloudMid: at("cloud_cover_mid", i),
       cloudHigh: at("cloud_cover_high", i),

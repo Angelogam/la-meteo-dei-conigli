@@ -14,7 +14,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  ArrowUp, Cloud, CloudDrizzle, CloudLightning, CloudRain, CloudSnow, CloudSun,
+  Activity, ArrowUp, Cloud, CloudDrizzle, CloudLightning, CloudRain, CloudSnow, CloudSun,
   Cloudy, Droplets, Gauge, MountainSnow, Sun, Thermometer, Timer, TrendingUp, Wind, X,
 } from "lucide-react";
 import type { Decollo } from "@/data/decolli";
@@ -172,6 +172,7 @@ export default function ReportVolo({
 
   const timeline = (data?.hours ?? []).filter((o) => o.hour >= 6 && o.hour <= 20);
   const flyHours = (data?.hours ?? []).filter((o) => o.hour >= 8 && o.hour <= 19 && o.rateo != null);
+  const maxRateo = Math.max(0.5, ...(data?.hours ?? []).map((o) => o.rateo ?? 0));
 
   const closeBtn = (
     <button type="button" className="cmap-close cmap-close-float" onClick={onClose} title="Chiudi il report" aria-label="Chiudi il report">
@@ -215,56 +216,126 @@ export default function ReportVolo({
 
         {!loading && data && (
           <>
-            {/* ANDAMENTO DELLA GIORNATA — timeline oraria cliccabile */}
+            {/* METEOGRAM ORARIO — righe compatte stile professionale, colonna cliccabile */}
             <div className="rv-block">
-              <h3><Timer size={14} aria-hidden="true" /> Andamento della giornata <small>clicca un'ora: tutte le card si aggiornano</small></h3>
-              <div className="rv-timeline" role="listbox" aria-label="Andamento orario della giornata">
-                {timeline.map((o) => (
-                  <button
-                    type="button"
-                    key={o.hour}
-                    role="option"
-                    aria-selected={o.hour === selectedHour}
-                    className={"rv-th" + (o.hour === selectedHour ? " is-sel" : "") + (o.code != null && o.code >= 95 ? " is-storm" : "")}
-                    onClick={() => onHourSelect(o.hour)}
-                    title={`${String(o.hour).padStart(2, "0")}:00 — ${wmoLabel(o.code)}, nuvole ${o.cloud ?? "N/D"}%`}
-                  >
-                    <span className="rv-th-h">{String(o.hour).padStart(2, "0")}</span>
-                    {wmoIcon(o.code, 15)}
-                    <span className="rv-th-t">{o.temp != null ? Math.round(o.temp) + "°" : "—"}</span>
-                    <span className="rv-th-bar" aria-hidden="true"><span style={{ height: `${Math.min(100, o.cloud ?? 0)}%` }} /></span>
-                  </button>
-                ))}
+              <h3><Timer size={14} aria-hidden="true" /> Meteogram orario <small>clicca una colonna: tutte le card si aggiornano</small></h3>
+              <div className="rv-meteo-wrap">
+                <div className="rv-meteo" style={{ "--cols": timeline.length } as React.CSSProperties} role="grid" aria-label="Meteogram orario della giornata">
+                  <div className="rv-mrow rv-mhead" role="row">
+                    <span className="rv-mlabel" aria-hidden="true" />
+                    {timeline.map((o) => (
+                      <button
+                        type="button"
+                        key={o.hour}
+                        className={"rv-mcol" + (o.hour === selectedHour ? " is-sel" : "")}
+                        onClick={() => onHourSelect(o.hour)}
+                        title={`${String(o.hour).padStart(2, "0")}:00 — ${wmoLabel(o.code)}`}
+                      >
+                        <b>{String(o.hour).padStart(2, "0")}</b>
+                        {wmoIcon(o.code, 15)}
+                        <em>{o.temp != null ? Math.round(o.temp) + "°" : "—"}</em>
+                      </button>
+                    ))}
+                  </div>
+                  <div className="rv-mrow" role="row">
+                    <span className="rv-mlabel">Volo</span>
+                    {timeline.map((o) => (
+                      <span key={o.hour} className={"rv-mcell" + (o.hour === selectedHour ? " is-sel" : "")} onClick={() => onHourSelect(o.hour)} title={o.indice != null ? `volabilità ${o.indice}/10 ${o.indiceLabel ?? ""}` : undefined}>
+                        {o.indice != null ? <b className={o.indice >= 7 ? "rv-ok" : o.indice >= 5 ? "rv-mid" : "rv-no"}>{o.indice}<i>/10</i></b> : <span className="rv-mdash">—</span>}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="rv-mrow" role="row">
+                    <span className="rv-mlabel">Vento</span>
+                    {timeline.map((o) => (
+                      <span key={o.hour} className={"rv-mcell" + (o.hour === selectedHour ? " is-sel" : "")} onClick={() => onHourSelect(o.hour)} title={o.wind != null ? `${Math.round(o.wind)} km/h da ${cardinal(o.dir)}${o.gust != null ? ` · raffiche ${Math.round(o.gust)}` : ""}` : undefined}>
+                        {o.dir != null && <ArrowUp size={11} className="rv-mdir" style={{ transform: `rotate(${o.dir + 180}deg)` }} />}
+                        <b className={o.wind != null ? (o.wind >= 30 ? "rv-no" : o.wind >= 18 ? "rv-mid" : "") : undefined}>{o.wind != null ? Math.round(o.wind) : "—"}</b>
+                        <i>{o.gust != null ? Math.round(o.gust) : "—"}</i>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="rv-mrow" role="row">
+                    <span className="rv-mlabel">Term.</span>
+                    {timeline.map((o) => (
+                      <span key={o.hour} className={"rv-mcell has-bar" + (o.hour === selectedHour ? " is-sel" : "")} onClick={() => onHourSelect(o.hour)} title={o.rateo != null ? `rateo ${o.rateo.toFixed(1).replace(".", ",")} m/s${o.baseNubi != null ? ` · base ${o.baseNubi.toLocaleString("it-IT")} m` : ""}` : undefined}>
+                        <span className="rv-mbar"><span className={(o.rateo ?? 0) >= 2 ? "is-hot" : (o.rateo ?? 0) > 0 ? "is-warm" : ""} style={{ height: `${Math.min(100, ((o.rateo ?? 0) / maxRateo) * 100)}%` }} /></span>
+                        <i>{o.rateo != null && o.rateo > 0 ? "+" + o.rateo.toFixed(1).replace(".", ",") : "—"}</i>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="rv-mrow" role="row">
+                    <span className="rv-mlabel">Nuvole</span>
+                    {timeline.map((o) => (
+                      <span key={o.hour} className={"rv-mcell has-bar" + (o.hour === selectedHour ? " is-sel" : "")} onClick={() => onHourSelect(o.hour)} title={`nuvole ${o.cloud ?? "N/D"}% · alte ${o.cloudHigh ?? "—"}% · medie ${o.cloudMid ?? "—"}% · basse ${o.cloudLow ?? "—"}%`}>
+                        <span className="rv-mbar rv-mbar-c"><span style={{ height: `${Math.min(100, o.cloud ?? 0)}%` }} /></span>
+                        <i>{o.cloud != null ? o.cloud + "%" : "—"}</i>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="rv-mrow" role="row">
+                    <span className="rv-mlabel">Um.</span>
+                    {timeline.map((o) => (
+                      <span key={o.hour} className={"rv-mcell" + (o.hour === selectedHour ? " is-sel" : "")} onClick={() => onHourSelect(o.hour)} title={`umidità ${o.humidity != null ? Math.round(o.humidity) + "%" : "N/D"} · rugiada ${o.dew != null ? Math.round(o.dew) + "°" : "N/D"}`}>
+                        <i className="rv-mval">{o.humidity != null ? Math.round(o.humidity) + "%" : "—"}</i>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="rv-mrow" role="row">
+                    <span className="rv-mlabel">UV</span>
+                    {timeline.map((o) => (
+                      <span key={o.hour} className={"rv-mcell" + (o.hour === selectedHour ? " is-sel" : "")} onClick={() => onHourSelect(o.hour)} title={`indice UV ${o.uv != null ? o.uv.toFixed(1).replace(".", ",") : "N/D"}`}>
+                        <i className={"rv-mval" + ((o.uv ?? 0) >= 6 ? " rv-no" : (o.uv ?? 0) >= 3 ? " rv-mid" : "")}>{o.uv != null ? o.uv.toFixed(1).replace(".", ",") : "—"}</i>
+                      </span>
+                    ))}
+                  </div>
+                  <div className="rv-mrow" role="row">
+                    <span className="rv-mlabel">Pioggia</span>
+                    {timeline.map((o) => (
+                      <span key={o.hour} className={"rv-mcell" + (o.hour === selectedHour ? " is-sel" : "") + ((o.rain ?? 0) > 0 ? " is-wet" : "")} onClick={() => onHourSelect(o.hour)} title={`pioggia ${o.rain != null ? o.rain.toFixed(1).replace(".", ",") : "—"} mm/h`}>
+                        <i className="rv-mval">{o.rain != null ? o.rain.toFixed(1).replace(".", ",") : "—"}</i>
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
+              <p className="rv-legend">vento in km/h (grassetto) con raffiche in piccolo · term. rateo m/s · valori per l'ora selezionata mostrati nelle card</p>
             </div>
 
             {/* CARD SINCRONIZZATE ALL'ORA SELEZIONATA */}
             <div className="rv-grid">
               <div className="rv-card rv-span2">
-                <span className="rv-k">Il tempo al decollo <em>ore {String(selectedHour).padStart(2, "0")}:00</em></span>
+                <span className="rv-k">{oraSel ? wmoIcon(oraSel.code, 13) : <Cloud size={13} />} Il tempo al decollo <em>ore {String(selectedHour).padStart(2, "0")}:00</em></span>
                 <div className="rv-v rv-big">{oraSel ? wmoIcon(oraSel.code, 26) : <Cloud size={26} />} <strong>{oraSel ? wmoLabel(oraSel.code) : "—"}</strong></div>
-                <p className="rv-sub">{oraSel ? `Pioggia ${oraSel.rain != null ? oraSel.rain.toFixed(1).replace(".", ",") : "—"} mm/h · rugiada ${oraSel.dew != null ? Math.round(oraSel.dew) + "°" : "—"}` : "—"}</p>
+                <div className="rv-chips">
+                  <span className="rv-chipv">Pioggia {oraSel?.rain != null ? oraSel.rain.toFixed(1).replace(".", ",") : "—"} mm/h</span>
+                  <span className="rv-chipv">Rugiada {oraSel?.dew != null ? Math.round(oraSel.dew) + "°" : "—"}</span>
+                  <span className="rv-chipv">Percepita {oraSel?.apparent != null ? Math.round(oraSel.apparent) + "°" : "—"}</span>
+                </div>
               </div>
 
               <div className="rv-card rv-span2">
-                <span className="rv-k">Copertura nuvole <em>{cloudLabel(oraSel?.cloud ?? null)}</em></span>
+                <span className="rv-k">{cloudIcon(oraSel?.cloud ?? null, 13)} Copertura nuvole <em>{cloudLabel(oraSel?.cloud ?? null)}</em></span>
                 <div className="rv-v rv-big">{cloudIcon(oraSel?.cloud ?? null)} <strong>{oraSel?.cloud != null ? oraSel.cloud + "%" : "—"}</strong></div>
-                <div className="rv-layers" aria-hidden="true">
-                  <span className="rv-layer"><i>alte</i><b style={{ width: `${oraSel?.cloudHigh ?? 0}%` }} /></span>
-                  <span className="rv-layer"><i>medie</i><b style={{ width: `${oraSel?.cloudMid ?? 0}%` }} /></span>
-                  <span className="rv-layer"><i>basse</i><b style={{ width: `${oraSel?.cloudLow ?? 0}%` }} /></span>
+                <div className="rv-layers">
+                  <span className="rv-layer"><i>alte</i><b style={{ width: `${oraSel?.cloudHigh ?? 0}%` }} /><em>{oraSel?.cloudHigh != null ? oraSel.cloudHigh + "%" : "—"}</em></span>
+                  <span className="rv-layer"><i>medie</i><b style={{ width: `${oraSel?.cloudMid ?? 0}%` }} /><em>{oraSel?.cloudMid != null ? oraSel.cloudMid + "%" : "—"}</em></span>
+                  <span className="rv-layer"><i>basse</i><b style={{ width: `${oraSel?.cloudLow ?? 0}%` }} /><em>{oraSel?.cloudLow != null ? oraSel.cloudLow + "%" : "—"}</em></span>
                 </div>
               </div>
 
               <div className="rv-card">
                 <span className="rv-k"><Thermometer size={12} aria-hidden="true" /> Temperatura</span>
-                <div className="rv-v"><strong>{oraSel?.temp != null ? Math.round(oraSel.temp) + " °C" : "—"}</strong></div>
+                <div className="rv-v"><strong>{oraSel?.temp != null ? Math.round(oraSel.temp) + "°C" : "—"}</strong></div>
                 <p className="rv-sub">{data.tempMin != null && data.tempMax != null ? `giornata ${Math.round(data.tempMin)}–${Math.round(data.tempMax)} °C` : "—"}</p>
               </div>
 
               <div className="rv-card">
                 <span className="rv-k"><Wind size={12} aria-hidden="true" /> Vento al decollo</span>
-                <div className="rv-v"><strong>{oraSel?.wind != null ? Math.round(oraSel.wind) + " km/h" : "—"}</strong></div>
+                <div className="rv-v">
+                  {oraSel?.dir != null && <span className="rv-windrose" aria-hidden="true"><ArrowUp size={15} style={{ transform: `rotate(${oraSel.dir + 180}deg)` }} /></span>}
+                  <strong>{oraSel?.wind != null ? Math.round(oraSel.wind) + " km/h" : "—"}</strong>
+                </div>
                 <p className="rv-sub">{oraSel?.dir != null ? `da ${cardinal(oraSel.dir)} (${oraSel.dir}°)` : "—"}{oraSel?.gust != null ? ` · raffiche ${Math.round(oraSel.gust)}` : ""}</p>
               </div>
 
@@ -281,9 +352,48 @@ export default function ReportVolo({
               </div>
 
               <div className="rv-card">
+                <span className="rv-k"><Droplets size={12} aria-hidden="true" /> Umidità & UV</span>
+                <div className="rv-v"><strong>{oraSel?.humidity != null ? Math.round(oraSel.humidity) + "%" : "—"}</strong></div>
+                <p className="rv-sub">{oraSel?.uv != null ? `UV ${oraSel.uv.toFixed(1).replace(".", ",")}` : "UV —"}{oraSel?.pressure != null ? ` · ${Math.round(oraSel.pressure)} hPa` : ""}</p>
+              </div>
+
+              <div className="rv-card">
                 <span className="rv-k"><Gauge size={12} aria-hidden="true" /> Termiche all'ora</span>
                 <div className="rv-v"><strong>{oraSel?.rateo != null && oraSel.rateo > 0 ? "+" + oraSel.rateo.toFixed(1).replace(".", ",") + " m/s" : "assenti"}</strong></div>
-                <p className="rv-sub">{oraSel?.indice != null ? `volabilità ${oraSel.indice}/10 ${oraSel.indiceLabel ?? ""}` : "—"}</p>
+                <p className="rv-sub">{oraSel?.indice != null ? `volabilità ${oraSel.indice}/10 ${oraSel.indiceLabel ?? ""}` : "—"}{oraSel?.windRel ? ` · vento ${oraSel.windRel}` : ""}</p>
+              </div>
+
+              <div className="rv-card">
+                <span className="rv-k"><Wind size={12} aria-hidden="true" /> Volo veleggiato</span>
+                <div className="rv-v"><strong className={data.veleggiata.livello === "OTTIME" || data.veleggiata.livello === "BUONE" ? "rv-ok" : data.veleggiata.livello === "MEDIATE" ? "rv-mid" : "rv-no"}>{data.veleggiata.livello.toLowerCase()}</strong></div>
+                <p className="rv-sub">{data.veleggiata.motivo}</p>
+              </div>
+
+              <div className="rv-card">
+                <span className="rv-k"><Timer size={12} aria-hidden="true" /> Finestra migliore</span>
+                <div className="rv-v"><strong>{data.bestWindow ? `${String(data.bestWindow.from).padStart(2, "0")}:00 – ${String(data.bestWindow.to).padStart(2, "0")}:00` : "—"}</strong></div>
+                <p className="rv-sub">{data.bestWindow ? `indice medio ${data.bestWindow.indice.toFixed(1).replace(".", ",")}/10${data.bestWindow.quota ? ` · base ${data.bestWindow.quota.toLocaleString("it-IT")} m` : ""}` : "—"}</p>
+              </div>
+
+              <div className="rv-card rv-span2">
+                <span className="rv-k"><Activity size={12} aria-hidden="true" /> Turbolenza stimata</span>
+                <div className="rv-turb-grid">
+                  {data.turbolenza.map((t) => (
+                    <span key={t.fascia} className="rv-turb-cell"><i>{t.fascia}</i><b className={t.livello === "MARCATA" ? "rv-no" : t.livello === "MODERATA" ? "rv-mid" : "rv-ok"}>{t.livello.toLowerCase()}</b></span>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rv-card">
+                <span className="rv-k"><MountainSnow size={12} aria-hidden="true" /> Quota max utile</span>
+                <div className="rv-v"><strong>{data.topRange ? data.topRange[1].toLocaleString("it-IT") + " m" : "—"}</strong></div>
+                <p className="rv-sub">{data.topRange ? `range base ${data.topRange[0].toLocaleString("it-IT")}–${data.topRange[1].toLocaleString("it-IT")} m` : "—"}</p>
+              </div>
+
+              <div className="rv-card">
+                <span className="rv-k"><CloudRain size={12} aria-hidden="true" /> Pioggia totale</span>
+                <div className="rv-v"><strong>{data.pioggiaTotale != null ? data.pioggiaTotale.toFixed(1).replace(".", ",") + " mm" : "—"}</strong></div>
+                <p className="rv-sub">{data.temporali ? "⚠ allerta temporalesca" : "nessun fenomeno convettivo"}</p>
               </div>
             </div>
 
@@ -341,28 +451,6 @@ export default function ReportVolo({
                 )) : <p className="rv-sub">Profilo verticale non disponibile per quest'ora.</p>}
               </div>
               <p className="rv-legend"><span className="rv-shearmark" /> strato con salto di vento ≥ 20 km/h tra due livelli (possibili turbolenze)</p>
-            </div>
-
-            {/* VELAGGIO · FINESTRA MIGLIORE · TURBOLENZA */}
-            <div className="rv-grid rv-grid3">
-              <div className="rv-card">
-                <span className="rv-k">Volo veleggiato</span>
-                <div className="rv-v"><strong className={data.veleggiata.livello === "OTTIME" || data.veleggiata.livello === "BUONE" ? "rv-ok" : data.veleggiata.livello === "MEDIATE" ? "rv-mid" : "rv-no"}>{data.veleggiata.livello}</strong></div>
-                <p className="rv-sub">{data.veleggiata.motivo}</p>
-              </div>
-              <div className="rv-card">
-                <span className="rv-k">Finestra migliore</span>
-                <div className="rv-v"><strong>{data.bestWindow ? `${String(data.bestWindow.from).padStart(2, "0")}:00 – ${String(data.bestWindow.to).padStart(2, "0")}:00` : "—"}</strong></div>
-                <p className="rv-sub">{data.bestWindow ? `indice medio ${data.bestWindow.indice.toFixed(1).replace(".", ",")}/10${data.bestWindow.quota ? ` · base ${data.bestWindow.quota.toLocaleString("it-IT")} m` : ""}` : "—"}</p>
-              </div>
-              <div className="rv-card">
-                <span className="rv-k">Turbolenza stimata</span>
-                <div className="rv-turb">
-                  {data.turbolenza.map((t) => (
-                    <span key={t.fascia}><i>{t.fascia}</i><b className={t.livello === "MARCATA" ? "rv-no" : t.livello === "MODERATA" ? "rv-mid" : "rv-ok"}>{t.livello.charAt(0) + t.livello.slice(1).toLowerCase()}</b></span>
-                  ))}
-                </div>
-              </div>
             </div>
 
             {/* TESTO ESPLICATIVO */}
