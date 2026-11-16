@@ -19,6 +19,7 @@ const BASE_PARAMS = [
   "cloud_cover", "cloud_cover_low", "cloud_cover_mid", "cloud_cover_high",
   "wind_speed_10m", "wind_direction_10m", "wind_gusts_10m",
   "cape", "lifted_index", "weather_code", "freezing_level_height",
+  "precipitation_probability", "visibility",
   "relative_humidity_2m", "uv_index", "surface_pressure",
 ];
 
@@ -54,6 +55,10 @@ export interface ReportOra {
   humidity: number | null;
   uv: number | null;
   pressure: number | null;
+  /** probabilità di precipitazione (%) */
+  prob: number | null;
+  /** visibilità orizzontale (metri) */
+  visibility: number | null;
 }
 
 export interface ProfileRow {
@@ -228,6 +233,8 @@ export async function fetchReportGiornata(
       humidity: at("relative_humidity_2m", i),
       uv: at("uv_index", i),
       pressure: at("surface_pressure", i),
+      prob: at("precipitation_probability", i),
+      visibility: at("visibility", i),
       cloudLow: at("cloud_cover_low", i),
       cloudMid: at("cloud_cover_mid", i),
       cloudHigh: at("cloud_cover_high", i),

@@ -1,0 +1,87 @@
+/* WmoGlyph — animazioni delle icone meteo SVG */
+
+.wglyph { display: block; }
+.wglyph line, .wglyph path, .wglyph circle { vector-effect: non-scaling-stroke; }
+
+.wglyph-rays {
+  stroke: #ffcf5e;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: wg-spin 26s linear infinite;
+}
+.wglyph-sunbody {
+  transform-box: fill-box;
+  transform-origin: center;
+  filter: drop-shadow(0 0 7px rgba(251, 191, 36, .6));
+  animation: wg-breathe 3.8s ease-in-out infinite;
+}
+.wglyph-cloud {
+  transform-box: fill-box;
+  transform-origin: center;
+  filter: drop-shadow(0 3px 6px rgba(6, 22, 40, .35));
+  animation: wg-drift 5.2s ease-in-out infinite alternate;
+}
+.wglyph-cloud--slow { animation-duration: 7s; animation-delay: -2s; }
+.wglyph-drop {
+  stroke: #58b0ec;
+  stroke-width: 3;
+  stroke-linecap: round;
+  transform-box: fill-box;
+  animation: wg-drop 1.15s ease-in infinite;
+}
+.wglyph-drop--thin { stroke: #8fcdf4; stroke-width: 2.4; animation-duration: 1.35s; }
+.wglyph-snow {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: wg-snowfall 2.8s linear infinite;
+}
+.wglyph-bolt {
+  filter: drop-shadow(0 0 6px rgba(250, 204, 21, .75));
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: wg-bolt 2.7s steps(1, end) infinite;
+}
+.wglyph-fogline {
+  stroke: rgba(228, 240, 250, .85);
+  transform-box: fill-box;
+  animation: wg-fogslide 3.2s ease-in-out infinite alternate;
+}
+.wglyph-star { animation: wg-twinkle 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+
+@keyframes wg-spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes wg-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.07); }
+}
+@keyframes wg-drift {
+  from { transform: translateX(-2.5px); }
+  to { transform: translateX(3px); }
+}
+@keyframes wg-drop {
+  0% { transform: translateY(-3px); opacity: 0; }
+  28% { opacity: 1; }
+  100% { transform: translateY(9px); opacity: 0; }
+}
+@keyframes wg-snowfall {
+  0% { transform: translateY(-2px) rotate(0deg); opacity: .55; }
+  45% { opacity: 1; }
+  100% { transform: translateY(7px) rotate(130deg); opacity: .55; }
+}
+@keyframes wg-bolt {
+  0%, 62%, 70%, 100% { opacity: .22; }
+  64%, 68% { opacity: 1; }
+}
+@keyframes wg-fogslide {
+  from { transform: translateX(-4px); opacity: .45; }
+  to { transform: translateX(4px); opacity: .95; }
+}
+@keyframes wg-twinkle {
+  0%, 100% { opacity: .25; transform: scale(.8); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wglyph, .wglyph * { animation: none !important; }
+}

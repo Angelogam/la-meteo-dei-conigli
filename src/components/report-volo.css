@@ -149,8 +149,8 @@
   grid-column: span 1;
   display: flex;
   flex-direction: column;
-  gap: .3rem;
-  padding: .65rem .8rem;
+  gap: .26rem;
+  padding: .5rem .68rem;
   border: 1px solid rgba(148, 197, 255, .16);
   border-radius: 13px;
   background: linear-gradient(170deg, rgba(148, 197, 255, .07), rgba(3, 10, 24, .3));
@@ -307,18 +307,14 @@
 
 /* ============ LAYOUT AGGRESSIVO: glow, accenti semantici, scene animate ============ */
 
-/* ---------- hero: scena animata sopra la foto ---------- */
-.rv-hero .weather-scene--hero { z-index: 0; opacity: .82; }
-.rv-hero .weather-scene--hero .weather-scene-sun { left: 61%; top: 6px; }
-.rv-hero .weather-scene--hero .weather-scene-cloud--back { left: 54%; top: 26px; }
-.rv-hero .weather-scene--hero .weather-scene-cloud--front { left: 63%; top: 40px; }
-.rv-hero .weather-scene--hero.weather-scene--partly .weather-scene-cloud--front { left: 66%; top: 36px; }
-.rv-hero .weather-scene--hero .weather-scene-rain { left: 62%; }
-.rv-hero .weather-scene--hero .weather-scene-flash { left: 68%; }
-.rv-hero .weather-scene--hero .weather-scene-fog { left: 60%; }
-.rv-hero .weather-scene--hero .weather-scene-snow { left: 60%; }
+/* ---------- hero: glyph meteo animato accanto al titolo ---------- */
 .rv-hero-head { position: relative; z-index: 2; }
 .rv-hero { border-bottom: 1px solid rgba(251, 191, 36, .28); }
+.rv-hero-glyph {
+  flex: 0 0 auto;
+  margin-left: auto;
+  filter: drop-shadow(0 6px 16px rgba(4, 14, 28, .6));
+}
 .rv-daychip { animation: rv-chip-pulse 2.6s ease-in-out infinite; }
 @keyframes rv-chip-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(251, 191, 36, .45); }
@@ -343,30 +339,29 @@
   50% { box-shadow: 0 0 13px rgba(251, 191, 36, .95); transform: scale(1.18); }
 }
 
-/* ---------- card tempo come scena animata ---------- */
+/* ---------- card tempo: testo a sinistra + glyph animato a destra ---------- */
 .rv-card.rv-scene {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(160deg, #10314f, #0a1d33 55%, #071324);
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .75rem 1.05rem;
+  background:
+    radial-gradient(ellipse at 84% 26%, rgba(125, 211, 252, .15), transparent 55%),
+    linear-gradient(150deg, #16344f, #0a1d33 55%, #071324);
   border-color: rgba(151, 208, 239, .32);
 }
-.rv-card.rv-scene > .weather-scene--hero { z-index: 0; }
-.rv-card.rv-scene::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  background: linear-gradient(100deg, rgba(4, 12, 24, .8) 24%, rgba(4, 12, 24, .28) 58%, rgba(4, 12, 24, .5));
-  pointer-events: none;
-}
-.rv-card.rv-scene > * { position: relative; z-index: 2; }
-.rv-k-scene { color: #bfe7fa; border-bottom-color: rgba(191, 231, 250, .2); }
-.rv-k-scene em { color: #d3e6f5; }
+.rv-scene-txt { min-width: 0; }
+.rv-scene-glyph { flex: 0 0 auto; filter: drop-shadow(0 8px 20px rgba(2, 10, 22, .5)); }
 .rv-v-scene { gap: .7rem; }
-.rv-scene .rv-temp { font-size: 2.9rem; color: #fff; text-shadow: 0 3px 22px rgba(0, 0, 0, .65); font-variant-numeric: tabular-nums; }
-.rv-scene .rv-label { font-size: 1.4rem; color: #fcd34d; text-shadow: 0 2px 14px rgba(0, 0, 0, .6); letter-spacing: .01em; }
-.rv-chips-scene { margin-top: .1rem; }
-.rv-chips-scene .rv-chipv { background: rgba(4, 12, 24, .6); border-color: rgba(151, 208, 239, .32); color: #d3e6f5; }
+.rv-scene .rv-temp { font-size: 3rem; color: #fff; text-shadow: 0 3px 22px rgba(0, 0, 0, .65); font-variant-numeric: tabular-nums; }
+.rv-scene .rv-label { font-size: 1.45rem; color: #fcd34d; text-shadow: 0 2px 14px rgba(0, 0, 0, .6); letter-spacing: .01em; }
+.rv-chips-scene { margin-top: .5rem; }
+.rv-chips-scene .rv-chipv { background: rgba(4, 12, 24, .62); border-color: rgba(151, 208, 239, .32); color: #d7e7f3; }
 
 /* ---------- linea accento semantica sopra ogni card ---------- */
 .rv-card { position: relative; overflow: hidden; }
@@ -415,6 +410,7 @@
 .rv-mcell.is-sel { animation: rv-col-glow 2.4s ease-in-out infinite; }
 .rv-mcell b { font-variant-numeric: tabular-nums; }
 .rv-mcol em { text-shadow: 0 1px 6px rgba(0, 0, 0, .4); }
+.rv-mcol .wglyph { margin: 0 auto; }
 
 /* ---------- testo e note ---------- */
 .rv-testo {
@@ -439,8 +435,8 @@
 
 
 /* ============ SEZIONI TEMATICHE ============ */
-.rv-sez { display: flex; flex-direction: column; gap: .55rem; }
-.rv-sez-head { display: flex; align-items: center; gap: .6rem; padding: .5rem .2rem .15rem; }
+.rv-sez { display: flex; flex-direction: column; gap: .5rem; }
+.rv-sez-head { display: flex; align-items: center; gap: .6rem; padding: .42rem .2rem .08rem; }
 .rv-sez-head h4 {
   margin: 0;
   font-family: var(--font-display);
@@ -464,7 +460,7 @@
   letter-spacing: .04em;
   white-space: nowrap;
 }
-.rv-sez-grid { display: grid; gap: .6rem; }
+.rv-sez-grid { display: grid; gap: .55rem; }
 .rv-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .rv-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
@@ -479,6 +475,9 @@
 /* metriche interne raggruppate */
 .rv-mets { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .45rem; margin-top: .55rem; }
 .rv-mets-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.rv-mets-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.rv-met-sub { font-size: .78rem; color: #9db2c5; font-weight: 600; letter-spacing: .01em; line-height: 1.4; }
+@media (max-width: 860px) { .rv-mets-4 { grid-template-columns: 1fr 1fr; } }
 .rv-met {
   display: flex;
   flex-direction: column;
@@ -508,7 +507,3 @@
 .rv-wind-bar > span { display: block; height: 100%; min-width: 3px; border-radius: 6px; background: linear-gradient(90deg, #34d399, #10b981); transition: width .4s ease; }
 .rv-wind-bar > span.is-mid { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
 .rv-wind-bar > span.is-strong { background: linear-gradient(90deg, #f87171, #ef4444); }
-
-/* scena: chips più leggibili */
-.rv-chips-scene { margin-top: .15rem; }
-.rv-chips-scene .rv-chipv { background: rgba(4, 12, 24, .66); }
