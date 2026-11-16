@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Activity, FileDown, FileText, Home, Mountain, Thermometer, Wind } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -17,6 +17,7 @@ import ReportGiornata from "@/components/ReportGiornata";
 import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
 import TermicheTab from "@/components/TermicheTab";
 import AnalisiMeteo from "@/components/AnalisiMeteo";
+import ReportVolo from "@/components/ReportVolo";
 import CartinaMeteo from "@/components/CartinaMeteo";
 import Cartina3D from "@/components/cartina3d/Cartina3D";
 import DiagnosticaPanel from "@/components/DiagnosticaPanel";
@@ -64,6 +65,8 @@ export default function Index() {
     updating: aggressiveUpdating,
     loadWeather: loadAggressiveWeather,
   } = useThreeSourceWeather();
+
+  const [reportOpen, setReportOpen] = useState(false);
 
   const filteredDayData = useMemo(() => {
     if (!dayData || dayData.length === 0) return [];
@@ -340,9 +343,32 @@ export default function Index() {
                     </section>
 
                     <section className="flight-hourly-section min-w-0">
-                      <div className="flight-subsection-heading"><div><span>DETTAGLIO ORARIO</span><h2>Previsioni ora per ora</h2></div><small>{dateLabel}</small></div>
+                      <div className="flight-subsection-heading">
+                        <div><span>DETTAGLIO ORARIO</span><h2>Previsioni ora per ora</h2></div>
+                        <button
+                          type="button"
+                          className="dxc-cmpbtn"
+                          onClick={() => setReportOpen(true)}
+                          title="Apri il report completo della giornata: copertura nuvole, base cumuli, termiche, venti in quota a step di 250 m e consiglio di volo"
+                        >
+                          Report della giornata
+                        </button>
+                        <small>{dateLabel}</small>
+                      </div>
                       <HourlyCards dayData={filteredDayData} altitude={site.elevation_m} selectedHour={selectedHour} onHourSelect={setSelectedHour} dayLabel={dateLabel} siteName={site.site_name} />
                     </section>
+
+                    <ReportVolo
+                      open={reportOpen}
+                      onClose={() => setReportOpen(false)}
+                      item={site}
+                      selectedDay={selectedDay}
+                      onSelectDay={setSelectedDay}
+                      selectedHour={selectedHour}
+                      onHourSelect={setSelectedHour}
+                      onSelect={(d) => { setSelectedId(d.id); }}
+                      decolli={mergedDecolli}
+                    />
                   </>
                 )}
               </div>
