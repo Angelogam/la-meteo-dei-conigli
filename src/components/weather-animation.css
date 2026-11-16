@@ -257,3 +257,32 @@
     transition: none !important;
   }
 }
+
+/* ---------- variante micro: per le colonne del meteogram del report ---------- */
+.weather-scene--micro {
+  flex: 0 0 46px;
+  width: 46px;
+  height: 33px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  overflow: hidden;
+}
+.weather-scene--micro .weather-scene-sky { background: transparent; }
+.weather-scene--micro .weather-scene-sun {
+  top: 2px; left: 4px; width: 16px; height: 16px;
+  animation: weather-sun-breathe 3.6s ease-in-out infinite;
+}
+.weather-scene--micro .weather-scene-cloud--back { top: 2px; left: 19px; width: 17px; height: 14px; }
+.weather-scene--micro .weather-scene-cloud--front { top: 8px; left: 10px; width: 23px; height: 19px; }
+.weather-scene--micro.weather-scene--partly .weather-scene-cloud--front { top: 7px; left: 13px; width: 20px; height: 17px; }
+.weather-scene--micro .weather-scene-rain { top: 19px; left: 9px; gap: 5px; }
+.weather-scene--micro .weather-scene-rain i { width: 1.6px; height: 5px; animation: weather-raindrop 1s linear infinite; }
+.weather-scene--micro .weather-scene-umbrella { display: none; }
+.weather-scene--micro .weather-scene-flash { top: 17px; left: 18px; width: 6px; height: 10px; }
+.weather-scene--micro .weather-scene-fog { top: 18px; right: 6px; bottom: auto; left: 6px; gap: 2px; }
+.weather-scene--micro .weather-scene-fog i { height: 1.5px; }
+.weather-scene--micro .weather-scene-snow { top: 18px; left: 8px; gap: 5px; }
+.weather-scene--micro .weather-scene-snow svg { width: 6px; height: 6px; }
+.weather-scene--micro.weather-scene--unknown .weather-scene-moon { top: 3px; left: 6px; right: auto; width: 13px; height: 13px; }

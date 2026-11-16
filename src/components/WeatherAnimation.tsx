@@ -5,7 +5,7 @@ import { Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudRain, CloudSnow, Mo
 
 type WeatherAnimationProps = {
   code: number | null;
-  size?: "compact" | "hero";
+  size?: "micro" | "compact" | "hero";
 };
 
 function weatherKind(code: number | null) {
