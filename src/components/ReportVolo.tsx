@@ -34,6 +34,8 @@ interface ReportVoloProps {
   onHourSelect: (h: number) => void;
   onSelect: (item: Decollo) => void;
   decolli: Decollo[];
+  /** inline: renderizzato come sezione della pagina (tab Report) invece che finestra flottante. */
+  inline?: boolean;
 }
 
 const POS_KEY = "rvo-panel-pos";
@@ -89,7 +91,7 @@ function saveJSON(key: string, v: unknown) {
 }
 
 export default function ReportVolo({
-  open, onClose, item, selectedDay, onSelectDay, selectedHour, onHourSelect, onSelect, decolli,
+  open, onClose, item, selectedDay, onSelectDay, selectedHour, onHourSelect, onSelect, decolli, inline = false,
 }: ReportVoloProps) {
   const [data, setData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -171,16 +173,21 @@ export default function ReportVolo({
   const timeline = (data?.hours ?? []).filter((o) => o.hour >= 6 && o.hour <= 20);
   const flyHours = (data?.hours ?? []).filter((o) => o.hour >= 8 && o.hour <= 19 && o.rateo != null);
 
-  return createPortal(
-    <div ref={boxRef} className="rv-window" data-testid="report-volo" style={st} role="dialog" aria-label="Report volo della giornata">
-      <button type="button" className="cmap-close cmap-close-float" onClick={onClose} title="Chiudi il report" aria-label="Chiudi il report">
-        <X size={14} aria-hidden="true" />
-      </button>
-      <span className="cmap-rz is-se" title="Trascina dall'angolo per ridimensionare" aria-hidden="true" onPointerDown={onRzPointerDown} onPointerMove={onRzPointerMove} onPointerUp={onRzPointerUp} onPointerCancel={onRzPointerUp} />
+  const closeBtn = (
+    <button type="button" className="cmap-close cmap-close-float" onClick={onClose} title="Chiudi il report" aria-label="Chiudi il report">
+      <X size={14} aria-hidden="true" />
+    </button>
+  );
+  const rzHandle = (
+    <span className="cmap-rz is-se" title="Trascina dall'angolo per ridimensionare" aria-hidden="true" onPointerDown={onRzPointerDown} onPointerMove={onRzPointerMove} onPointerUp={onRzPointerUp} onPointerCancel={onRzPointerUp} />
+  );
+  const heroHandlers = inline ? {} : { onPointerDown: onHeadPointerDown, onPointerMove: onHeadPointerMove, onPointerUp: onHeadPointerUp, onPointerCancel: onHeadPointerUp };
 
+  const inner = (
+    <>
       {/* HERO con la foto reale del decollo */}
       <div className={"rv-hero" + (photo ? " has-photo" : "")} style={photo ? { backgroundImage: `linear-gradient(180deg, rgba(7,17,31,.5), rgba(7,17,31,.94)), url(${photo})` } : undefined}>
-        <div className="rv-hero-head" onPointerDown={onHeadPointerDown} onPointerMove={onHeadPointerMove} onPointerUp={onHeadPointerUp} onPointerCancel={onHeadPointerUp}>
+        <div className="rv-hero-head" {...heroHandlers}>
           <span className="rv-daychip">{selectedDay === 0 ? "OGGI" : selectedDay === 1 ? "DOMANI" : "DOPODOMANI"}</span>
           <div className="rv-hero-title">
             <h2>Report meteo</h2>
@@ -367,6 +374,22 @@ export default function ReportVolo({
           </>
         )}
       </div>
+    </>
+  );
+
+  if (inline) {
+    return (
+      <div className="rv-window rv-inline" data-testid="report-volo" role="region" aria-label="Report volo della giornata">
+        {inner}
+      </div>
+    );
+  }
+
+  return createPortal(
+    <div ref={boxRef} className="rv-window" data-testid="report-volo" style={st} role="dialog" aria-label="Report volo della giornata">
+      {closeBtn}
+      {rzHandle}
+      {inner}
     </div>,
     document.body,
   );

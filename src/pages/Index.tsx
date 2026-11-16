@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { Activity, FileDown, FileText, Home, Mountain, Thermometer, Wind } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -65,8 +65,6 @@ export default function Index() {
     updating: aggressiveUpdating,
     loadWeather: loadAggressiveWeather,
   } = useThreeSourceWeather();
-
-  const [reportOpen, setReportOpen] = useState(false);
 
   const filteredDayData = useMemo(() => {
     if (!dayData || dayData.length === 0) return [];
@@ -278,18 +276,35 @@ export default function Index() {
 
                     <section className="flight-tab-content min-w-0" aria-live="polite">
                       {activeTab === "meteo" && site && (
-                        <ReportGiornata
-                          siteName={site.site_name}
-                          elevation={site.elevation_m}
-                          lat={site.lat}
-                          lon={site.lon}
-                          current={currentData}
-                          hourly={hourlyData}
-                          rawData={rawApiResponse}
-                          daily={enrichedDaily}
-                          selectedDay={selectedDay}
-                          onSelectDay={setSelectedDay}
-                        />
+                        <>
+                          <ReportVolo
+                            inline
+                            open
+                            onClose={() => setActiveTab("meteo")}
+                            item={site}
+                            selectedDay={selectedDay}
+                            onSelectDay={setSelectedDay}
+                            selectedHour={selectedHour}
+                            onHourSelect={setSelectedHour}
+                            onSelect={(d) => { setSelectedId(d.id); }}
+                            decolli={mergedDecolli}
+                          />
+                          <details className="rv-export-details">
+                            <summary>Report esportabile · le 2 pagine A4 (PDF · PNG · WhatsApp)</summary>
+                            <ReportGiornata
+                              siteName={site.site_name}
+                              elevation={site.elevation_m}
+                              lat={site.lat}
+                              lon={site.lon}
+                              current={currentData}
+                              hourly={hourlyData}
+                              rawData={rawApiResponse}
+                              daily={enrichedDaily}
+                              selectedDay={selectedDay}
+                              onSelectDay={setSelectedDay}
+                            />
+                          </details>
+                        </>
                       )}
                       {activeTab === "venti" && (
                         <div className="launch-windgram-shortcut" role="status">
@@ -348,7 +363,7 @@ export default function Index() {
                         <button
                           type="button"
                           className="dxc-cmpbtn"
-                          onClick={() => setReportOpen(true)}
+                          onClick={() => { setActiveTab("meteo"); document.getElementById("details-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); }}
                           title="Apri il report completo della giornata: copertura nuvole, base cumuli, termiche, venti in quota a step di 250 m e consiglio di volo"
                         >
                           Report della giornata
@@ -357,18 +372,6 @@ export default function Index() {
                       </div>
                       <HourlyCards dayData={filteredDayData} altitude={site.elevation_m} selectedHour={selectedHour} onHourSelect={setSelectedHour} dayLabel={dateLabel} siteName={site.site_name} />
                     </section>
-
-                    <ReportVolo
-                      open={reportOpen}
-                      onClose={() => setReportOpen(false)}
-                      item={site}
-                      selectedDay={selectedDay}
-                      onSelectDay={setSelectedDay}
-                      selectedHour={selectedHour}
-                      onHourSelect={setSelectedHour}
-                      onSelect={(d) => { setSelectedId(d.id); }}
-                      decolli={mergedDecolli}
-                    />
                   </>
                 )}
               </div>
