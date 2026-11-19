@@ -151,9 +151,10 @@
   flex-direction: column;
   gap: .26rem;
   padding: .5rem .68rem;
-  border: 1px solid rgba(148, 197, 255, .16);
-  border-radius: 13px;
-  background: linear-gradient(170deg, rgba(148, 197, 255, .07), rgba(3, 10, 24, .3));
+  border: 1px solid rgba(255, 255, 255, .09);
+  border-radius: 16px;
+  background: linear-gradient(170deg, rgba(120, 150, 185, .1), rgba(6, 14, 28, .38));
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .28);
   min-width: 0;
   transition: border-color .18s ease, background .18s ease, transform .18s ease;
 }
@@ -463,11 +464,14 @@
 .rv-sez-grid { display: grid; gap: .55rem; }
 .rv-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .rv-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.rv-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
 /* card con superficie piena, contrasto forte */
 .rv-card-solid {
-  background: linear-gradient(175deg, rgba(27, 60, 95, .95), rgba(12, 27, 48, .96) 62%, rgba(8, 19, 35, .97));
-  border-color: rgba(148, 197, 255, .3);
+  background: linear-gradient(176deg, rgba(54, 70, 94, .93), rgba(24, 35, 52, .97) 60%, rgba(16, 24, 38, .98));
+  border-color: rgba(255, 255, 255, .1);
+  border-radius: 18px;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .35);
 }
 .rv-v-note { margin-left: .45rem; font-size: .92rem; font-style: normal; color: #a9c2d6; font-weight: 700; }
 .rv-val-xl { font-size: 2.2rem !important; }
@@ -478,6 +482,8 @@
 .rv-mets-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .rv-met-sub { font-size: .78rem; color: #9db2c5; font-weight: 600; letter-spacing: .01em; line-height: 1.4; }
 @media (max-width: 860px) { .rv-mets-4 { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 860px) { .rv-cols-3 { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 620px) { .rv-cols-3 { grid-template-columns: 1fr; } }
 .rv-met {
   display: flex;
   flex-direction: column;
@@ -507,3 +513,86 @@
 .rv-wind-bar > span { display: block; height: 100%; min-width: 3px; border-radius: 6px; background: linear-gradient(90deg, #34d399, #10b981); transition: width .4s ease; }
 .rv-wind-bar > span.is-mid { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
 .rv-wind-bar > span.is-strong { background: linear-gradient(90deg, #f87171, #ef4444); }
+
+
+/* ============ BARRA OGGI + PRESSIONE (stile dashboard) ============ */
+.rv-today { display: flex; gap: .7rem; align-items: stretch; }
+.rv-today-pill {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: .9rem;
+  padding: .6rem 1.1rem .6rem .8rem;
+  border-radius: 18px;
+  background: linear-gradient(176deg, rgba(54, 70, 94, .93), rgba(20, 30, 46, .97));
+  border: 1px solid rgba(255, 255, 255, .1);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .35);
+}
+.rv-today-day {
+  padding: .32rem .8rem;
+  border-radius: 999px;
+  background: linear-gradient(140deg, #fbbf24, #f59e0b);
+  color: #42200a;
+  font-size: .74rem;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.rv-today-cond { font-family: var(--font-display); font-size: 1.35rem; font-weight: 800; color: #f2fbff; letter-spacing: .01em; }
+.rv-today-range { margin-left: auto; font-family: var(--font-display); font-size: 1.3rem; font-weight: 800; color: #e6f1fb; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rv-today-range i { font-style: normal; color: #8ba2b6; font-weight: 600; }
+.rv-today-press {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  padding: .5rem .95rem;
+  border-radius: 18px;
+  background: linear-gradient(176deg, rgba(54, 70, 94, .93), rgba(20, 30, 46, .97));
+  border: 1px solid rgba(255, 255, 255, .1);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .35);
+}
+.rv-today-press-body { display: flex; flex-direction: column; }
+.rv-today-k { color: #a9c2d6; font-size: .7rem; font-weight: 900; letter-spacing: .09em; text-transform: uppercase; }
+.rv-today-press-v { font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; color: #f2fbff; line-height: 1.05; }
+.rv-today-press-v small { font-size: .72rem; color: #9db2c5; font-weight: 700; }
+
+/* ============ RIGA WIDGET GAUGE (stile dashboard) ============ */
+.rv-gauges { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; }
+.rv-gcard {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  padding: .6rem .8rem;
+  border-radius: 18px;
+  background: linear-gradient(176deg, rgba(54, 70, 94, .93), rgba(20, 30, 46, .97));
+  border: 1px solid rgba(255, 255, 255, .1);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .35);
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+}
+.rv-gcard::before { content: ""; position: absolute; left: 14px; right: 14px; top: 0; height: 2.5px; border-radius: 0 0 4px 4px; background: var(--accent, rgba(148, 197, 255, .5)); }
+.rv-gk { color: #b6cbdb; font-size: .76rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+.rv-gbody { display: flex; align-items: center; justify-content: space-between; gap: .7rem; min-width: 0; }
+.rv-gval { display: flex; flex-direction: column; gap: .12rem; min-width: 0; }
+.rv-gval strong { font-family: var(--font-display); font-size: 1.72rem; font-weight: 800; color: #f2fbff; line-height: 1.05; white-space: nowrap; }
+.rv-gdir { color: #b6cbdb; font-size: .84rem; font-weight: 700; }
+.rv-gsub { color: #8ba2b6; font-size: .74rem; font-weight: 600; line-height: 1.35; }
+.gg-ring, .gg-rose, .gg-semi { flex: 0 0 auto; }
+.rv-accent-wind { --accent: linear-gradient(90deg, #7dd3fc, #38bdf8); }
+.rv-accent-therm { --accent: linear-gradient(90deg, #fde68a, #f59e0b); }
+.rv-accent-cloud { --accent: linear-gradient(90deg, #bfdbfe, #3b82f6); }
+.rv-accent-uv { --accent: linear-gradient(90deg, #a7f3d0, #f87171); }
+.rv-accent-alt { --accent: linear-gradient(90deg, #67e8f9, #3b82f6); }
+.rv-accent-rain { --accent: linear-gradient(90deg, #93c5fd, #1d4ed8); }
+
+@media (max-width: 1000px) {
+  .rv-gauges { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 640px) {
+  .rv-gauges { grid-template-columns: 1fr; }
+  .rv-today { flex-direction: column; }
+  .rv-today-pill { flex-wrap: wrap; }
+}

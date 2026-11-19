@@ -24,6 +24,8 @@ import {
 } from "@/services/reportGiornata";
 import "./report-volo.css";
 import WmoGlyph from "./WmoGlyph";
+import RadarMappa from "./RadarMappa";
+import { RingGauge, SemiGauge, WindRose } from "./gauge";
 
 interface ReportVoloProps {
   open: boolean;
@@ -114,7 +116,9 @@ export default function ReportVolo({
   const oraSel: ReportOra | null = data?.hours.find((o) => o.hour === selectedHour) ?? null;
   const profilo = data?.profili.get(selectedHour) ?? [];
   const testo = data ? testoGiornata(data, quota, item.site_name || item.name) : "";
-  const photo = item.photo?.url;
+  const uvLabel = oraSel?.uv == null ? "raggio UV" : oraSel.uv < 3 ? "basso" : oraSel.uv < 6 ? "moderato" : oraSel.uv < 8 ? "alto" : "molto alto";
+  const visLabel = oraSel?.visibility == null ? "visibilità orizzontale" : oraSel.visibility >= 20000 ? "ottima" : oraSel.visibility >= 10000 ? "buona" : oraSel.visibility >= 5000 ? "modesta" : "limitata";
+  const photo = (item as { photo?: { url?: string } }).photo?.url;
   const espo = item.orientation || item.exposure || "—";
 
   const onHeadPointerDown = (ev: React.PointerEvent<HTMLDivElement>) => {
@@ -206,6 +210,21 @@ export default function ReportVolo({
 
         {!loading && data && (
           <>
+            {/* BARRA OGGI — condizione dell'ora + pressione, stile dashboard */}
+            <div className="rv-today">
+              <div className="rv-today-pill">
+                <span className="rv-today-day">{selectedDay === 0 ? "Oggi" : selectedDay === 1 ? "Domani" : "Dopodomani"}</span>
+                <WmoGlyph code={oraSel?.code ?? null} size={56} />
+                <strong className="rv-today-cond">{oraSel ? wmoLabel(oraSel.code) : "—"}</strong>
+                <span className="rv-today-range">{data.tempMax != null ? Math.round(data.tempMax) + "°" : "—"} <i>/</i> {data.tempMin != null ? Math.round(data.tempMin) + "°" : "—"}</span>
+              </div>
+              <div className="rv-today-press">
+                <span className="rv-today-k">Pressione</span>
+                <strong className="rv-today-press-v">{oraSel?.pressure != null ? Math.round(oraSel.pressure) : "—"}<small> hPa</small></strong>
+                <SemiGauge value={oraSel?.pressure ?? null} size={118} />
+              </div>
+            </div>
+
             {/* METEOGRAM ORARIO — righe compatte stile professionale, colonna cliccabile */}
             <div className="rv-block">
               <h3><Timer size={14} aria-hidden="true" /> Meteogram orario <small>clicca una colonna: tutte le card si aggiornano</small></h3>
@@ -301,6 +320,92 @@ export default function ReportVolo({
               <p className="rv-legend">vento in km/h (grassetto) con raffiche in piccolo · term. rateo m/s · valori per l'ora selezionata mostrati nelle card</p>
             </div>
 
+            {/* RIGA WIDGET — gauge circolari stile dashboard */}
+            <div className="rv-gauges">
+              <div className="rv-gcard rv-accent-wind">
+                <span className="rv-gk">Vento al decollo</span>
+                <div className="rv-gbody">
+                  <div className="rv-gval">
+                    <strong>{oraSel?.wind != null ? Math.round(oraSel.wind) + " km/h" : "—"}</strong>
+                    <span className="rv-gdir">{oraSel?.dir != null ? `da ${cardinal(oraSel.dir)} (${oraSel.dir}°)` : "direzione N/D"}</span>
+                    <small className="rv-gsub">{oraSel?.gust != null ? `raffiche ${Math.round(oraSel.gust)} km/h` : "raffiche —"}{oraSel?.windRel ? ` · vento ${oraSel.windRel}` : ""}</small>
+                  </div>
+                  <WindRose dir={oraSel?.dir ?? null} />
+                </div>
+              </div>
+
+              <div className="rv-gcard rv-accent-therm">
+                <span className="rv-gk">Ascendenza</span>
+                <div className="rv-gbody">
+                  <div className="rv-gval">
+                    <strong>{oraSel?.rateo != null && oraSel.rateo > 0 ? "+" + oraSel.rateo.toFixed(1).replace(".", ",") + " m/s" : "assenti"}</strong>
+                    <span className="rv-gdir">termica dell&apos;ora</span>
+                    <small className="rv-gsub">{oraSel?.indice != null ? `volabilità ${oraSel.indice}/10 ${oraSel.indiceLabel ?? ""}` : "volabilità —"}</small>
+                  </div>
+                  <RingGauge value={oraSel?.rateo != null && oraSel.rateo > 0 ? oraSel.rateo : 0} min={0} max={5} from="#fde68a" to="#f59e0b" gradientId="gg-therm" />
+                </div>
+              </div>
+
+              <div className="rv-gcard rv-accent-cloud">
+                <span className="rv-gk">Base cumuli</span>
+                <div className="rv-gbody">
+                  <div className="rv-gval">
+                    <strong>{oraSel?.baseNubi != null ? oraSel.baseNubi.toLocaleString("it-IT") + " m" : "—"}</strong>
+                    <span className="rv-gdir">quota base nubi</span>
+                    <small className="rv-gsub">{oraSel?.baseNubi != null ? `${Math.round(oraSel.baseNubi - quota).toLocaleString("it-IT")} m di soglia dal decollo` : "soglia —"}</small>
+                  </div>
+                  <RingGauge value={oraSel?.baseNubi ?? 0} min={0} max={4000} from="#bfdbfe" to="#3b82f6" gradientId="gg-base" />
+                </div>
+              </div>
+
+              <div className="rv-gcard rv-accent-uv">
+                <span className="rv-gk">Raggio UV</span>
+                <div className="rv-gbody">
+                  <div className="rv-gval">
+                    <strong>{oraSel?.uv != null ? oraSel.uv.toFixed(1).replace(".", ",") : "—"}</strong>
+                    <span className="rv-gdir">{uvLabel}</span>
+                    <small className="rv-gsub">protezione consigliata</small>
+                  </div>
+                  <RingGauge value={oraSel?.uv ?? 0} min={0} max={11} from="#a7f3d0" to="#f87171" gradientId="gg-uv" />
+                </div>
+              </div>
+
+              <div className="rv-gcard rv-accent-alt">
+                <span className="rv-gk">Visibilità</span>
+                <div className="rv-gbody">
+                  <div className="rv-gval">
+                    <strong>{oraSel?.visibility != null ? (oraSel.visibility / 1000).toFixed(1).replace(".", ",") + " km" : "—"}</strong>
+                    <span className="rv-gdir">{visLabel}</span>
+                    <small className="rv-gsub">orizzonte verso l&apos;atterraggio</small>
+                  </div>
+                  <RingGauge value={oraSel?.visibility != null ? Math.min(oraSel.visibility, 30000) : 0} min={0} max={30000} from="#67e8f9" to="#3b82f6" gradientId="gg-vis" />
+                </div>
+              </div>
+
+              <div className="rv-gcard rv-accent-rain">
+                <span className="rv-gk">Precipitazione</span>
+                <div className="rv-gbody">
+                  <div className="rv-gval">
+                    <strong>{oraSel?.rain != null ? oraSel.rain.toFixed(1).replace(".", ",") + " mm/h" : "—"}</strong>
+                    <span className="rv-gdir">pioggia dell&apos;ora</span>
+                    <small className="rv-gsub">{oraSel?.prob != null ? `probabilità ${oraSel.prob}%` : "probabilità —"}</small>
+                  </div>
+                  <RingGauge value={oraSel?.rain ?? 0} min={0} max={4} from="#93c5fd" to="#1d4ed8" gradientId="gg-rain" />
+                </div>
+              </div>
+            </div>
+
+            {/* RADAR TEMPORALI — carta radar reale animata centrata sul decollo */}
+            <div className="rv-sez">
+              <div className="rv-sez-head">
+                <Activity size={19} className="rv-sez-ico" aria-hidden="true" />
+                <h4>Radar temporali in tempo reale</h4>
+                <span className="rv-sez-time">ultimi 60 min + proiezione</span>
+              </div>
+              <RadarMappa lat={item.lat} lon={item.lon} nome={item.site_name || item.name} quota={quota} />
+              <p className="rv-note">Le celle pioggia/temporale in arrivo si vedono prima che raggiungano l&apos;area di volo — i frame arancioni sono la proiezione della prossima mezz&apos;ora. Radar © RainViewer.</p>
+            </div>
+
             {/* SEZIONI TEMATICHE — metriche correlate raggruppate per la decisione di volo */}
             <div className="rv-sez">
               <div className="rv-sez-head">
@@ -321,6 +426,7 @@ export default function ReportVolo({
                       <span className="rv-chipv">Rugiada {oraSel?.dew != null ? Math.round(oraSel.dew) + "°" : "—"}</span>
                       <span className="rv-chipv">Percepita {oraSel?.apparent != null ? Math.round(oraSel.apparent) + "°" : "—"}</span>
                       {data.tempMin != null && data.tempMax != null && <span className="rv-chipv">Giornata {Math.round(data.tempMin)}–{Math.round(data.tempMax)} °C</span>}
+                      <span className="rv-chipv">Umidità {oraSel?.humidity != null ? Math.round(oraSel.humidity) + "%" : "—"}</span>
                     </div>
                   </div>
                   <WmoGlyph code={oraSel?.code ?? null} size={164} className="rv-scene-glyph" label={oraSel ? wmoLabel(oraSel.code) : undefined} />
@@ -334,39 +440,6 @@ export default function ReportVolo({
                     <span className="rv-layer"><i>Nuvole medie</i><b style={{ width: `${oraSel?.cloudMid ?? 0}%` }} /><em>{oraSel?.cloudMid != null ? oraSel.cloudMid + "%" : "—"}</em></span>
                     <span className="rv-layer"><i>Nuvole basse</i><b style={{ width: `${oraSel?.cloudLow ?? 0}%` }} /><em>{oraSel?.cloudLow != null ? oraSel.cloudLow + "%" : "—"}</em></span>
                   </div>
-                  <div className="rv-mets rv-mets-4">
-                    <div className="rv-met"><span>Umidità</span><b>{oraSel?.humidity != null ? Math.round(oraSel.humidity) + "%" : "—"}</b></div>
-                    <div className="rv-met"><span>Raggio UV</span><b className={(oraSel?.uv ?? 0) >= 6 ? "rv-no" : (oraSel?.uv ?? 0) >= 3 ? "rv-mid" : undefined}>{oraSel?.uv != null ? oraSel.uv.toFixed(1).replace(".", ",") : "—"}</b></div>
-                    <div className="rv-met"><span>Pressione</span><b>{oraSel?.pressure != null ? Math.round(oraSel.pressure) + " hPa" : "—"}</b></div>
-                    <div className="rv-met"><span>Visibilità</span><b>{oraSel?.visibility != null ? (oraSel.visibility / 1000).toFixed(1).replace(".", ",") + " km" : "—"}</b></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="rv-sez">
-              <div className="rv-sez-head">
-                <Wind size={19} className="rv-sez-ico" aria-hidden="true" />
-                <h4>Vento</h4>
-              </div>
-              <div className="rv-sez-grid rv-cols-2">
-                <div className="rv-card rv-card-solid rv-accent-wind">
-                  <span className="rv-k">Vento al decollo</span>
-                  <div className="rv-wind-big">
-                    <span className="rv-windrose rv-windrose-lg" aria-hidden="true">{oraSel?.dir != null ? <ArrowUp size={26} style={{ transform: `rotate(${oraSel.dir + 180}deg)` }} /> : "—"}</span>
-                    <div className="rv-wind-main">
-                      <strong className="rv-val-xl">{oraSel?.wind != null ? Math.round(oraSel.wind) + " km/h" : "—"}</strong>
-                      <span className="rv-dir-line">{oraSel?.dir != null ? `proveniente da ${cardinal(oraSel.dir)} (${oraSel.dir}°)` : "direzione non disponibile"}{oraSel?.gust != null ? ` · raffiche fino a ${Math.round(oraSel.gust)} km/h` : ""}</span>
-                    </div>
-                  </div>
-                  <div className="rv-wind-bar" aria-hidden="true"><span className={(oraSel?.wind ?? 0) >= 40 ? "is-strong" : (oraSel?.wind ?? 0) >= 25 ? "is-mid" : ""} style={{ width: `${Math.min(100, ((oraSel?.wind ?? 0) / 60) * 100)}%` }} /></div>
-                  {oraSel?.windRel && <p className="rv-sub">Vento {oraSel.windRel} all&apos;esposizione del decollo</p>}
-                </div>
-
-                <div className="rv-card rv-card-solid rv-accent-ok">
-                  <span className="rv-k">Volo veleggiato</span>
-                  <div className="rv-v"><strong className={data.veleggiata.livello === "OTTIME" || data.veleggiata.livello === "BUONE" ? "rv-ok" : data.veleggiata.livello === "MEDIATE" ? "rv-mid" : "rv-no"}>{data.veleggiata.livello.toLowerCase()}</strong></div>
-                  <p className="rv-sub">{data.veleggiata.motivo}</p>
                 </div>
               </div>
             </div>
@@ -380,7 +453,7 @@ export default function ReportVolo({
                 <div className="rv-card rv-card-solid rv-accent-therm">
                   <span className="rv-k">Le termiche dell&apos;ora</span>
                   <div className="rv-mets rv-mets-4">
-                    <div className="rv-met"><span>Ascendenza</span><b>{oraSel?.rateo != null && oraSel.rateo > 0 ? "+" + oraSel.rateo.toFixed(1).replace(".", ",") + " m/s" : "assenti"}</b><small className="rv-met-sub">{oraSel?.indice != null ? `volabilità ${oraSel.indice}/10 ${oraSel.indiceLabel ?? ""}` : "volabilità —"}</small></div>
+                    <div className="rv-met"><span>Rateo max giornata</span><b>{data.rateoMax > 0.2 ? "+" + data.rateoMax.toFixed(1).replace(".", ",") + " m/s" : "debole"}</b><small className="rv-met-sub">{data.rateoOraMax != null ? `picco alle ${String(data.rateoOraMax).padStart(2, "0")}:00` : "picco —"}</small></div>
                     <div className="rv-met"><span>Base cumuli</span><b>{oraSel?.baseNubi != null ? oraSel.baseNubi.toLocaleString("it-IT") + " m" : "—"}</b><small className="rv-met-sub">{oraSel?.baseNubi != null ? `${Math.round(oraSel.baseNubi - quota).toLocaleString("it-IT")} m di soglia dal decollo` : "soglia —"}</small></div>
                     <div className="rv-met"><span>Zero termico</span><b>{oraSel?.freezing != null ? Math.round(oraSel.freezing).toLocaleString("it-IT") + " m" : "—"}</b><small className="rv-met-sub">{oraSel?.freezing != null ? `${Math.round(oraSel.freezing - quota).toLocaleString("it-IT")} m sopra il decollo` : "— m sopra il decollo"}</small></div>
                     <div className="rv-met"><span>Quota max utile</span><b>{data.topRange ? data.topRange[1].toLocaleString("it-IT") + " m" : "—"}</b><small className="rv-met-sub">{data.topRange ? `range base ${data.topRange[0].toLocaleString("it-IT")}–${data.topRange[1].toLocaleString("it-IT")} m` : "range —"}</small></div>
@@ -394,7 +467,13 @@ export default function ReportVolo({
                 <Timer size={19} className="rv-sez-ico" aria-hidden="true" />
                 <h4>La decisione di volo</h4>
               </div>
-              <div className="rv-sez-grid rv-cols-2">
+              <div className="rv-sez-grid rv-cols-3">
+                <div className="rv-card rv-card-solid rv-accent-ok">
+                  <span className="rv-k">Volo veleggiato</span>
+                  <div className="rv-v"><strong className={data.veleggiata.livello === "OTTIME" || data.veleggiata.livello === "BUONE" ? "rv-ok" : data.veleggiata.livello === "MEDIATE" ? "rv-mid" : "rv-no"}>{data.veleggiata.livello.toLowerCase()}</strong></div>
+                  <p className="rv-sub">{data.veleggiata.motivo}</p>
+                </div>
+
                 <div className="rv-card rv-card-solid rv-accent-window">
                   <span className="rv-k">Finestra migliore</span>
                   <div className="rv-v"><strong className="rv-val-xl">{data.bestWindow ? `${String(data.bestWindow.from).padStart(2, "0")}:00 – ${String(data.bestWindow.to).padStart(2, "0")}:00` : "—"}</strong></div>
