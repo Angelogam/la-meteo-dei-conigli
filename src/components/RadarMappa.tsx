@@ -43,7 +43,7 @@ export default function RadarMappa({ lat, lon, nome, quota }: { lat: number; lon
   const [, setTick] = useState(0);
   const redrawRef = useRef<() => void>(() => {});
 
-  const loadImg = useCallback((src: string, onReady: () => void): HTMLImageElement | null => {
+  const loadImg = useCallback((src: string, onReady: () => void, fallbackSrc?: string): HTMLImageElement | null => {
     const cache = imgCache.current;
     let im = cache.get(src);
     if (im) return im.complete && im.naturalWidth > 0 ? im : null;
@@ -51,13 +51,10 @@ export default function RadarMappa({ lat, lon, nome, quota }: { lat: number; lon
     im.referrerPolicy = "no-referrer";
     cache.set(src, im);
     im.onload = () => {
-      // sanitizzazione SOLO del radar: le tile che il tilecache ripiega su
-      // messaggi di errore ("Zoom Level Not Supported") non vengono disegnate
-      if (!src.includes("frame=")) {
-        (im as HTMLImageElement & { clean?: boolean }).clean = true;
-        onReady();
-        return;
-      }
+      // sanitizzazione di TUTTE le tile: i provider di basemap a volte rispondono
+      // 200 con un'immagine di errore ("Zoom Level Not Supported" di Esri) che
+      // coprirebbe la carta — si riconosce dal pannello grigio uniforme con testo
+      // bianco e si scarta, riprovando con la tile del provider di riserva
       try {
         const cv = document.createElement("canvas");
         cv.width = im.naturalWidth;
@@ -73,15 +70,20 @@ export default function RadarMappa({ lat, lon, nome, quota }: { lat: number; lon
             if (a2 > 45 && r > 60 && r < 210 && Math.abs(r - g) < 28 && Math.abs(g - b) < 40 && Math.abs(r - b) < 40) gray++;
             if (a2 > 45 && r > 225 && g > 225 && b > 225) white++;
           }
-          // le tile di errore hanno un grande pannello grigio-uniforme con testo bianco
-          const isClean = !(gray / n > 0.3 || (gray / n > 0.18 && white / n > 0.04));
-          if (!isClean) console.log("[radar] tile di errore scartata:", src.slice(0, 70));
+          const isClean = !(white / n > 0.02 || (gray / n > 0.3 && white / n > 0.008));
           (im as HTMLImageElement & { clean?: boolean }).clean = isClean;
+          if (!isClean) {
+            console.log("[radar] tile di errore scartata:", src.slice(0, 80));
+            if (fallbackSrc) { loadImg(fallbackSrc, onReady); return; }
+          }
         } else (im as HTMLImageElement & { clean?: boolean }).clean = true;
       } catch { (im as HTMLImageElement & { clean?: boolean }).clean = true; }
       onReady();
     };
-    im.onerror = () => cache.delete(src);
+    im.onerror = () => {
+      cache.delete(src);
+      if (fallbackSrc) loadImg(fallbackSrc, onReady);
+    };
     im.src = src;
     return null;
   }, []);
@@ -116,7 +118,11 @@ export default function RadarMappa({ lat, lon, nome, quota }: { lat: number; lon
         const wx = ((tx % (2 ** z)) + 2 ** z) % (2 ** z);
         const wy = Math.max(0, Math.min(2 ** z - 1, ty));
         const dx = Math.round(tx * TILE - left), dy = Math.round(ty * TILE - top);
-        const im = loadImg(`/api/map-tile?z=${z}&x=${wx}&y=${wy}`, () => { if (pending === 0) redrawRef.current(); });
+        const im = loadImg(
+          `/api/map-tile?prov=carto&z=${z}&x=${wx}&y=${wy}`,
+          () => { if (pending === 0) redrawRef.current(); },
+          `/api/map-tile?prov=esri&z=${z}&x=${wx}&y=${wy}`,
+        );
         if (im && (im as HTMLImageElement & { clean?: boolean }).clean !== false) ctx.drawImage(im, dx, dy, TILE, TILE); else pending++;
       }
     }
@@ -164,14 +170,21 @@ export default function RadarMappa({ lat, lon, nome, quota }: { lat: number; lon
 
   redrawRef.current = draw;
 
-  // resize observer + loop di animazione (per il pulsare del marker)
+  // resize observer + loop di animazione (per il pulsare del marker) — limitato a
+  // ~20 fps: basta per il pulsare e lascia CPU/batteria liberi al resto della pagina
   useEffect(() => {
     const cv = canvasRef.current;
     if (!cv) return;
     const ro = new ResizeObserver(() => redrawRef.current());
     if (boxRef.current) ro.observe(boxRef.current);
     let raf = 0;
-    const loop = () => { redrawRef.current(); raf = window.requestAnimationFrame(loop); };
+    let last = 0;
+    const loop = (t: number) => {
+      raf = window.requestAnimationFrame(loop);
+      if (t - last < 50) return;
+      last = t;
+      redrawRef.current();
+    };
     raf = window.requestAnimationFrame(loop);
     return () => { window.cancelAnimationFrame(raf); ro.disconnect(); };
   }, []);
@@ -241,45 +254,48 @@ framesRef.current = [...past, ...now];
 
   return (
     <div className="radar-box" data-testid="radar-temporali">
-      <div
-        ref={boxRef}
-        className="radar-map"
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
-        style={{ cursor: dragRef.current ? "grabbing" : "grab", touchAction: "none" }}
-      >
-        <canvas ref={canvasRef} className="radar-canvas" />
+      {/* striscia superiore: titolo + legenda intensità come barra gradiente */}
+      <div className="radar-top" aria-hidden="true">
+        <span className="radar-top-k">Radar pioggia</span>
+        <span className="radar-top-bar">{LEGENDA.map((l) => <i key={l.c} style={{ background: l.c }} />)}</span>
+        <span className="radar-top-t">{LEGENDA.map((l) => <em key={l.c}>{l.t}</em>)}</span>
       </div>
-      <div className="radar-zoom">
-        <button type="button" onClick={() => zoomBy(1)} title="Zoom avanti" aria-label="Zoom avanti">+</button>
-        <button type="button" onClick={() => zoomBy(-1)} title="Zoom indietro" aria-label="Zoom indietro">−</button>
+      <div className="radar-mapwrap">
+        <div
+          ref={boxRef}
+          className="radar-map"
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
+          style={{ cursor: dragRef.current ? "grabbing" : "grab", touchAction: "none" }}
+        >
+          <canvas ref={canvasRef} className="radar-canvas" />
+        </div>
+        <div className="radar-zoom">
+          <button type="button" onClick={() => zoomBy(1)} title="Zoom avanti" aria-label="Zoom avanti">+</button>
+          <button type="button" onClick={() => zoomBy(-1)} title="Zoom indietro" aria-label="Zoom indietro">−</button>
+        </div>
+        {stato === "load" && <div className="radar-veil">Radar in caricamento…</div>}
+        {stato === "err" && <div className="radar-veil">Radar momentaneamente non disponibile — riprova più tardi</div>}
+        {stato === "ok" && (
+          <>
+            <button
+              type="button"
+              className={"radar-play" + (playing ? " is-on" : "")}
+              onClick={() => setPlaying((p) => !p)}
+              title={playing ? "Metti in pausa l'animazione" : "Avvia l'animazione del radar"}
+              aria-label={playing ? "Pausa radar" : "Play radar"}
+            >
+              {playing ? "❚❚" : "▶"}
+            </button>
+            <div className="radar-when">
+              <span className={"radar-when-time" + (isForecast ? " is-fc" : "")}>{isForecast ? "proiezione" : "radar"} {minutesLabel}</span>
+              <span className="radar-attr">radar © RainViewer · mappa © CARTO/OpenStreetMap · Esri</span>
+            </div>
+          </>
+        )}
       </div>
-      {stato === "load" && <div className="radar-veil">Radar in caricamento…</div>}
-      {stato === "err" && <div className="radar-veil">Radar momentaneamente non disponibile — riprova più tardi</div>}
-      {stato === "ok" && (
-        <>
-          <button
-            type="button"
-            className={"radar-play" + (playing ? " is-on" : "")}
-            onClick={() => setPlaying((p) => !p)}
-            title={playing ? "Metti in pausa l'animazione" : "Avvia l'animazione del radar"}
-            aria-label={playing ? "Pausa radar" : "Play radar"}
-          >
-            {playing ? "❚❚" : "▶"}
-          </button>
-          <div className="radar-legend" aria-hidden="true">
-            <span className="radar-legend-k">Radar pioggia</span>
-            <span className="radar-legend-bar">{LEGENDA.map((l) => <i key={l.c} style={{ background: l.c }} />)}</span>
-            <span className="radar-legend-t">{LEGENDA.map((l) => <em key={l.c}>{l.t}</em>)}</span>
-          </div>
-          <div className="radar-when">
-            <span className={"radar-when-time" + (isForecast ? " is-fc" : "")}>{isForecast ? "proiezione" : "radar"} {minutesLabel}</span>
-            <span className="radar-attr">radar © RainViewer · mappa © Esri</span>
-          </div>
-        </>
-      )}
     </div>
   );
 }

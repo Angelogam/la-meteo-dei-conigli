@@ -4316,12 +4316,27 @@ const DECOLLI_BASE: Decollo[] = [
 ];
 
 /**
- * DECOLLI COMPLETI: banca dati storica (vetrina, già nel batch meteo) +
- * estensione ParaglidingSpots a tutta Italia, Val d'Aosta e Savoia/Annecy.
+ * VETRINA LIMITATA — il batch Open-Meteo multi-location regge ~60 località per
+ * richiesta: con 520 decolli tutti in vetrina l'URL sfora e il provider risponde
+ * 429 (limite per minuto dall'IP del server), con il risultato che i dati non
+ * arrivano più. Si marca vetrina solo il sottoinsieme dei decolli "di casa"
+ * (primi 48 siti della banca dati storica CN/TO/LIG/LO/FR); gli altri decolli
+ * caricano il meteo alla selezione o dal dettaglio.
+ */
+const VETRINA_MAX = 48;
+const vetrinaIds = new Set<string>();
+for (const d of DECOLLI_BASE) {
+  if (vetrinaIds.size >= VETRINA_MAX) break;
+  vetrinaIds.add(d.id);
+}
+
+/**
+ * DECOLLI COMPLETI: banca dati storica + estensione ParaglidingSpots a tutta
+ * Italia, Val d'Aosta e Savoia/Annecy. Solo i vetrina entrano nel batch meteo.
  */
 export const DECOLLI: Decollo[] = [
-  ...DECOLLI_BASE.map((d) => ({ ...d, vetrina: d.vetrina ?? true })),
-  ...DECOLLI_ESTESI,
+  ...DECOLLI_BASE.map((d) => ({ ...d, vetrina: vetrinaIds.has(d.id) })),
+  ...DECOLLI_ESTESI.map((d) => ({ ...d, vetrina: vetrinaIds.has(d.id) })),
 ];
 
 export const DECOLLO_MAP = Object.fromEntries(DECOLLI.map(d => [d.id, d]));

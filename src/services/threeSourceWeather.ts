@@ -479,7 +479,9 @@ export async function getAllMeteoDecolliAggressivo(): Promise<Map<string, MeteoD
 /**
  * BATCH METEO-PARAPENTE — una sola richiesta a /api/decolli-batch (che a sua volta
  * fa UNA chiamata Open-Meteo multi-location): tutti i decolli in ~1-2 s, senza
- * rate-limit né 24 connessioni dal browser. Fallback: getAllMeteoDecolliAggressivo.
+ * rate-limit né 24 connessioni dal browser. Fallback: getAllMeteoDecolliDiretto
+ * (stessa chiamata multi-location ma dritta dal browser) e infine il ciclo
+ * per-decollo a 3 fonti.
  */
 interface BatchSiteRaw {
   id: string;
@@ -491,13 +493,37 @@ interface BatchSiteRaw {
   daily: Record<string, unknown> | null;
 }
 
-export async function getAllMeteoDecolliBatch(): Promise<Map<string, MeteoDecollo>> {
-  const res = await fetch("/api/decolli-batch", { headers: { accept: "application/json" } });
-  if (!res.ok) throw new Error("Batch decolli HTTP " + res.status);
-  const json: unknown = await res.json();
-  const sites = (json as { sites?: BatchSiteRaw[] }).sites;
-  if (!Array.isArray(sites) || !sites.length) throw new Error("Batch decolli vuoto");
+/** Variabili del batch: identiche a quelle richieste dal proxy /api/decolli-batch. */
+const BATCH_HOURLY = [
+  "temperature_2m",
+  "dew_point_2m",
+  "precipitation",
+  "cloud_cover",
+  "wind_speed_10m",
+  "wind_gusts_10m",
+  "wind_direction_10m",
+  "cape",
+  "freezing_level_height",
+  "weather_code",
+  "direct_radiation",
+  ...PRESSURE_LEVELS.flatMap((hpa) => [
+    `wind_speed_${hpa}hPa`,
+    `geopotential_height_${hpa}hPa`,
+    `wind_direction_${hpa}hPa`,
+  ]),
+  "temperature_925hPa",
+  "temperature_850hPa",
+  "temperature_700hPa",
+  "temperature_550hPa",
+].join(",");
+const BATCH_DAILY = ["temperature_2m_max", "temperature_2m_min", "cloud_cover_mean", "precipitation_sum"].join(",");
 
+/** Cache della banca dati vetrina in sessionStorage: al rientro nella pagina il
+ * primo disegno è immediato, il refresh avviene in background. */
+const BATCH_CACHE_KEY = "mdc-vetrina-batch-v2";
+const BATCH_CACHE_TTL = 10 * 60_000;
+
+function shapeBatchSites(sites: BatchSiteRaw[]): Map<string, MeteoDecollo> {
   const results = new Map<string, MeteoDecollo>();
   for (const site of sites) {
     const shaped = site.hourly ? shapeOpenMeteo({ hourly: site.hourly, daily: site.daily ?? undefined }) : null;
@@ -533,4 +559,95 @@ export async function getAllMeteoDecolliBatch(): Promise<Map<string, MeteoDecoll
     });
   }
   return results;
+}
+
+/** Dati vetrina freschi dalla sessionStorage (null se assenti o troppo vecchi). */
+export function cachedBatchSites(): BatchSiteRaw[] | null {
+  try {
+    const raw = sessionStorage.getItem(BATCH_CACHE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as { at: number; sites: BatchSiteRaw[] };
+    if (!parsed?.sites?.length || Date.now() - parsed.at > BATCH_CACHE_TTL) return null;
+    return parsed.sites;
+  } catch { return null; }
+}
+
+/** Dalla cache al formato Map usato dall'hook (primo disegno immediato). */
+export function shapeCachedBatchSites(sites: BatchSiteRaw[]): Map<string, MeteoDecollo> {
+  return shapeBatchSites(sites);
+}
+
+function saveBatchSites(sites: BatchSiteRaw[]) {
+  try { sessionStorage.setItem(BATCH_CACHE_KEY, JSON.stringify({ at: Date.now(), sites })); } catch { /* quota */ }
+}
+
+type VetrinaRow = { id: string; name: string; lat: number; lon: number; elevation: number; vetrina?: boolean };
+
+function decolliVetrina(): VetrinaRow[] {
+  return (DECOLLI as unknown as VetrinaRow[]).filter(
+    (d) => d.vetrina && Number.isFinite(d.lat) && Number.isFinite(d.lon),
+  );
+}
+
+export async function getAllMeteoDecolliBatch(): Promise<Map<string, MeteoDecollo>> {
+  const res = await fetch("/api/decolli-batch", { headers: { accept: "application/json" } });
+  if (!res.ok) throw new Error("Batch decolli HTTP " + res.status);
+  const json: unknown = await res.json();
+  const sites = (json as { sites?: BatchSiteRaw[] }).sites;
+  if (!Array.isArray(sites) || !sites.length) throw new Error("Batch decolli vuoto");
+  saveBatchSites(sites);
+  return shapeBatchSites(sites);
+}
+
+/**
+ * DIRETTO MULTI-LOCATION — stessa chiamata che fa il server nel batch, ma dritta
+ * dal browser all'API Open-Meteo: usa l'IP dell'utente (mai il 429 condiviso del
+ * data center) e resta comunque UNA richiesta per ~40 decolli, non 24 per-decollo.
+ */
+export async function getAllMeteoDecolliDiretto(): Promise<Map<string, MeteoDecollo>> {
+  const vetrina = decolliVetrina();
+  if (!vetrina.length) throw new Error("nessun decollo vetrina");
+  const CHUNK = 40;
+  const chunks: string[][][] = [];
+  for (let i = 0; i < vetrina.length; i += CHUNK) {
+    chunks.push([
+      vetrina.slice(i, i + CHUNK).map((d) => d.lat.toFixed(5)),
+      vetrina.slice(i, i + CHUNK).map((d) => d.lon.toFixed(5)),
+    ]);
+  }
+  const responses = await Promise.all(chunks.map(([lats, lons]) => {
+    const url = new URL("https://api.open-meteo.com/v1/forecast");
+    url.searchParams.set("latitude", lats.join(","));
+    url.searchParams.set("longitude", lons.join(","));
+    url.searchParams.set("hourly", BATCH_HOURLY);
+    url.searchParams.set("daily", BATCH_DAILY);
+    url.searchParams.set("timezone", "Europe/Rome");
+    url.searchParams.set("forecast_days", "3");
+    return fetch(url.toString(), { headers: { accept: "application/json" } });
+  }));
+  for (const r of responses) {
+    if (!r.ok) throw new Error("Diretto multi-location HTTP " + r.status);
+  }
+  const payloads = (await Promise.all(responses.map((r) => r.json()))) as Array<Array<Record<string, unknown>> | Record<string, unknown>>;
+  const raws: Record<string, unknown>[] = [];
+  for (const p of payloads) {
+    if (Array.isArray(p)) raws.push(...(p as Record<string, unknown>[]));
+    else raws.push(p as Record<string, unknown>);
+  }
+  if (raws.length !== vetrina.length) throw new Error("Diretto: risposta incompleta");
+
+  const sites: BatchSiteRaw[] = vetrina.map((d, i) => {
+    const raw = raws[i] as { hourly?: Record<string, unknown>; daily?: Record<string, unknown> };
+    return {
+      id: d.id,
+      name: d.name,
+      lat: d.lat,
+      lon: d.lon,
+      elevation: d.elevation,
+      hourly: (raw?.hourly ?? null) as Record<string, unknown> | null,
+      daily: (raw?.daily ?? null) as Record<string, unknown> | null,
+    };
+  });
+  saveBatchSites(sites);
+  return shapeBatchSites(sites);
 }

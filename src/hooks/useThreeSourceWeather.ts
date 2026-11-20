@@ -1,7 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { getAllMeteoDecolliAggressivo, getAllMeteoDecolliBatch } from "@/services/threeSourceWeather";
+import {
+  getAllMeteoDecolliAggressivo, getAllMeteoDecolliBatch, getAllMeteoDecolliDiretto,
+  cachedBatchSites, shapeCachedBatchSites,
+} from "@/services/threeSourceWeather";
 import type { MeteoDecollo } from "@/services/threeSourceWeather";
 import { DECOLLI } from "@/data/decolli";
 
@@ -31,7 +34,15 @@ function offlineFallback(name: string): MeteoDecollo {
 
 export function useThreeSourceWeather() {
   const [weatherData, setWeatherData] = useState<Map<string, MeteoDecollo>>(() => {
-    // Inizializza con dati stimati per evitare "N/D"
+    // primo disegno immediato dalla cache della sessione: la pagina non aspetta
+    // la rete per mostrare numeri, il refresh fresco parte in background
+    const cached = cachedBatchSites();
+    if (cached) {
+      try {
+        const m = shapeCachedBatchSites(cached);
+        if (m.size) return m;
+      } catch { /* cache corrotta: si ricomincia da zero */ }
+    }
     const m = new Map<string, MeteoDecollo>();
     DECOLLI.forEach(d => m.set(d.id, offlineFallback(d.name)));
     return m;
@@ -60,9 +71,16 @@ export function useThreeSourceWeather() {
     setError(null);
 
     try {
-      // Prima il BATCH (1 richiesta, tutti i decolli — sistema meteo-parapente);
-      // se il batch non risponde, fallback al ciclo per-decollo a 3 fonti.
-      const data = await getAllMeteoDecolliBatch();
+      // 1) BATCH via proxy same-origin (una chiamata Open-Meteo multi-location sul
+      //    server, cache CDN 5 min); 2) se il proxy è in 429/502, la STESSA chiamata
+      //    multi-location dritta dal browser (IP dell'utente, mai limitata); 3) per
+      //    ultimo il ciclo per-decollo a 3 fonti.
+      let data: Map<string, MeteoDecollo>;
+      try {
+        data = await getAllMeteoDecolliBatch();
+      } catch {
+        data = await getAllMeteoDecolliDiretto();
+      }
       setWeatherData(data);
       setLastUpdate(new Date());
       hasCompletedOnce.current = true;

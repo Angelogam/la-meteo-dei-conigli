@@ -9,8 +9,12 @@ import { defineHandler, getQuery, createError, setHeader } from "nitro/h3";
  * dual-stack IPv6/IPv4 del runtime: si riprova una volta prima di dare errore.
  */
 
-// Esri Dark Gray Canvas: basemap neutra scura senza chiavi (attribuzione Esri richiesta)
-const OSM_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile";
+// Basemap: Carto dark_all (primaria, CDN affidabile stile dark da dashboard) con
+// fallback Esri Dark Gray Canvas — entrambe senza chiavi. Esri a volte risponde
+// con l'immagine "Zoom Level Not Supported" per tile valide (HTTP 200): il client
+// la scarta via sanitizzazione e riprova con l'altro provider.
+const CARTO_URL = "https://basemaps.cartocdn.com/dark_all";
+const ESRI_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile";
 const RADAR_CACHE_URL = "https://tilecache.rainviewer.com/v2/radar";
 const TIMEOUT_MS = 8_000;
 const UA = "LaMeteoDeiConigli/1.0 (carta dei temporali per piloti di volo libero)";
@@ -33,10 +37,13 @@ export default defineHandler(async (event) => {
     if (!/^\d{10}$/.test(frame)) throw createError({ statusCode: 400, statusMessage: "frame radar non valido" });
     url = `${RADAR_CACHE_URL}/${frame}/256/${zn}/${xn}/${yn}/2/1_1.png`;
     cache = "public, max-age=300";
-  } else {
+  } else if (String(q.prov ?? "carto") === "esri") {
     // Esri usa l'ordine z/y/x e serve JPEG
-    url = `${OSM_URL}/${zn}/${yn}/${xn}`;
+    url = `${ESRI_URL}/${zn}/${yn}/${xn}`;
     cache = "public, max-age=3600";
+  } else {
+    url = `${CARTO_URL}/${zn}/${xn}/${yn}.png`;
+    cache = "public, max-age=86400";
   }
 
   let res: Response | null = null;
