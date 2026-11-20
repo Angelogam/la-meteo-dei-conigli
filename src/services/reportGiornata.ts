@@ -14,6 +14,19 @@ import { calcolaIndiceVolabilita, esposizioneToGradi } from "@/utils/indiceVolab
 
 export const PRESSURE_LEVELS = [1000, 975, 950, 925, 900, 850, 800, 750, 700, 650, 600, 550, 500];
 
+/** Etichetta coerente con la scala pilota (10 = volo ideale, 1 = pericoloso):
+ * i motivi specifici del rischio (vento forte, pioggia, rotore) restano nelle
+ * sezioni «Rischi della giornata» e nel verdetto, qui la lettura deve essere
+ * immediata e senza contraddizioni. */
+function labelPilota(v: number): string {
+  if (v >= 9) return "volo ideale";
+  if (v >= 7) return "buono per volare";
+  if (v >= 5) return "discreto";
+  if (v >= 4) return "impegnativo";
+  if (v >= 2) return "sconsigliato";
+  return "pericoloso";
+}
+
 const BASE_PARAMS = [
   "temperature_2m", "dew_point_2m", "apparent_temperature", "precipitation",
   "cloud_cover", "cloud_cover_low", "cloud_cover_mid", "cloud_cover_high",
@@ -247,8 +260,12 @@ export async function fetchReportGiornata(
       freezing: at("freezing_level_height", i),
       baseNubi: Math.round(res.baseNubiM),
       rateo: res.rateoTermicoMs,
-      indice: res.indice,
-      indiceLabel: res.label,
+      // scala naturale per il pilota: 10 = volo ideale, 1 = pericoloso.
+      // l'utensile di partenza usa la scala opposta (1 = perfetto) e la UI del
+      // report legge «9/10» come ottimo: si capovolge qui, alla fonte, così
+      // verdetto, meteogram, gauge e finestra migliore parlano tutti uguale.
+      indice: 11 - res.indice,
+      indiceLabel: labelPilota(11 - res.indice),
       windRel: res.windRelativo,
     });
     profili.set(hour, buildProfile(site.quota, at, i));
@@ -271,13 +288,14 @@ export async function fetchReportGiornata(
   })();
   const temporali = fly.some((o) => o.code != null && o.code >= 95);
 
-  // finestra migliore: 2 ore consecutive con indice medio più basso (bonus termiche)
+  // finestra migliore: 2 ore consecutive con volabilità media più alta
+  // (scala pilota: 10 = ideale) + bonus termiche
   let bestWindow: ReportGiornata["bestWindow"] = null;
   for (let i = 0; i < fly.length - 1; i++) {
     const a = fly[i], b = fly[i + 1];
     if (a.indice == null || b.indice == null) continue;
     const media = (a.indice + b.indice) / 2;
-    if (bestWindow && media >= bestWindow.indice) continue;
+    if (bestWindow && media <= bestWindow.indice) continue;
     const quota = a.baseNubi != null && b.baseNubi != null ? Math.round(Math.min(a.baseNubi, b.baseNubi)) : null;
     bestWindow = { from: a.hour, to: b.hour + 1, indice: media, quota };
   }

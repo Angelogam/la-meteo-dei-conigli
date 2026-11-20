@@ -105,7 +105,7 @@ function calcolaVerdetto(data: ReportData): Verdetto {
     motivi.push(`finestra di volo ${String(data.bestWindow.from).padStart(2, "0")}:00–${String(data.bestWindow.to).padStart(2, "0")}:00, volabilità media ${bestIndice.toFixed(1).replace(".", ",")}/10`);
   }
   motivi.push(
-    `vento fino a ${Math.round(windMax)} km/h da ${cardinal(windMaxO.dir)}${windMaxO.windRel ? ` — ${windMaxO.windRel}` : ""}${gustMax > windMax + 2 ? `, raffiche ${Math.round(gustMax)}` : ""}`,
+    `vento fino a ${Math.round(windMax)} km/h da ${cardinal(windMaxO.dir)}${windMaxO.windRel && windMaxO.windRel !== "sconosciuto" ? ` — ${windMaxO.windRel}` : ""}${gustMax > windMax + 2 ? `, raffiche ${Math.round(gustMax)}` : ""}`,
   );
   if (baseMedia.length) {
     motivi.push(`base dei cumuli intorno a ${Math.round(baseMedia.reduce((a, b) => a + b, 0) / baseMedia.length).toLocaleString("it-IT")} m, ascendenze fino a +${data.rateoMax.toFixed(1).replace(".", ",")} m/s`);
@@ -376,7 +376,7 @@ export default function ReportVolo({
                 <div className="rv-wind-flex">
                   <div className="rv-wind-txt">
                     <strong className="rv-wind-val">{oraSel?.wind != null ? Math.round(oraSel.wind) + " km/h" : "—"}</strong>
-                    <span className="rv-wind-rel">{oraSel?.windRel ? oraSel.windRel : oraSel?.dir != null ? `da ${cardinal(oraSel.dir)}` : "direzione —"}</span>
+                    <span className="rv-wind-rel">{oraSel?.windRel && oraSel.windRel !== "sconosciuto" ? oraSel.windRel : oraSel?.dir != null ? `da ${cardinal(oraSel.dir)}` : "direzione —"}</span>
                     <small className="rv-wind-sub">{oraSel?.gust != null ? `raffiche ${Math.round(oraSel.gust)} km/h` : "raffiche —"}</small>
                   </div>
                   <WindRose dir={oraSel?.dir ?? null} size={84} />
