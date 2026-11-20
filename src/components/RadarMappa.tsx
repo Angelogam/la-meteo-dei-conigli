@@ -118,12 +118,19 @@ export default function RadarMappa({ lat, lon, nome, quota }: { lat: number; lon
         const wx = ((tx % (2 ** z)) + 2 ** z) % (2 ** z);
         const wy = Math.max(0, Math.min(2 ** z - 1, ty));
         const dx = Math.round(tx * TILE - left), dy = Math.round(ty * TILE - top);
-        const im = loadImg(
-          `/api/map-tile?prov=carto&z=${z}&x=${wx}&y=${wy}`,
-          () => { if (pending === 0) redrawRef.current(); },
-          `/api/map-tile?prov=esri&z=${z}&x=${wx}&y=${wy}`,
-        );
-        if (im && (im as HTMLImageElement & { clean?: boolean }).clean !== false) ctx.drawImage(im, dx, dy, TILE, TILE); else pending++;
+        // Esri primaria (funziona dall'egress del server), Carto di riserva
+        // (da browser residenziale: Carto blocca gli IP datacenter con placeholder)
+        const urlA = `/api/map-tile?prov=esri&z=${z}&x=${wx}&y=${wy}`;
+        const urlB = `/api/map-tile?prov=carto&z=${z}&x=${wx}&y=${wy}`;
+        const im = loadImg(urlA, () => { if (pending === 0) redrawRef.current(); }, urlB);
+        // se la primaria è una tile di errore si disegna la riserva (già in cache
+        // dopo il primo caricamento) invece di lasciare il buco scuro
+        let drawn: HTMLImageElement | null = im;
+        if (!drawn || (drawn as HTMLImageElement & { clean?: boolean }).clean === false) {
+          const fb = imgCache.current.get(urlB);
+          if (fb && fb.complete && fb.naturalWidth > 0 && (fb as HTMLImageElement & { clean?: boolean }).clean !== false) drawn = fb;
+        }
+        if (drawn && (drawn as HTMLImageElement & { clean?: boolean }).clean !== false) ctx.drawImage(drawn, dx, dy, TILE, TILE); else pending++;
       }
     }
     // radar del frame corrente
