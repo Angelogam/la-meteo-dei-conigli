@@ -9,7 +9,7 @@ import { createError } from "nitro/h3";
  */
 
 const OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast";
-const TIMEOUT_MS = 12_000;
+const TIMEOUT_MS = 18_000;
 const CACHE_TTL_MS = 5 * 60_000;
 const CACHE_MAX_ENTRIES = 200;
 

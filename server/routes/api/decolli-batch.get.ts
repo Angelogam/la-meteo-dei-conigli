@@ -43,10 +43,12 @@ const HOURLY = [
 const DAILY = ["temperature_2m_max", "temperature_2m_min", "cloud_cover_mean", "precipitation_sum"].join(",");
 
 /**
- * Con più di ~60 località per richiesta l'URL verso Open-Meteo diventa fragile:
- * si spezza l'elenco in chunk e si fondono le risposte nell'ordine dei decolli.
+ * Con più di ~60 località per richiesta l'URL verso Open-Meteo diventa fragile,
+ * e una richiesta unica molto pesante può superare il timeout dell'upstream:
+ * si spezza in chunk piccoli fatti in parallelo (24 siti ≈ risposta in ~2 s) e
+ * si fondono le risposte nell'ordine dei decolli.
  */
-const CHUNK_SIZE = 60;
+const CHUNK_SIZE = 24;
 
 /**
  * SITI VETRINA — il batch completo Open-Meteo (43 variabili orarie × 3 giorni) pesa
