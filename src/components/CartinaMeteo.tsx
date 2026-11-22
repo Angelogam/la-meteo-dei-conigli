@@ -177,7 +177,8 @@ function hourOf(time: string): number {
 }
 
 function getIndexClass(index: number): "is-good" | "is-fair" | "is-bad" {
-  return index <= 4 ? "is-good" : index <= 6 ? "is-fair" : "is-bad";
+  // Scala pilota condivisa: 10 = volo ideale, 1 = pericoloso
+  return index >= 7 ? "is-good" : index >= 5 ? "is-fair" : "is-bad";
 }
 
 function evaluatePoint(point: HourlyPoint, quota: number, esposizione: string): HourEval {

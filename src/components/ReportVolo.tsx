@@ -86,7 +86,7 @@ function saveJSON(key: string, v: unknown) {
  * temporali, turbolenza). Le soglie sono prudenziali: la sicurezza prima di tutto. */
 type Verdetto = { livello: string; cls: "ok" | "mid" | "no"; motivi: string[] };
 
-function calcolaVerdetto(data: ReportData): Verdetto {
+function calcolaVerdetto(data: ReportData, quota: number): Verdetto {
   const hours = data.hours.filter((o) => o.hour >= 8 && o.hour <= 19);
   if (!hours.length) {
     return { livello: "DATI IN COMPLETAMENTO", cls: "mid", motivi: ["il modello non ha ancora restituito le ore diurne: rileggi tra poco"] };
@@ -99,22 +99,33 @@ function calcolaVerdetto(data: ReportData): Verdetto {
   const bestIndice = data.bestWindow?.indice ?? 0;
   const turbMarcata = data.turbolenza.some((t) => t.livello === "MARCATA");
   const baseMedia = hours.map((o) => o.baseNubi).filter((v): v is number => v != null);
+  const baseMediaM = baseMedia.length ? baseMedia.reduce((a, b) => a + b, 0) / baseMedia.length : null;
+  const sogliaBase = baseMediaM != null ? Math.round(baseMediaM - quota) : null;
+  // REGOLA D'ORO DEL GIUDIZIO: se i grafici danno ascendenze e base da cross,
+  // il verdetto lo dice esplicitamente — mai un «discreto» che smentisce i numeri.
+  const crossOk = data.rateoMax >= 2.2 && sogliaBase != null && sogliaBase >= 900;
 
   const motivi: string[] = [];
+  if (crossOk && baseMediaM != null) {
+    motivi.unshift(`giornata da cross: ascendenze fino a +${data.rateoMax.toFixed(1).replace(".", ",")} m/s con base dei cumuli a ${Math.round(baseMediaM).toLocaleString("it-IT")} m (${sogliaBase?.toLocaleString("it-IT")} m sopra il decollo)`);
+  }
   if (data.bestWindow) {
     motivi.push(`finestra di volo ${String(data.bestWindow.from).padStart(2, "0")}:00–${String(data.bestWindow.to).padStart(2, "0")}:00, volabilità media ${bestIndice.toFixed(1).replace(".", ",")}/10`);
   }
   motivi.push(
-    `vento fino a ${Math.round(windMax)} km/h da ${cardinal(windMaxO.dir)}${windMaxO.windRel && windMaxO.windRel !== "sconosciuto" ? ` — ${windMaxO.windRel}` : ""}${gustMax > windMax + 2 ? `, raffiche ${Math.round(gustMax)}` : ""}`,
+    `vento fino a ${Math.round(windMax)} km/h da ${cardinal(windMaxO.dir)}${windMaxO.windRel && windMaxO.windRel !== "sconosciuto" ? ` — ${windMaxO.windRel.replace(/_/g, " ")}` : ""}${gustMax > windMax + 2 ? `, raffiche ${Math.round(gustMax)}` : ""}`,
   );
-  if (baseMedia.length) {
-    motivi.push(`base dei cumuli intorno a ${Math.round(baseMedia.reduce((a, b) => a + b, 0) / baseMedia.length).toLocaleString("it-IT")} m, ascendenze fino a +${data.rateoMax.toFixed(1).replace(".", ",")} m/s`);
+  if (baseMedia.length && !crossOk) {
+    motivi.push(`base dei cumuli intorno a ${Math.round(baseMediaM ?? 0).toLocaleString("it-IT")} m, ascendenze fino a +${data.rateoMax.toFixed(1).replace(".", ",")} m/s`);
   }
   if (data.temporali) motivi.push("temporali possibili: tieni d'occhio lo sviluppo dei cumuli e pianifica il rientro prima che crescano");
   else if (probMax >= 50) motivi.push(`pioggia probabile (${probMax}%): organizza il rientro con margine`);
 
   const staATerra = rainMax > 1.5 || windMax > 38 || bestIndice < 3.5 || (data.temporali && probMax >= 65);
-  const siVola = !staATerra && bestIndice >= 6 && windMax <= 25 && !data.temporali && rainMax < 0.3 && probMax < 40 && !turbMarcata;
+  // con termiche da cross la giornata è buona anche se l'indice medio è timido:
+  // l'indice penalizza copertura e vento, ma se le ascendenze spingono e la base
+  // è alta il pilota che cerca il cross deve leggere «SI VOLA», non «discreto»
+  const siVola = !staATerra && (bestIndice >= 6 || crossOk) && windMax <= 25 && !data.temporali && rainMax < 0.3 && probMax < 40 && !turbMarcata;
 
   if (staATerra) {
     return { livello: "RESTA A TERRA", cls: "no", motivi };
@@ -239,7 +250,15 @@ export default function ReportVolo({
       : oraSel.apparent > oraSel.temp ? "l'aria si sente più calda" : "si sente più fresca: vento e umidità"
     : "con vento e umidità in conto";
 
-  const verdetto = data ? calcolaVerdetto(data) : null;
+  const verdetto = data ? calcolaVerdetto(data, quota) : null;
+
+  // picco di volabilità della giornata: serve alla card Volabilità per dire
+  // «l'ora selezionata è 5/10, ma la giornata arriva a 9,5/10 alle 13:00» —
+  // così il numero dell'ora non viene più letto come il giudizio sul giorno
+  const piccoOra = timeline.reduce<{ indice: number; hour: number } | null>(
+    (b, o) => (o.indice != null && (!b || o.indice > b.indice) ? { indice: o.indice, hour: o.hour } : b),
+    null,
+  );
 
   const closeBtn = (
     <button type="button" className="cmap-close cmap-close-float" onClick={onClose} title="Chiudi il report" aria-label="Chiudi il report">
@@ -302,7 +321,7 @@ export default function ReportVolo({
               <div className="rv-card rv-card-solid rv-today">
                 <span className="rv-k">{selectedDay === 0 ? "Oggi" : selectedDay === 1 ? "Domani" : "Dopodomani"} · {wmoLabel(oraSel?.code ?? null)}</span>
                 <div className="rv-today-flex">
-                  <WmoGlyph code={oraSel?.code ?? null} size={64} />
+                  <WmoGlyph code={oraSel?.code ?? null} size={46} />
                   <div className="rv-today-vals">
                     <strong className="rv-today-range">{data.tempMax != null ? Math.round(data.tempMax) + "°" : "—"} <i>/</i> {data.tempMin != null ? Math.round(data.tempMin) + "°" : "—"}</strong>
                     <span className="rv-today-sub">massima / minima</span>
@@ -315,7 +334,7 @@ export default function ReportVolo({
                 <span className="rv-k">Pressione</span>
                 <div className="rv-press-flex">
                   <strong className="rv-press-val">{oraSel?.pressure != null ? Math.round(oraSel.pressure) : "—"}<small> hPa</small></strong>
-                  <SemiGauge value={oraSel?.pressure ?? null} size={112} />
+                  <SemiGauge value={oraSel?.pressure ?? null} size={84} />
                 </div>
               </div>
 
@@ -323,13 +342,16 @@ export default function ReportVolo({
                 <span className="rv-k"><Info size={13} aria-hidden="true" /> Volabilità</span>
                 <div className="rv-vola-hero">
                   <RingGauge
-                    value={oraSel?.indice ?? null} min={0} max={10} size={86} gradientId="gg-vola"
+                    value={oraSel?.indice ?? null} min={0} max={10} size={60} gradientId="gg-vola"
                     from={oraSel?.indice != null && oraSel.indice >= 7 ? "#6ee7b7" : oraSel?.indice != null && oraSel.indice >= 5 ? "#fcd34d" : "#fca5a5"}
                     to={oraSel?.indice != null && oraSel.indice >= 7 ? "#10b981" : oraSel?.indice != null && oraSel.indice >= 5 ? "#f59e0b" : "#ef4444"}
                   />
                   <div className="rv-vola-head">
                     <strong className="rv-vola-num">{oraSel?.indice != null ? `${oraSel.indice}/10` : "—"}</strong>
-                    <em>{oraSel?.indiceLabel ?? "volabilità"}</em>
+                    <em>{oraSel?.indiceLabel ?? "volabilità"}{oraSel?.hour != null ? ` · ore ${String(oraSel.hour).padStart(2, "0")}:00` : ""}</em>
+                    {piccoOra && oraSel?.hour != null && piccoOra.hour !== oraSel.hour && (
+                      <em className="rv-vola-peak">picco della giornata {piccoOra.indice}/10 alle {String(piccoOra.hour).padStart(2, "0")}:00</em>
+                    )}
                   </div>
                 </div>
                 <div className="rv-vola-facts">
@@ -376,10 +398,10 @@ export default function ReportVolo({
                 <div className="rv-wind-flex">
                   <div className="rv-wind-txt">
                     <strong className="rv-wind-val">{oraSel?.wind != null ? Math.round(oraSel.wind) + " km/h" : "—"}</strong>
-                    <span className="rv-wind-rel">{oraSel?.windRel && oraSel.windRel !== "sconosciuto" ? oraSel.windRel : oraSel?.dir != null ? `da ${cardinal(oraSel.dir)}` : "direzione —"}</span>
+                    <span className="rv-wind-rel">{oraSel?.windRel && oraSel.windRel !== "sconosciuto" ? oraSel.windRel.replace(/_/g, " ") : oraSel?.dir != null ? `da ${cardinal(oraSel.dir)}` : "direzione —"}</span>
                     <small className="rv-wind-sub">{oraSel?.gust != null ? `raffiche ${Math.round(oraSel.gust)} km/h` : "raffiche —"}</small>
                   </div>
-                  <WindRose dir={oraSel?.dir ?? null} size={84} />
+                  <WindRose dir={oraSel?.dir ?? null} size={62} />
                 </div>
               </div>
 
@@ -391,7 +413,7 @@ export default function ReportVolo({
                     <span className="rv-wind-rel">{oraSel?.temp != null ? `aria ${Math.round(oraSel.temp)}°` : "—"}</span>
                     <small className="rv-wind-sub">{percepitaLabel}</small>
                   </div>
-                  <RingGauge value={oraSel?.apparent ?? null} min={-10} max={35} size={84} from="#fca5a5" to="#ef4444" gradientId="gg-ap" />
+                  <RingGauge value={oraSel?.apparent ?? null} min={-10} max={35} size={62} from="#fca5a5" to="#ef4444" gradientId="gg-ap" />
                 </div>
               </div>
 
@@ -416,7 +438,7 @@ export default function ReportVolo({
                       <b className="rv-htime">{String(o.hour).padStart(2, "0")}:00</b>
                       <span className={"rv-hprob" + ((o.prob ?? 0) >= 60 ? " is-heavy" : (o.prob ?? 0) >= 30 ? " is-some" : "")}><Droplet size={11} aria-hidden="true" />{o.prob != null ? o.prob + "%" : "—"}</span>
                       <em className="rv-htemp">{o.temp != null ? Math.round(o.temp) + "°" : "—"}</em>
-                      <span className="rv-hglyph"><WmoGlyph code={o.code} size={46} /></span>
+                      <span className="rv-hglyph"><WmoGlyph code={o.code} size={40} /></span>
                       <span className="rv-hwind">
                         {o.dir != null && <ArrowUp size={11} style={{ transform: `rotate(${o.dir + 180}deg)` }} aria-hidden="true" />}
                         <i>{o.wind != null ? Math.round(o.wind) : "—"}</i>
@@ -442,7 +464,7 @@ export default function ReportVolo({
                       <strong className="rv-wind-val">{oraSel?.visibility != null ? (oraSel.visibility / 1000).toFixed(1).replace(".", ",") + " km" : "—"}</strong>
                       <small className="rv-wind-sub">{visLabel} · orizzonte verso l&apos;atterraggio</small>
                     </div>
-                    <RingGauge value={oraSel?.visibility != null ? Math.min(oraSel.visibility, 30000) : 0} min={0} max={30000} size={64} from="#67e8f9" to="#3b82f6" gradientId="gg-vis" />
+                    <RingGauge value={oraSel?.visibility != null ? Math.min(oraSel.visibility, 30000) : 0} min={0} max={30000} size={52} from="#67e8f9" to="#3b82f6" gradientId="gg-vis" />
                   </div>
                 </div>
                 <div className="rv-card rv-card-solid rv-accent-rain">
@@ -452,7 +474,7 @@ export default function ReportVolo({
                       <strong className="rv-wind-val">{oraSel?.rain != null ? oraSel.rain.toFixed(1).replace(".", ",") + " mm/h" : "—"}</strong>
                       <small className="rv-wind-sub">{oraSel?.prob != null ? `probabilità ${oraSel.prob}%` : "probabilità —"}</small>
                     </div>
-                    <RingGauge value={oraSel?.rain ?? 0} min={0} max={4} size={64} from="#93c5fd" to="#1d4ed8" gradientId="gg-rain" />
+                    <RingGauge value={oraSel?.rain ?? 0} min={0} max={4} size={52} from="#93c5fd" to="#1d4ed8" gradientId="gg-rain" />
                   </div>
                 </div>
               </div>
@@ -488,7 +510,7 @@ export default function ReportVolo({
                       <span className="rv-chipv">Umidità {oraSel?.humidity != null ? Math.round(oraSel.humidity) + "%" : "—"}</span>
                     </div>
                   </div>
-                  <WmoGlyph code={oraSel?.code ?? null} size={164} className="rv-scene-glyph" label={oraSel ? wmoLabel(oraSel.code) : undefined} />
+                  <WmoGlyph code={oraSel?.code ?? null} size={124} className="rv-scene-glyph" label={oraSel ? wmoLabel(oraSel.code) : undefined} />
                 </div>
 
                 <div className="rv-card rv-card-solid rv-accent-cloud">
@@ -528,7 +550,7 @@ export default function ReportVolo({
               </div>
               <div className="rv-sez-grid rv-cols-3">
                 <div className="rv-card rv-card-solid rv-accent-ok">
-                  <span className="rv-k">Volo veleggiato</span>
+                  <span className="rv-k">Veleggiato sul pendio</span>
                   <div className="rv-v"><strong className={data.veleggiata.livello === "OTTIME" || data.veleggiata.livello === "BUONE" ? "rv-ok" : data.veleggiata.livello === "MEDIATE" ? "rv-mid" : "rv-no"}>{data.veleggiata.livello.toLowerCase()}</strong></div>
                   <p className="rv-sub">{data.veleggiata.motivo}</p>
                 </div>

@@ -14,19 +14,6 @@ import { calcolaIndiceVolabilita, esposizioneToGradi } from "@/utils/indiceVolab
 
 export const PRESSURE_LEVELS = [1000, 975, 950, 925, 900, 850, 800, 750, 700, 650, 600, 550, 500];
 
-/** Etichetta coerente con la scala pilota (10 = volo ideale, 1 = pericoloso):
- * i motivi specifici del rischio (vento forte, pioggia, rotore) restano nelle
- * sezioni «Rischi della giornata» e nel verdetto, qui la lettura deve essere
- * immediata e senza contraddizioni. */
-function labelPilota(v: number): string {
-  if (v >= 9) return "volo ideale";
-  if (v >= 7) return "buono per volare";
-  if (v >= 5) return "discreto";
-  if (v >= 4) return "impegnativo";
-  if (v >= 2) return "sconsigliato";
-  return "pericoloso";
-}
-
 const BASE_PARAMS = [
   "temperature_2m", "dew_point_2m", "apparent_temperature", "precipitation",
   "cloud_cover", "cloud_cover_low", "cloud_cover_mid", "cloud_cover_high",
@@ -260,12 +247,10 @@ export async function fetchReportGiornata(
       freezing: at("freezing_level_height", i),
       baseNubi: Math.round(res.baseNubiM),
       rateo: res.rateoTermicoMs,
-      // scala naturale per il pilota: 10 = volo ideale, 1 = pericoloso.
-      // l'utensile di partenza usa la scala opposta (1 = perfetto) e la UI del
-      // report legge «9/10» come ottimo: si capovolge qui, alla fonte, così
-      // verdetto, meteogram, gauge e finestra migliore parlano tutti uguale.
-      indice: 11 - res.indice,
-      indiceLabel: labelPilota(11 - res.indice),
+      // l'utensile emette già la scala pilota (10 = volo ideale, 1 = pericoloso)
+      // e le label coerenti: nessuna trasformazione qui, un solo giudizio in tutta l'app
+      indice: res.indice,
+      indiceLabel: res.label,
       windRel: res.windRelativo,
     });
     profili.set(hour, buildProfile(site.quota, at, i));
@@ -308,14 +293,18 @@ export async function fetchReportGiornata(
     fly.forEach((o) => { if (o.windRel) counts.set(o.windRel, (counts.get(o.windRel) ?? 0) + 1); });
     return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "sconosciuto";
   })();
+  // veleggiata = DINAMICA SUL PENDIO (sostegno dal vento sul crinale): è una
+  // disciplina diversa dal volo termico. Il motivo dice sempre come si vola la
+  // giornata: se il pendio non sostiene ma le termiche spingono, si legge
+  // «la giornata si vola in termica» — mai un giudizio che contraddice i grafici.
   const veleggiata = (() => {
-    if (windMed == null) return { livello: "SCARSE" as const, motivo: "dati vento insufficienti" };
-    if (windMed >= 35) return { livello: "SCARSE" as const, motivo: `vento medio ${Math.round(windMed)} km/h: troppo forte e turbolento per il veleggiato` };
-    if (windMed >= 15 && relDominante === "frontale") return { livello: "OTTIME" as const, motivo: `vento medio ${Math.round(windMed)} km/h quasi sempre in fronte all'esposizione: pendio che alimenta la vela` };
-    if (windMed >= 15 && relDominante === "diagonale") return { livello: "BUONE" as const, motivo: `vento medio ${Math.round(windMed)} km/h in diagonale all'esposizione` };
-    if (windMed >= 10 && relDominante !== "di_coda") return { livello: "MEDIATE" as const, motivo: `vento medio ${Math.round(windMed)} km/h ${relDominante === "laterale" ? "laterale: occhio al drift" : "a corsa"}` };
-    if (relDominante === "di_coda") return { livello: "SCARSE" as const, motivo: `vento ${Math.round(windMed)} km/h prevalentemente di coda sul decollo` };
-    return { livello: "SCARSE" as const, motivo: `vento debole (${Math.round(windMed)} km/h): giornata solo termica` };
+    if (windMed == null) return { livello: "SCARSE" as const, motivo: "dati vento insufficienti: giudizio dal pendio non affidabile" };
+    if (windMed >= 35) return { livello: "SCARSE" as const, motivo: `vento medio ${Math.round(windMed)} km/h: troppo forte e turbolento anche per il veleggiato` };
+    if (windMed >= 15 && relDominante === "frontale") return { livello: "OTTIME" as const, motivo: `dinamica sul pendio ottima: vento medio ${Math.round(windMed)} km/h in fronte all'esposizione — la vela resta carica sul crinale` };
+    if (windMed >= 15 && relDominante === "diagonale") return { livello: "BUONE" as const, motivo: `dinamica sul pendio buona: vento medio ${Math.round(windMed)} km/h in diagonale all'esposizione` };
+    if (windMed >= 10 && relDominante !== "di_coda") return { livello: "MEDIATE" as const, motivo: `dinamica sul pendio media: vento medio ${Math.round(windMed)} km/h ${relDominante === "laterale" ? "laterale: occhio al drift" : "a corsa"}` };
+    if (relDominante === "di_coda") return { livello: "SCARSE" as const, motivo: `vento ${Math.round(windMed)} km/h di coda sul decollo: il pendio non sostiene la vela — la giornata si vola in termica` };
+    return { livello: "SCARSE" as const, motivo: `vento debole (${Math.round(windMed)} km/h): poco sostegno dal pendio — la giornata si vola in termica` };
   })();
 
   // turbolenza: shear nei primi strati + raffiche al suolo
@@ -368,9 +357,9 @@ export function testoGiornata(r: ReportGiornata, quotaDecollo: number, nome: str
   if (r.baseRange && r.rateoMax > 0.2) {
     parts.push(`Le termiche permettono di salire fino a una base cumuli tra ${Math.round(r.baseRange[0])} e ${Math.round(r.baseRange[1])} m s.l.m. (del decollo a ${quotaDecollo} m), con ascendenza stimata fino a ${r.rateoMax.toFixed(1).replace(".", ",")} m/s${r.rateoOraMax != null ? ` intorno alle ${orario(r.rateoOraMax)}` : ""}: ${r.rateoMax >= 2 ? "giornata termica valida per allungarsi in cross" : r.rateoMax >= 1 ? "ascendenze modeste, realistiche ortiche e volo locale" : "ascendenze deboli: volo breve sotto il decollo"}.`);
   } else {
-    parts.push("Il modello non mostra ascendenze sfruttabili: nubi troppo coperte o aria stabile — giornata comunque buona per una scorribila o per il veleggiato se il vento regge.");
+    parts.push("Il modello non mostra ascendenze sfruttabili: nubi troppo coperte o aria stabile — si tratta di una giornata da riservare alla scorribila o al veleggiato, solo se vento e pioggia lo permettono.");
   }
-  if (r.veleggiata) parts.push(`Volo veleggiato: condizioni ${r.veleggiata.livello.toLowerCase()} — ${r.veleggiata.motivo}.`);
+  if (r.veleggiata) parts.push(`Veleggiato sul pendio: dinamica ${r.veleggiata.livello.toLowerCase()} — ${r.veleggiata.motivo}.`);
   if (r.bestWindow) {
     parts.push(`La finestra migliore per volare va dalle ${orario(r.bestWindow.from)} alle ${orario(r.bestWindow.to)}${r.bestWindow.quota ? `, con base cumuli intorno a ${r.bestWindow.quota} m` : ""}; fuori da questa finestra valutate raffiche e cambio di direzione prima di decollare.`);
   }

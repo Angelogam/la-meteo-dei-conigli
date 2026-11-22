@@ -82,8 +82,8 @@ function getWeatherStatus(weather: AggressiveWeatherData | null | undefined) {
 }
 
 function getIndexClass(index: number): "is-good" | "is-fair" | "is-bad" {
-  // Indice inverso: valori bassi = condizioni migliori (2 = "Perfetto").
-  return index <= 4 ? "is-good" : index <= 6 ? "is-fair" : "is-bad";
+  // Scala pilota condivisa: 10 = volo ideale, 1 = pericoloso
+  return index >= 7 ? "is-good" : index >= 5 ? "is-fair" : "is-bad";
 }
 
 /* ============================================================
@@ -320,7 +320,7 @@ function HeadBlock({ item, selected, index }: { item: CardItem; selected: boolea
       </div>
       <div className="dxc-badges">
         {index !== null && (
-          <span className={"dxc-index " + getIndexClass(index)} title="Indice di volabilità: 1 = perfetto, 10 = pericoloso">
+          <span className={"dxc-index " + getIndexClass(index)} title="Indice di volabilità: 10 = volo ideale, 1 = pericoloso">
             <small>Indice</small>
             <strong>{index}/10</strong>
             <span className="dxc-index-bar"><span style={{ width: Math.max(6, index * 10) + "%" }} /></span>

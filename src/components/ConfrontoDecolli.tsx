@@ -208,9 +208,10 @@ function initialPicks(decolli: CardItem[], selectedId?: string): string[] {
 
 function IndexChip({ indice, label }: { indice: number | null; label?: string }) {
   if (indice == null) return <span className="cmp-index is-na">N/D</span>;
-  const cls = indice <= 4 ? "is-good" : indice <= 6 ? "is-fair" : "is-bad";
+  // scala pilota condivisa: alto = buono
+  const cls = indice >= 7 ? "is-good" : indice >= 5 ? "is-fair" : "is-bad";
   return (
-    <span className={"cmp-index " + cls} title="Indice di volabilità: 1 = perfetto, 10 = pericoloso">
+    <span className={"cmp-index " + cls} title="Indice di volabilità: 10 = volo ideale, 1 = pericoloso">
       <strong>{indice}/10</strong>
       {label && <em>{label}</em>}
     </span>
@@ -291,14 +292,16 @@ export default function ConfrontoDecolli({ decolli, open, onClose, onSelect, onO
     return live[c.id] ?? null;
   }), [chosen, live]);
 
-  /* Il migliore: indice più basso; a parità di indice vince la termica più forte */
+  /* Il migliore: indice più alto (scala pilota: 10 = volo ideale); a parità
+     di indice vince la termica più forte. Batch e live ora parlano la stessa
+     scala, il confronto è finalmente corretto. */
   const bestId = useMemo(() => {
     let best: { id: string; indice: number; therm: number } | null = null;
     for (let i = 0; i < chosen.length; i++) {
       const c = chosen[i];
       const r = reads[i];
       if (!c || !r || r.indice == null) continue;
-      if (!best || r.indice < best.indice || (r.indice === best.indice && r.thermMs > best.therm)) {
+      if (!best || r.indice > best.indice || (r.indice === best.indice && r.thermMs > best.therm)) {
         best = { id: c.id, indice: r.indice, therm: r.thermMs };
       }
     }

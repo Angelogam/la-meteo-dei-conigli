@@ -18,8 +18,11 @@ export interface ParametriVolabilita {
 }
 
 export interface RisultatoVolabilita {
-  indice: number;           // 1 (Perfetto) ... 10 (Pericoloso)
-  label: string;            // "Perfetto", "Ottimo", "Buono", "Discreto", "Impegnativo", "Rischioso", "Sconsigliato", "Pericoloso"
+  /** SCALA PILOTA (unica in tutta l'app): 10 = volo ideale, 1 = pericoloso.
+   * Se una card mostra «9/10» e un'altra «giornata pericolosa» per la stessa ora
+   * è una bugia scritta — qui si decide una volta per tutti il significato. */
+  indice: number;
+  label: string;            // "Perfetto", "Ottimo", "Buono", "Discreto", "Impegnativo", "Difficile", "Rischioso", "Sconsigliato", "Pericoloso - …"
   coloreTesto: string;      // Tailwind text color
   coloreBg: string;         // Tailwind bg color
   coloreBordo: string;      // Tailwind border color
@@ -96,17 +99,17 @@ export function calcolaIndiceVolabilita(p: ParametriVolabilita): RisultatoVolabi
   if (p.cloudCover > 85) rateoTermico *= 0.25;
   rateoTermico = Math.round(rateoTermico * 10) / 10;
 
-  // 3. CONDIZIONI BLOCCANTI → indice >= 8
+  // 3. CONDIZIONI BLOCCANTI → scala pilota 1-3 (bloccano il volo, colore rosso/arancio)
   // Temporale / fulmini
   if (p.weatherCode !== undefined && (p.weatherCode === 95 || p.weatherCode === 96 || p.weatherCode === 99)) {
     return {
-      indice: 10, label: "Pericoloso", coloreTesto: "text-red-400", coloreBg: "bg-red-950/80", coloreBordo: "border-red-600",
+      indice: 1, label: "Pericoloso - Temporale", coloreTesto: "text-red-400", coloreBg: "bg-red-950/80", coloreBordo: "border-red-600",
       baseNubiM, rateoTermicoMs: 0, motivi: ["Temporale in atto (WMO 95/96/99)"], windRelativo: "sconosciuto"
     };
   }
   if (p.cape !== undefined && p.cape > 1500 && p.precipitation > 0.5) {
     return {
-      indice: 9, label: "Rischioso", coloreTesto: "text-red-400", coloreBg: "bg-red-950/80", coloreBordo: "border-red-600",
+      indice: 2, label: "Pericoloso - Instabilità", coloreTesto: "text-red-400", coloreBg: "bg-red-950/80", coloreBordo: "border-red-600",
       baseNubiM, rateoTermicoMs: 0, motivi: [`CAPE estremo (${p.cape} J/kg) + pioggia`], windRelativo: "sconosciuto"
     };
   }
@@ -114,13 +117,13 @@ export function calcolaIndiceVolabilita(p: ParametriVolabilita): RisultatoVolabi
   // Pioggia significativa
   if (p.precipitation > 1.0) {
     return {
-      indice: 9, label: "Non volabile - Pioggia", coloreTesto: "text-red-400", coloreBg: "bg-red-950/80", coloreBordo: "border-red-600",
+      indice: 2, label: "Non volabile - Pioggia", coloreTesto: "text-red-400", coloreBg: "bg-red-950/80", coloreBordo: "border-red-600",
       baseNubiM, rateoTermicoMs: 0, motivi: [`Pioggia ${p.precipitation.toFixed(1)} mm`], windRelativo: "sconosciuto"
     };
   }
   if (p.precipitation > 0.2) {
     return {
-      indice: 8, label: "Sconsigliato - Pioviggine", coloreTesto: "text-orange-400", coloreBg: "bg-orange-950/80", coloreBordo: "border-orange-600",
+      indice: 3, label: "Sconsigliato - Pioviggine", coloreTesto: "text-orange-400", coloreBg: "bg-orange-950/80", coloreBordo: "border-orange-600",
       baseNubiM, rateoTermicoMs: rateoTermico, motivi: ["Pioviggine in corso"], windRelativo: "sconosciuto"
     };
   }
@@ -128,7 +131,7 @@ export function calcolaIndiceVolabilita(p: ParametriVolabilita): RisultatoVolabi
   // Vento troppo forte
   if (p.windSpeed > 30 || (p.windGusts !== undefined && p.windGusts > 40)) {
     return {
-      indice: 9, label: "Pericoloso - Vento forte", coloreTesto: "text-red-400", coloreBg: "bg-red-950/80", coloreBordo: "border-red-600",
+      indice: 1, label: "Pericoloso - Vento forte", coloreTesto: "text-red-400", coloreBg: "bg-red-950/80", coloreBordo: "border-red-600",
       baseNubiM, rateoTermicoMs: 0, motivi: [`Vento ${Math.round(p.windSpeed)} km/h, raffiche ${Math.round(p.windGusts || 0)} km/h`], windRelativo: "sconosciuto"
     };
   }
@@ -191,26 +194,30 @@ export function calcolaIndiceVolabilita(p: ParametriVolabilita): RisultatoVolabi
     punteggio += 1.0; motivi.push(`Lifted Index ${p.liftedIndex} - instabilità marcata`);
   }
 
-  // Normalizza 1-10
+  // Normalizza 1-10 (scala interna storica: punteggio ALTO = aria peggiore)
   const indiceFinale = Math.max(1, Math.min(10, Math.round(punteggio)));
 
-  // Label e colori
+  // SCALA PILOTA — capovolgimento alla fonte: 10 = volo ideale, 1 = pericoloso.
+  // Ogni card dell'app legge QUESTO valore: niente più «9/10» accanto a «pericoloso».
+  const indicePilota = Math.max(1, Math.min(10, 11 - indiceFinale));
+
+  // Label e colori, coereni con la scala pilota
   let label = "";
   let coloreTesto = "";
   let coloreBg = "";
   let coloreBordo = "";
 
-  if (indiceFinale <= 2) { label = "Perfetto"; coloreTesto = "text-emerald-400"; coloreBg = "bg-emerald-950/80"; coloreBordo = "border-emerald-500/60"; }
-  else if (indiceFinale <= 3) { label = "Ottimo"; coloreTesto = "text-emerald-300"; coloreBg = "bg-emerald-950/70"; coloreBordo = "border-emerald-500/50"; }
-  else if (indiceFinale <= 4) { label = "Buono"; coloreTesto = "text-lime-400"; coloreBg = "bg-lime-950/70"; coloreBordo = "border-lime-500/50"; }
-  else if (indiceFinale <= 5) { label = "Discreto"; coloreTesto = "text-yellow-400"; coloreBg = "bg-yellow-950/70"; coloreBordo = "border-yellow-500/50"; }
-  else if (indiceFinale <= 6) { label = "Impegnativo"; coloreTesto = "text-amber-400"; coloreBg = "bg-amber-950/70"; coloreBordo = "border-amber-500/50"; }
-  else if (indiceFinale <= 7) { label = "Difficile"; coloreTesto = "text-orange-400"; coloreBg = "bg-orange-950/80"; coloreBordo = "border-orange-500/60"; }
-  else if (indiceFinale <= 8) { label = "Rischioso"; coloreTesto = "text-orange-300"; coloreBg = "bg-orange-950/80"; coloreBordo = "border-orange-600"; }
+  if (indicePilota >= 9) { label = "Perfetto"; coloreTesto = "text-emerald-400"; coloreBg = "bg-emerald-950/80"; coloreBordo = "border-emerald-500/60"; }
+  else if (indicePilota >= 8) { label = "Ottimo"; coloreTesto = "text-emerald-300"; coloreBg = "bg-emerald-950/70"; coloreBordo = "border-emerald-500/50"; }
+  else if (indicePilota >= 7) { label = "Buono"; coloreTesto = "text-lime-400"; coloreBg = "bg-lime-950/70"; coloreBordo = "border-lime-500/50"; }
+  else if (indicePilota >= 6) { label = "Discreto"; coloreTesto = "text-yellow-400"; coloreBg = "bg-yellow-950/70"; coloreBordo = "border-yellow-500/50"; }
+  else if (indicePilota >= 5) { label = "Impegnativo"; coloreTesto = "text-amber-400"; coloreBg = "bg-amber-950/70"; coloreBordo = "border-amber-500/50"; }
+  else if (indicePilota >= 4) { label = "Difficile"; coloreTesto = "text-orange-400"; coloreBg = "bg-orange-950/80"; coloreBordo = "border-orange-500/60"; }
+  else if (indicePilota >= 3) { label = "Rischioso"; coloreTesto = "text-orange-300"; coloreBg = "bg-orange-950/80"; coloreBordo = "border-orange-600"; }
   else { label = "Sconsigliato"; coloreTesto = "text-red-400"; coloreBg = "bg-red-950/80"; coloreBordo = "border-red-500/70"; }
 
   return {
-    indice: indiceFinale,
+    indice: indicePilota,
     label,
     coloreTesto,
     coloreBg,
