@@ -1,0 +1,840 @@
+{
+ "meta": {
+  "titolo": "Banca Dati Parapendio - Cervello Pilota",
+  "progetto": "la-meteo-dei-conigli - copilota virtuale",
+  "versione": "1.0",
+  "data": "2026-11-22",
+  "scopo": "Trasformare dati Open-Meteo in decisioni operative per il pilota di parapendio. La banca dati e la base di conoscenza che precede ogni algoritmo: Conoscenza -> Algoritmi -> Decisioni -> Interfaccia.",
+  "sette_domande": [
+   "Posso volare?",
+   "Quando decollo?",
+   "Quanto salgono le termiche?",
+   "Qual e la base?",
+   "Posso fare cross?",
+   "C e rischio temporale?",
+   "Il vento e favorevole?"
+  ],
+  "nota_calibrazione": "Le soglie sono intervalli di riferimento estratti dalle fonti citate e vanno calibrate per sito e ala prima di diventare regole del Decision Engine."
+ },
+ "regola2": {
+  "cosa_ho_capito": [
+   "La missione non e un sito meteo ma un copilota virtuale che ragiona come un pilota esperto e risponde in meno di 5 secondi alle sette domande del pilota.",
+   "L ordine e ferreo: Conoscenza -> Algoritmi -> Decisioni -> Interfaccia.",
+   "La banca dati estrae la logica decisionale dalle fonti senza copiarle, in sette livelli: concetti, regole, soglie, rischi, decisioni, casi reali, errori da evitare."
+  ],
+  "cosa_esiste_gia": [
+   "Open-Meteo con livelli 1000/3000/6000 m, calcolo base nube, valutazione termiche e veleggiata, multi-decollo.",
+   "Sito su Vercel con report giornaliero, card, radar pioggia e barra oraria.",
+   "Problema architetturale noto: ogni card calcola il giudizio di volo in modo indipendente e produce dati contraddittori; la cura progettata e un unico Decision Engine sorgente di verita."
+  ],
+  "cosa_manca": [
+   "Il livello di conoscenza: soglie, margini, catene causali e casi reali non sono codificati da nessuna parte (colmati da questo documento).",
+   "I cinque agenti (Pilot, Instructor, XC, Safety, Weather) e il loro coordinatore.",
+   "La mappa concettuale dei collegamenti causa-effetto e il test di comprensione delle tre figure di ragionamento."
+  ],
+  "rischi_top": [
+   "Rotor sottovento basso: il killer numero uno in montagna (collassi violenti, discendenze 3-10 m/s).",
+   "Gust front: 5-30 km davanti al temporale, vento freddo che raddoppia in minuti; decollo e atterraggio pericolosi anche a 20-30 km.",
+   "Trappola inversione: calma al suolo con vento forte sopra (slipstream), piloti trascinati sottovento.",
+   "Foehn breakthrough: da calma totale a raffiche forti in pochi minuti al decollo, in volo o all atterraggio.",
+   "Catena di errori e pressione sociale: obiettivo fisso, FOMO, normalizzazione della devianza."
+  ],
+  "proposta": [
+   "Banca dati completa: 20 temi per 7 categorie (questo documento) piu JSON machine-readable.",
+   "Grafo della conoscenza con 15 catene causali operative ed edge list per il futuro Decision Engine.",
+   "Test di comprensione su tre scenari concreti per le tre figure di ragionamento.",
+   "Poi, e solo poi, algoritmi e interfaccia secondo l ordine prescritto."
+  ]
+ },
+ "ragionamenti": {
+  "pilota": {
+   "domanda": "Oggi posso volare in sereno?",
+   "passi": [
+    "Legge tre punti di vento (decollo, quota, atterraggio) prima di tutto il resto.",
+    "Osserva il ciclo termico 10-15 minuti prima di imbragare (bandiere, erba, altri piloti).",
+    "Confronta sempre il vento medio con le raffiche: lo scarto e piu pericoloso della media.",
+    "Chiede dove atterro se non salgo prima di ogni attraversamento.",
+    "Al primo segno di nuvola che cresce in verticale riduce il raggio di volo."
+   ]
+  },
+  "istruttore": {
+   "domanda": "Posso portare questo allievo, questo giorno, su questo sito?",
+   "passi": [
+    "Soglie piu basse del pilota esperto: decollo idealmente entro 15 km/h.",
+    "Decide per finestra di lancio: mattina presto e sera in transizione, mai nel picco convettivo pomeridiano.",
+    "Guarda il cielo dietro il decollo e la valle sotto.",
+    "Applica la regola: se hai dubbi non decollare; il decollo si puo sempre rimandare.",
+    "Teme il drainage mattutino sui decolli di fondo valle e la termica che si accende vicino al decollo."
+   ]
+  },
+  "xc": {
+   "domanda": "Quanta strada posso fare, con che margine, e dove esco se va storta?",
+   "passi": [
+    "Pianifica controvento prima e sottovento poi.",
+    "Usa le strade di cumuli come autostrada e la convergenza come ascensore (termiche piu concentrate e piu forti).",
+    "Ragiona a margini: mai attraversare valle o sottovento senza quota di fuga.",
+    "Ha un orologio mentale: sovrasviluppo previsto, turnaround fisso (esempio ore 14:00).",
+    "Tratta il gust front come un treno: si sa da dove arriva e a che velocita; si lascia passare o si scende prima."
+   ]
+  }
+ },
+ "grafo": {
+  "catene": [
+   "sole forte -> anabatica e brezza di valle -> vento al decollo in aumento -> finestra si chiude -> decollare presto",
+   "vento perpendicolare 15-25 km/h -> lift di cresta -> veleggiata ottima",
+   "vento forte -> rotor sottovento -> collasso -> MAI basso sottovento",
+   "calma al suolo + vento forte in quota (cap/slipstream) -> trascinamento -> NO cross",
+   "ampiezza termica grande -> termiche forti -> turbolenza pomeridiana -> volare mattina e sera",
+   "spread alto -> base alta -> margine dal terreno -> cross possibile",
+   "umidita alta + convezione -> cumuli in crescita verticale -> sovrasviluppo -> temporale -> gust front -> rientro immediato",
+   "valle che si stringe -> effetto Venturi -> vento 1,5-2,5x -> sella imprendibile -> deviare o aspettare",
+   "cap forte e alto -> niente temporali -> giornata secca -> cross stabile",
+   "cap basso + vento forte sopra -> slipstream -> volo locale sotto il cap",
+   "foehn in quota -> breakthrough -> raffiche in valle -> NO valle esposta",
+   "strade allineate + vento moderato -> traslazione rapida -> cross veloce",
+   "convergenza -> lift concentrato -> salita rapida",
+   "rafficosita alta al decollo -> instabilita -> NO decollo",
+   "base che cala -> umidita in arrivo -> pioggia -> ala bagnata -> parachutal stall -> atterraggio prudente"
+  ],
+  "edge_format": "da -> [relazione] -> a; esempio: vento_forte -> [genera] -> turbolenza -> [aumenta] -> rischio_decollo -> [riduce] -> volabilita",
+  "nota": "L edge list completa machine-ready (43 archi del grafo fase 1) e nel file parapendio_knowledge_base.json; qui le catene operative per il Decision Engine."
+ },
+ "test": [
+  {
+   "scenario": "A - Sabato d estate, decollo 1200 m, base 2800 m, vento S 15 km/h in quota, ampiezza 12 C, temporali 20 per cento dal tardo pomeriggio.",
+   "pilota": "Decolla in mattinata, resta nel raggio del sito, guarda i cumuli: se crescono in verticale rientra prima delle 15:30. La sua domanda: dove atterro?",
+   "istruttore": "Finestra allievi solo mattina, chiusa dopo le 13:30; monitora la rafficosita al decollo (scarto oltre 12 km/h = chiusura immediata); insegna a leggere bandiere e ciclo.",
+   "xc": "Task verso NE lungo le strade di cumuli, turnaround fisso ore 14:00, margine valle oltre 800 m, campo di fuga a ovest pronto. Controvento prima, sottovento poi."
+  },
+  {
+   "scenario": "B - Mattina con inversione, decollo basso di fondo valle.",
+   "pilota": "Aspetta il sole sulla parete e l inversione del vento prima di imbragare.",
+   "istruttore": "Drainage attivo: NO decollo; fa leggere le bandiere agli allievi.",
+   "xc": "Non e mattina da task; controlla i profili: slipstream sopra il cap, resta locale sotto il cap."
+  },
+  {
+   "scenario": "C - Pomeriggio, cumuli che crescono oltre 500 m in mezz ora.",
+   "pilota": "Rientra ora, riduce il raggio.",
+   "istruttore": "Allievi in volo: finestra chiusa immediatamente, richiamo alla radio.",
+   "xc": "Turnaround gia scaduto; fuga verso campo noto; mai attraversare davanti al temporale per rientrare."
+  },
+  {
+   "scenario": "Conclusione",
+   "pilota": "L istruttore ha soglie piu strette (safety prima di tutto), il pilota locale ragiona a raggio e finestra, il pilota XC a linee, orari e fughe.",
+   "istruttore": "Lo stesso dato Open-Meteo produce tre giudizi diversi, tutti corretti per la figura che ragiona.",
+   "xc": "Gli agenti futuri riproducono esattamente queste tre voci piu il veto di sicurezza."
+  }
+ ],
+ "fonti": [
+  "XC Magazine: gust fronts, seabreeze convergence, rotor zone, thermal flying (xcmag.com)",
+  "Topmeteo, Thunderstorms and Flying (2026): gust front 5-30 km, inflow pericoloso a 20-30 km (topmeteo.eu)",
+  "Paragliding Forum: limiti vento decollo circa 25 km/h, lee side rotors (2015), meteo Vallese e Prealpi 2026 (paraglidingforum.com)",
+  "Wingmanfly: base nube = spread x 125 m/ C (wingmanfly.com)",
+  "FAA: Glider Handbook cap. 9 e 11; Aviation Weather; ADM cap. 13 catena di errori; spread / 4,4 x 1000 ft (faa.gov)",
+  "RMetS: anabatica e katabatica, guide to mountain winds (rmets.org)",
+  "MeteoSwiss: Alpine pumping, brezze di monte e di valle, Foehn (meteosvizzera.admin.ch)",
+  "ARPA Piemonte: brezze di monte e di valle (arpa.piemonte.it)",
+  "Xacademy P3 Meteorology: Foehn breakthrough (xacademy.com)",
+  "Manuale di volo libero: aerologia, dinamica, inversioni, caso Brianza 1987 (manualedivololibero.com)",
+  "Wikipedia e Sydney Morning Herald: caso Ewa Wisnierska, Manilla 14/02/2007, 9947 m",
+  "Riassunti incidenti USHGA; Schulze 2002, Injury prophylaxis in paragliding (PubMed)",
+  "SKYbrary: mountain waves e rotor (skybrary.aero); FAA AC 00-57 Hazardous Mountain Winds",
+  "Flybubble: thermal drift e tecniche di termica (flybubble.com)",
+  "DHV: analisi incidenti mortali 2018-2022 (48 casi, circa 10 all anno); Canbek et al. 2015, lesioni parapendio (PubMed)"
+ ],
+ "temi": [
+  {
+   "n": 1,
+   "t": "Vento: fondamenta e lettura",
+   "concetti": "Il vento è il fattore decisionale numero uno nel volo libero e si legge sempre in tre punti: decollo, quota e atterraggio. Va valutato su tre dimensioni: direzione, intensità e rafficosità, cioè lo scarto tra media e punta, che è spesso più significativo della media stessa. Il vento aumenta con la quota e cambia direzione tra gli strati: i profili multilivello (1000, 3000, 6000 m) raccontano la realtà in cui si volerà, mentre la bandiera del decollo descrive solo i primi metri.",
+   "regole": [
+    "Si giudica il vento prima di tutto il resto: nessun altro parametro compensa un vento fuori soglia.",
+    "Il vento al suolo non rappresenta il vento in quota: l'attrito lo riduce del 30-50 per cento nei primi 10-20 metri.",
+    "Mai volare con vento superiore alla velocità di penetrazione dell'ala (35-50 km/h): la vela viene cappellata e si avanza a indietro.",
+    "La rafficosità conta più della media: si vola con le punte, non con la media."
+   ],
+   "soglie": [
+    "Decollo per principianti: 0-10 km/h; pilota intermedio: 10-20 km/h; pilota esperto: 20-25 km/h.",
+    "Soglia di rinuncia al decollo: oltre 25-30 km/h (consenso ricorrente su Paragliding Forum, circa 25 km/h al lancio).",
+    "Veleggiata minima sul pendio: circa 15-18 km/h perpendicolari alla cresta.",
+    "Penetrazione insufficiente (cappellaggio): oltre 35-40 km/h.",
+    "Scarto raffiche (massimo meno media): oltre 10-12 km/h indica aria disordinata anche con media bassa."
+   ],
+   "rischi": [
+    "Trascinamento sottovento durante il lancio.",
+    "Cappellaggio e volo all'indietro impossibile da gestire in prossimità del rilievo.",
+    "Impossibilità di rientrare verso il decollo con vento rinforzato.",
+    "Atterraggio imprendibile sul campo previsto per deriva e turbolenza."
+   ],
+   "decisioni": [
+    "Calma al suolo con vento in quota superiore a 35 km/h: NON VOLABILE, è la trappola classica dell'inversione.",
+    "Scarto raffiche oltre 10-12 km/h al decollo: NON VOLABILE per il pilota medio, il disordine spiana l'ala.",
+    "Vento perpendicolare 15-25 km/h: VOLABILE per veleggiata, condizione ottima sul pendio.",
+    "Vento medio in quota oltre 30 km/h contro la rotta: volo locale riparato, niente cross."
+   ],
+   "casi": [
+    "Discussione Paragliding Forum sul vento massimo al lancio (thread storico ancora citato): consenso attorno a 25 km/h al decollo e +5/+15 km/h in quota sopra il suolo.",
+    "r/freeflight sulla velocità massima di sicurezza: oltre 30 km/h si vola a acceleratore tutto, cioè senza margine di manovra disponibile."
+   ],
+   "errori": [
+    "Guardare solo la bandiera del decollo e ignorare gli strati in quota.",
+    "Fidarsi della media del vento senza controllare la punta delle raffiche.",
+    "Confondere il vento al suolo con il vento alla quota di volo."
+   ]
+  },
+  {
+   "n": 2,
+   "t": "Decollo: vento, finestra di lancio, decisione",
+   "concetti": "La finestra di lancio è l'intervallo in cui vento, direzione e rafficosità restano entro le soglie dell'ala e del pilota. Il ciclo termico pulsa tipicamente ogni 10-20 minuti: la finestra si apre e si chiude, e chi gonfia nel minimo del ciclo lancia in serenità, chi gonfia nella punta lavora contro l'ala. Il decollo è la fase in cui l'errore paga di più perché la quota di recupero è zero.",
+   "regole": [
+    "Osservare il ciclo 10-15 minuti prima di imbragare: bandiere, erba, fumo, altri piloti.",
+    "Sopra 10 km/h si gonfia in retro; con calma si gonfia in fronte: il tecnica si sceglie dal vento, non dall'abitudine.",
+    "Mai decollare quando la valle tace (transizione tra brezze): il vento può rientrare da direzione opposta a metà lancio.",
+    "Mai decollare per pressione sociale: gli altri che volano non sono un dato meteorologico.",
+    "Regola d'oro dell'istruzione: se hai dubbi, non decollare; il decollo si può sempre rimandare."
+   ],
+   "soglie": [
+    "Finestra ideale di lancio: 5-20 km/h costanti con scarto raffiche contenuto.",
+    "Massimo operativo: circa 25 km/h; scarto raffiche oltre 10-12 km/h: attendere il minimo del ciclo.",
+    "Drainage mattutino sui decolli bassi di fondo valle: vento contrario 8-12 km/h fino a metà mattina.",
+    "Termica che si attiva vicino al decollo: raffiche improvvise sopra 25 km/h senza preavviso."
+   ],
+   "rischi": [
+    "Lancio nella raffica di una termica appena attivata: collasso tra 30 e 100 m di quota, il pattern più letale.",
+    "Decollo con vento di coda: l'ala supera il pilota, trascinamento verso il rilievo.",
+    "Rotor vicino al decollo: gonfiaggio impossibile da controllare."
+   ],
+   "decisioni": [
+    "Finestra non arrivata entro 60 minuti di attesa: passare a sito alternativo o rinunciare.",
+    "Decolli in ombra o bassi di fondo valle la mattina: attendere l'inversione del vento prima di imbragare.",
+    "Ciclo di raffiche senza momenti calmi sufficienti: rinunciare, non forzare il lancio."
+   ],
+   "casi": [
+    "Schemi di incidente USHGA/DHV: lancio nella raffica della termica appena accesa sopra il decollo, collasso sopra la testa con terreno sotto.",
+    "XC Magazine, serie What went wrong: pilota che esce basso dal decollo in una termica che si disintegra e finisce nella turbolenza sottovento."
+   ],
+   "errori": [
+    "Fretta e obiettivo fisso: volare oggi a tutti i costi.",
+    "Non osservare il ciclo prima del gonfiaggio.",
+    "Decollare in transizione di brezza o con rafficosità in aumento."
+   ]
+  },
+  {
+   "n": 3,
+   "t": "Atterraggio",
+   "concetti": "Nei metri finali l'aria cambia: il vento si riduce con il gradiente al suolo, dietro gli ostacoli si forma turbolenza meccanica e il campo che era sereno in mattinata può essere diventato turbolento o sottovento. L'atterraggio è la fase con la più alta incidenza di lesioni: le fratture degli arti inferiori sono l'esito tipico di un finale sbagliato.",
+   "regole": [
+    "Rivedere sempre il vento prima di ogni finale: tra il decollo e l'atterraggio la direzione può essere girata.",
+    "Approccio controvento sul finale, con eventuale ritorno sul punto via a S o otto.",
+    "In turbolenza: velocità, manovre dolci, pilota attivo; mai frenata forte a bassa quota.",
+    "Mai virata stretta e bassa: lo stall involontario vicino al suolo non si recupera."
+   ],
+   "soglie": [
+    "Soglie di scuola per l'atterraggio: vento fino a 15-18 km/h, rafficosità contenuta.",
+    "Turbolenza meccanica forte sotto 50-100 m dietro edifici, alberi, crinali.",
+    "Raffiche al campo oltre 25 km/h: il campo non è più scontato, cercare alternativa ampia e riparata."
+   ],
+   "rischi": [
+    "Pendolare o collasso basso sul finale in raffica.",
+    "Stall involontario in virata bassa per ridurre il raggio.",
+    "Vento girato: finale sottovento con terreno che accelera e flare inefficace."
+   ],
+   "decisioni": [
+    "Campo turbolento: scegliere il campo più ampio o più riparato, non il più comodo.",
+    "Vento forte al campo: campo grande sottovento ad area aperta, ala veloce, flare tardivo e deciso.",
+    "Dubbi sul vento: conservare quota extra per un secondo tentativo o per il campo alternativo."
+   ],
+   "casi": [
+    "Riassunti di incidenti USHGA: collasso o pendolare in finale con raffica improvvisa, impatto sugli arti inferiori.",
+    "Studio Schulze 2002 (PubMed): le lesioni più gravi si concentrano nelle fasi di decollo e atterraggio."
+   ],
+   "errori": [
+    "Flare precoce con vento forte: la vela sale sopra la testa e il pilota batte con l'imbrago in avanti.",
+    "Virare basso per correggere il punto: stall a due metri dal suolo.",
+    "Non rivedere il vento tra il passaggio alto e il finale."
+   ]
+  },
+  {
+   "n": 4,
+   "t": "Vento in quota e gradienti",
+   "concetti": "I profili multilivello raccontano il vento vero: il vento medio tra il suolo e la base nube determina deriva e traslazione, mentre le differenze tra strati indicano shear. Sopra l'inversione il vento è spesso più forte e di direzione diversa: il famoso slipstream che intrappola i piloti saliti sopra il cap.",
+   "regole": [
+    "Controllare i profili strato per strato, non solo il valore medio di giornata.",
+    "Per il cross conta il vento medio su tutta la fascia di volo, dal decollo alla base.",
+    "Margine per attraversare: con un glide 8:1 servono 120-150 m extra per ogni km controvento.",
+    "La direzione può cambiare tra gli strati: ricalibrare la rotta man mano che si sale."
+   ],
+   "soglie": [
+    "Cross: vento medio in fascia fino a 20-25 km/h; oltre 30 km/h il cross diventa lento e il sottovento critico.",
+    "Vento superiore a 35-40 km/h alla quota di volo: NON VOLABILE, anche con suolo calmo.",
+    "Shear marcato tra strati ravvicinati: oltre 15-20 km/h di salto."
+   ],
+   "rischi": [
+    "Trappola calma-forte: decollo sereno, cappellaggio a 800 m.",
+    "Deriva indietro: impossibile risalire la valle contro vento rinforzato.",
+    "Shear tra strati: comportamento anomalo della vela, pitching e cappellaggio in transizione."
+   ],
+   "decisioni": [
+    "Vento medio oltre 30 km/h: volo locale riparato, niente cross.",
+    "Direzione diversa per strato: pianificare la rotta sullo strato dominante, non sul suolo.",
+    "Slipstream previsto sopra il cap: restare sotto l'inversione, volo locale."
+   ],
+   "casi": [
+    "Discussioni meteo su Paragliding Forum (Vallese e Prealpi, 2026): rinforzo del vento previsto in quota, termiche turbolente e sottovento significativo: il piano del giorno cambia coi profili, non con la bandiera."
+   ],
+   "errori": [
+    "Usare solo il vento al suolo per decidere il tipo di volo.",
+    "Ignorare le differenze di direzione tra gli strati.",
+    "Calcolare il glide controvento senza margine."
+   ]
+  },
+  {
+   "n": 5,
+   "t": "Brezze di valle e di monte",
+   "concetti": "Nei giorni soleggiati i monti generano una circolazione termica diurna propria: l'anabatica risale i versanti al mattino, la brezza di valle risale la vallata nel pomeriggio (il cosiddetto Alpine pumping), la katabatica e il drainage scendono di notte e al mattino presto. Il ciclo pulsa ogni 10-20 minuti e la direzione al decollo può invertirsi nel corso della giornata.",
+   "regole": [
+    "Il decollo al sole si accende con l'anabatica: raffiche improvvise; il decollo in ombra resta tranquillo più a lungo.",
+    "Nel pomeriggio la brezza di valle rinforza: il vento cresce e si allinea alla valle.",
+    "La sera è la transizione: il vento cala, gira, e il lift muore.",
+    "Pianificare il girare della valle, non la foto istantanea del vento."
+   ],
+   "soglie": [
+    "Brezze ordinarie: 5-15 km/h.",
+    "Rinforzo pomeridiano nei giorni forti: 15-25 km/h allineati alla valle.",
+    "Drainage mattutino in fondo valle: 8-12 km/h contro il decollo."
+   ],
+   "rischi": [
+    "Raffiche al decollo quando l'anabatica si accende.",
+    "Transizione serale: lift che muore e rientro difficile contro il drainage.",
+    "Campo di atterraggio che diventa sottovento nel pomeriggio."
+   ],
+   "decisioni": [
+    "Giorni forti: decollare presto, nella mattina morbida.",
+    "Attendere sempre il ciclo prima di imbragare.",
+    "Dopo le 15:00-16:00 monitorare il rinforzo e preparare il rientro prima della transizione serale."
+   ],
+   "casi": [
+    "Guide dei siti alpini (esempio classico: Chabre, Alpi francesi): insegnano a distinguere vento globale, locale e micro su tre scale separate; chi non le distingue sbaglia il decollo.",
+    "MeteoSwiss, sezione Alpine pumping: le brezze di bel tempo dominano il vento in valle nei giorni anticiclonici soleggiati."
+   ],
+   "errori": [
+    "Ignorare la differenza sole-ombra sulla parete del decollo.",
+    "Decollare nel picco pomeridiano di brezza senza esperienza.",
+    "Non aspettare il ciclo di termica."
+   ]
+  },
+  {
+   "n": 6,
+   "t": "Effetto Venturi",
+   "concetti": "Dove la valle si stringe o sopra una sella il flusso si incanala e accelera per conservare la portata: lo stretto funziona da amplificatore, tipicamente di un fattore 1,5-2,5. Le selle tra due valli presentano vento rinforzato e spesso trasversale alla rotta. Sopra i canaloni profondi si forma inoltre una depressione che tira verso il basso.",
+   "regole": [
+    "Prima di attraversare valutare tre fattori: larghezza dello stretto, vento stimato, quota disponibile.",
+    "L'estensione della depressione sopra un canalone arriva a 400 m e più sopra i bordi.",
+    "L'attraversamento si fa in alto, con linea corta e lato lift, mai bassi e in linea.",
+    "Mai stimare il vento in sella dal vento della valle aperta: lo stretto moltiplica."
+   ],
+   "soglie": [
+    "Amplificazione tipica in strettoia: +50-100 per cento rispetto alla valle aperta.",
+    "Vento stimato in sella oltre 30-35 km/h: attraversamento da esperti o impossibile.",
+    "Depressione sopra i canaloni: effetto fino a 400 m sopra i bordi."
+   ],
+   "rischi": [
+    "Blocco in strettoia con deriva nel sottovento: discesa inesorabile in planata.",
+    "Turbolenza ai bordi dello stretto.",
+    "Sella trasversale: deriva laterale verso il rilievo sottovento."
+   ],
+   "decisioni": [
+    "Attraversare in alto, linea corta, lato lift, con vento tollerabile: oppure girare PRIMA di arrivare bassi.",
+    "Canalone allineato col vento sulla rotta: allargare verso l'aperto davanti alla bocca, mai attraversarlo in linea.",
+    "Quota insufficiete per la sella: deviare o attendere in ascendenza."
+   ],
+   "casi": [
+    "Discussioni di cross su Paragliding Forum sugli attraversamenti di cresta: piloti bloccati nelle strettoie e trascinati nel sottovento; la risposta degli esperti è sempre la stessa: alto, corto, veloce, o niente."
+   ],
+   "errori": [
+    "Stimare il vento della sella dalla valle aperta.",
+    "Attraversare bassi per risparmiare quota.",
+    "Pianificare la rotta senza piano B per la sella."
+   ]
+  },
+  {
+   "n": 7,
+   "t": "Turbolenza",
+   "concetti": "Le fonti di turbolenza sono quattro: i bordi delle termiche forti, la turbolenza meccanica dietro creste e ostacoli, il rotor sottovento e lo shear tra strati. L'intensità cresce con la forza termica, il vento e l'irregolarità del terreno. Il pilota la gestisce con velocità costante e pilotaggio attivo, non con la frenata.",
+   "regole": [
+    "In turbolenza: velocità costante con leggera pressione sui freni, pilotaggio attivo.",
+    "Mai frenata forte: il profondo in raffica apre la porta allo stall involontario.",
+    "Banco ridotto in virata: le asimmetriche arrivano in virata, non in linea retta.",
+    "Ali EN-A e EN-B perdonano più dei modelli ad alte prestazioni nei giorni turbolenti."
+   ],
+   "soglie": [
+    "Termiche sopra 4-6 m/s: turbolenza apprezzabile ai bordi.",
+    "Ampiezza giornaliera (Tmax-Tmin) oltre 10-12 °C: pomeriggio turbolento atteso.",
+    "Turbolenza forte: sottovento a rilievi e vicino agli ostacoli."
+   ],
+   "rischi": [
+    "Collassi asimmetrici e cravat.",
+    "Stall involontario per frenata riflessiva.",
+    "Pendolare basso vicino al terreno."
+   ],
+   "decisioni": [
+    "Giorni forti: volare mattina e sera con ala prudente.",
+    "Turbolenza già al decollo: volo breve, vicino, con alta quota di sicurezza.",
+    "Ampiezza grande + umidità: verificare prima le nuvole, la turbolenza può essere il segno del temporale."
+   ],
+   "casi": [
+    "Schulze 2002 (PubMed, Injury prophylaxis in paragliding): convezione e turbolenza tra le cause principali delle lesioni gravi nel volo libero."
+   ],
+   "errori": [
+    "Frenare forte in raffica.",
+    "Virare stretto e basso in convezione forte.",
+    "Volare ala piccola e carica nei giorni turbolenti."
+   ]
+  },
+  {
+   "n": 8,
+   "t": "Rotor e vento sottovento",
+   "concetti": "Sottovento a un ostacolo con vento forte si formano discendenza forte e vortici: il rotor. Più il vento è perpendicolare e il versante ripido, più il rotor è violento. È il killer numero uno in montagna perché invisibile dal sopravvento: lì dove la cresta dà lift perfetto, duecento metri oltre rende l'ala ingovernabile.",
+   "regole": [
+    "MAI basso sottovento con vento forte: regola assoluta.",
+    "Attraversamento del sottovento: in alto (quota cresta più margine), linea corta, ala veloce.",
+    "Estensione del sottovento turbolento: ordine di grandezza 2-5 altezze dell'ostacolo.",
+    "Lenticole sopra = onda attiva = rotor sotto: segnale di allerta, non di bellezza fotografica."
+   ],
+   "soglie": [
+    "Vento perpendicolare oltre 20-25 km/h: rotor significativo.",
+    "Vento perpendicolare oltre 30-35 km/h: rotor violento, zona proibita.",
+    "Discendenze in rotor: 3-10 m/s, superiori a ogni rateo di risalita."
+   ],
+   "rischi": [
+    "Collassi violenti multipli e perdita di controllo.",
+    "Risucchio verso il suolo entro pochi secondi.",
+    "Impossibilità di rientro verso il decollo dal sottovento."
+   ],
+   "decisioni": [
+    "Pianificare ogni rotta CON il vento in mente, non contro: le creste si attraversano in alto.",
+    "Rientro basso sottovento al decollo: NO assoluto, atterrare altrove.",
+    "Impossibile passare in alto: non attraversare, girare o attendere."
+   ],
+   "casi": [
+    "Paragliding Forum, thread Lee side rotors (2015): il dilemma di chi deve rientrare basso sottovento; consenso: alto, corto, veloce, o niente.",
+    "XC Magazine, articolo ROTOR ZONE: pilota che lascia la collina basso in una termica che si disintegra e finisce in zona rotor."
+   ],
+   "errori": [
+    "Rientrare basso sottovento per comodità.",
+    "Attraversare il sottovento perché ieri si è riusciti.",
+    "Non calcolare mai la deriva sottovento sulla rotta."
+   ]
+  },
+  {
+   "n": 9,
+   "t": "Shear",
+   "concetti": "Lo shear è il cambio rapido di vento tra strati vicini o lungo la verticale vicino al suolo. Il gradient al suolo aiuta il decollo, ma il vento sopra è più forte; sopra l'inversione c'è lo strato veloce dello slipstream. Lo shear marcato produce comportamenti anomali della vela: pitching, cappellaggio, asimmetriche senza causa termica.",
+   "regole": [
+    "Leggere i profili multilivello, non solo il vento al suolo.",
+    "Con decollo calmo e shear previsto forte: attenzione estrema, il suolo mentisce.",
+    "Ricalibrare mentre si sale: entrare gradualmente negli strati veloci."
+   ],
+   "soglie": [
+    "Shear marcato: oltre 15-20 km/h tra strati ravvicinati (es. tra 800 e 1200 m).",
+    "Salto di direzione tra strati oltre 45-90 gradi: aria organizzata male per il termico."
+   ],
+   "rischi": [
+    "Cappellaggio entrando nello strato veloce.",
+    "Vento sorpresa all'atterraggio: il campo calmo alle 11 non lo è più alle 15.",
+    "Termiche sbrindolate: rateo reale molto inferiore al previsto."
+   ],
+   "decisioni": [
+    "Shear forte previsto in fascia bassa: limitare la quota o rinunciare.",
+    "Slipstream sopra il cap: restare sotto l'inversione.",
+    "Vento girato tra strati: pianificare l'atterraggio sullo strato più basso."
+   ],
+   "casi": [
+    "Pattern documentato nelle inversioni autunnali e invernali (discussioni meteo Paragliding Forum): decolli calmi, 500-1000 m sopra vento forte, piloti trascinati sottovento e atterraggi forzati."
+   ],
+   "errori": [
+    "Fidarsi del vento al suolo per certificare l'aria di sopra.",
+    "Non ricalibrare la rotta passando di strato."
+   ]
+  },
+  {
+   "n": 10,
+   "t": "Inversione termica",
+   "concetti": "L'inversione è uno strato caldo sopra aria fredda che blocca le ascendenze: il cap. Sopra il cap l'aria è stabile, spesso più secca e più ventosa. La base del cap è il tetto operativo locale della giornata: quasi nessuna termica lo attraversa, e chi lo forza finisce nello slipstream.",
+   "regole": [
+    "Le termiche quasi mai attraversano un cap forte: pianificare sotto.",
+    "La base del cap è il tetto reale, anche quando la base dei cumuli calcolata è più alta.",
+    "XC solo se il cap è alto o si sa che si romperà nel pomeriggio.",
+    "Mai restare sopra il cap: slipstream e vento forte sono lì."
+   ],
+   "soglie": [
+    "Intensità tipica dell'inversione: 2-6 °C.",
+    "Scioglimento mattutino: tra le 9:00 e le 13:00 a seconda della stagione.",
+    "Cap forte e alto: niente temporali, giornata secca e ordinata.",
+    "Cap basso con umidità crescente: sovrasviluppo quando si rompe."
+   ],
+   "rischi": [
+    "Entrare nello slipstream sopra il cap: vento forte e turbolenza inattesi.",
+    "Giornata bella sotto, ostile sopra: trappola dei profili.",
+    "Base calcolata di carta più alta del tetto reale: pianificazione sbagliata del cross."
+   ],
+   "decisioni": [
+    "Cap basso con vento forte sopra: volo locale sotto l'inversione, niente cross.",
+    "Mattina: decollo in ombra dentro la stabilità, attendere il sole.",
+    "Inversione documentata dai profili: dichiarare il tetto reale nei report, non la base di carta."
+   ],
+   "casi": [
+    "Caso reale analizzato nel manuale di volo libero (Brianza, 23 aprile 1987): inversione a 2400-2600 m tetto invalicabile per ogni ascendenza.",
+    "Pattern alpino autunnale ricorrente su Paragliding Forum: suolo calmo, quota ostile, trascinamenti."
+   ],
+   "errori": [
+    "Ritenere il vento al suolo rappresentativo dell'aria sopra il cap.",
+    "Pianificare un cross su giornata a cap basso senza profili in quota."
+   ]
+  },
+  {
+   "n": 11,
+   "t": "Termiche",
+   "concetti": "Le termiche sono colonne di aria calda ascendente alimentate da sorgenti: versanti al sole, convalle, orli di foresta, villaggi, roccia scura. Pulsano con cicli di 5-20 minuti, si inclinano sottovento salendo, e nei giorni forti si organizzano in strade allineate col vento. L'ampiezza termica giornaliera (Tmax-Tmin) è l'indicatore chiave della potenza prevista.",
+   "regole": [
+    "Cercare il versante al sole e le sorgenti scure: la termica nasce dove il suolo scalda o rilascia a sprazzi.",
+    "La colonna si inclina sottovento: salendo, il lift è sempre più sottovento della sorgente.",
+    "Girare stretto e centrare il nucleo: il rateo medio paga, il giro largo sbrindola.",
+    "Perdi la termica: tornare dove l'hai persa, non cercarne un'altra.",
+    "Lift netto medio almeno 1-1,5 m/s per restare in colonna: sotto, è una planata lenta."
+   ],
+   "soglie": [
+    "Ratei: debole 0,5-2 m/s, medio 2-4, forte 4-8, estremo oltre 8.",
+    "Ampiezza giornaliera oltre 10-12 °C: giorno termico forte.",
+    "Ciclo di distacco delle bolle: 5-20 minuti."
+   ],
+   "rischi": [
+    "Turbolenza ai bordi delle colonne forti.",
+    "Trascinamento sottovento salendo (thermal tracking) vicino alla cresta.",
+    "Confondere il sink generale del pomeriggio con una termica assente."
+   ],
+   "decisioni": [
+    "Ampiezza grande + base alta + vento moderato: giorno da cross.",
+    "Termiche deboli con cap basso: volo locale, obiettivi corti.",
+    "Convezione forte con umidità alta: guardare le nuvole prima di girare, il temporale si annuncia in termica."
+   ],
+   "casi": [
+    "XC Magazine (thermal flying): tecnica dei campioni, approccio al bordo sottovento sotto la base e bersaglio sul nucleo più scuro e piatto del cumulo.",
+    "Guida alla termica di paragliding-lessons.com: sorgenti, trigger e centratura del nucleo."
+   ],
+   "errori": [
+    "Girare largo e uscire troppo presto dalla colonna.",
+    "Ignorare le nuvole per pianificare la prossima termica.",
+    "Fidarsi del rateo teorico senza contare lo shear."
+   ]
+  },
+  {
+   "n": 12,
+   "t": "Base nube",
+   "concetti": "La base dei cumuli è la quota dove la temperatura raggiunge il punto di rugiada. La stima operativa usa lo spread: base = spread (°C) per circa 125 m per grado (equivalente FAA: spread diviso 4,4 per 1000 piedi). È una stima indicativa, non una legge: la discrepanza con il tetto d'inversione è la regola, non l'eccezione. Il margine base-terreno decide il tipo di volo.",
+   "regole": [
+    "Ricalcolare la base durante la giornata: si innalza se l'aria si asciuga, cala con l'umidità in arrivo.",
+    "MAI entrare in nube: regola ferrea, anche con visibilità apparente.",
+    "La base calcolata va sempre confrontata con il profilo di temperatura: il cap più basso vince.",
+    "Mantenere margine dalla base: vicino al cumulo l'ascendenza è più robusta ma i margini di fuga svaniscono."
+   ],
+   "soglie": [
+    "Base sopra 2500-3000 m con aria secca: giornata potente, margine ampio.",
+    "Margine base-terreno oltre 1500 m: potenziale cross.",
+    "Margine 800-1500 m: volo locale allungabile.",
+    "Margine sotto 600-800 m: terreno stretto, margini di recupero ridotti."
+   ],
+   "rischi": [
+    "Cloud suck sotto un cumulo attivo: aspirazione che supera ogni rateo di discesa.",
+    "Base bassa: poco spazio di recupero dalle discendenze.",
+    "Base in calo: umidità in arrivo, il cielo si chiude."
+   ],
+   "decisioni": [
+    "Base alta e secca: cross possibile.",
+    "Base bassa: locale e prudenza, margini raddoppiati.",
+    "Base che scende durante il volo: rientro in anticipo, obiettivi ridotti."
+   ],
+   "casi": [
+    "Il calcolo spread-base è la prima stima operativa di ogni pilota: riferimento wingmanfly (spread per 125 m) e manuali FAA (spread diviso 4,4 per 1000 ft)."
+   ],
+   "errori": [
+    "Calcolare la base una sola volta per la giornata.",
+    "Volare attaccato alla base con cumuli in crescita verticale."
+   ]
+  },
+  {
+   "n": 13,
+   "t": "Lettura delle nuvole",
+   "concetti": "I cumuli marcano termiche e base; la crescita verticale racconta la salute del cielo; le strade allineate col vento sono autostrade del cross; cumuli che si sgrana: aria secca e discendenze; nuvola a cavolfiore: convezione violenta in sviluppo. Il cielo è il radar più aggiornato disponibile: va letto ogni 10-15 minuti in volo.",
+   "regole": [
+    "Usare il cumulo come bersaglio: sotto un cumulo attivo c'è la termica.",
+    "Crescita verticale rapida oltre 500 m in 15-30 minuti: allarme sovrasviluppo.",
+    "Anvil (incus) in cima: cumulonembo maturo vicino, rientro immediato.",
+    "Controllare il cielo in volo ogni 10-15 minuti: la previsione della mattina non basta."
+   ],
+   "soglie": [
+    "Crescita oltre 500 m in 15-30 minuti: allarme.",
+    "Copertura cumuli in crescita oltre 50-60 per cento: cielo che si chiude, pioggia attesa entro 1-3 ore."
+   ],
+   "rischi": [
+    "Temporale in sviluppo sulla rotta.",
+    "Navigare verso cumuli morenti: discendenze e perdita di quota.",
+    "Fidarsi dei cumuli vecchi: la sorgente può essersi spenta."
+   ],
+   "decisioni": [
+    "Strade nette allineate col vento: cross lungo la linea.",
+    "Cumuli isolati che esplodono: ridurre il raggio, pianificare la fuga.",
+    "Nessun cumulo con termiche attive: aria secca, cross ok ma attenzione alle discendenze sui versanti a ombra."
+   ],
+   "casi": [
+    "XC Magazine (seabreeze convergence): le linee di convergenza si legano dalla formazione lineare delle nuvole; navigarle è tecnica XC standard."
+   ],
+   "errori": [
+    "Fidarsi dei cumuli vecchi come bersaglio.",
+    "Non ricontrollare il cielo durante il volo."
+   ]
+  },
+  {
+   "n": 14,
+   "t": "Cumulonembi",
+   "concetti": "Il cumulonembo è il motore del temporale: ascendenze da 10 a 30 m/s e oltre, ghiaccio e anvil in cima, discendenze fredde e gust front davanti. Il ciclo di vita va da 30 minuti a 3 ore. Dentro: turbolenza estrema, grandine, ipossia, scariche. Il caso Wiśnierska resta il riferimento: la crescita del sistema era visibile PRIMA.",
+   "regole": [
+    "MAI dentro o vicino: distanza minima 10 km, prudenti 20 km se il sistema è in sviluppo.",
+    "Il gust front corre davanti alla tempesta per 5-30 km: si arriva prima del cielo scuro.",
+    "La direzione di avanzamento del sistema segue il vento medio in quota.",
+    "Monitoraggio costante: il primo segno di Cb sulla rotta impone la decisione subito."
+   ],
+   "soglie": [
+    "Cb in sviluppo a meno di 20 km sulla direzione di avanzamento: rientro immediato.",
+    "Discendenze sotto un Cb: fino a -10 m/s e oltre.",
+    "Vento del gust front: raddoppia e gira in pochi minuti."
+   ],
+   "rischi": [
+    "Aspirazione in quota: ipossia, ghiaccio, temperature sotto i -40 °C.",
+    "Collassi ai bordi del sistema.",
+    "Gust front al suolo: trascinamento e grandine."
+   ],
+   "decisioni": [
+    "Primo segno di Cb sulla rotta: rientra subito prima che chiuda la via.",
+    "Cb tra te e casa: atterra al campo più vicino, mai attraversare davanti al sistema per rientrare.",
+    "Mai correre il gust front: si lascia passare o si scende prima."
+   ],
+   "casi": [
+    "Ewa Wisnierska, 14 febbraio 2007, Manilla (Australia): aspirata in un Cb a 9947 m, -40 °C, ghiaccio, ipossia, volo inconscio per circa un'ora, sopravvissuta (Wikipedia; Sydney Morning Herald). Lo stesso sistema uccise il pilota He Zhongping."
+   ],
+   "errori": [
+    "Restare per l'ultima ascendenza davanti al cielo che si scurisce.",
+    "Sottovalutare la velocità di avanzamento del sistema.",
+    "Volare senza campi di fuga identificati."
+   ]
+  },
+  {
+   "n": 15,
+   "t": "Sovrasviluppo",
+   "concetti": "Il sovrasviluppo (OD) è la crescita dei cumuli oltre la base: si fondono, saturano il cielo, portano pioggia, buio e discendenze, e possono evolvere in temporale. È tipico dell'estate umida. Il segnale si legge nella crescita VERTICALE, non solo nella copertura: un cumulo che diventa torre conta più di un cielo coperto piatto.",
+   "regole": [
+    "Osservare la crescita verticale, non solo la copertura totale.",
+    "Copertura in crescita oltre 50-60 per cento: pioggia attesa entro 1-3 ore.",
+    "Sovrasviluppo attivo: sole spento, termiche morte, discendenze generalizzate.",
+    "Ridurre il raggio di volo al primo segno: il rientro si decide presto o non si decide più."
+   ],
+   "soglie": [
+    "Crescita oltre la base superiore a 500 m: sovrasviluppo attivo.",
+    "Cielo che si chiude rapidamente: uscire dall'area di volo."
+   ],
+   "rischi": [
+    "Atterraggio forzato sotto pioggia con discendenze.",
+    "Ala bagnata: parachutal stall, la vela perde l'effetto aerodinamico.",
+    "Temporale in evoluzione dal sovrasviluppo."
+   ],
+   "decisioni": [
+    "Rientro in anticipo alla prima crescita verticale marcata.",
+    "Il turnaround del cross si decide con orologio e cielo, non con la distanza rimasta.",
+    "Pioggia in vista: atterraggio preventivo, non volo normale sotto la pioggia."
+   ],
+   "casi": [
+    "Pattern estivo alpino ricorrente: mattina di cross perfetta, pomeriggio chiuso da OD, piloti a terra bagnati. Lezione: la finestra finisce presto."
+   ],
+   "errori": [
+    "Solo un po' più avanti: la frase tipica prima dell'atterraggio forzato.",
+    "Trattare la pioggia come volo normale: la vela bagnata non si controlla come l'asciutta."
+   ]
+  },
+  {
+   "n": 16,
+   "t": "Temporali e gust front",
+   "concetti": "Il temporale vive in tre fasi (sviluppo, maturità, dissipazione). Il gust front è l'ondata di aria fredda che si estende 5-30 km davanti al sistema: vento che raddoppia e gira in minuti, turbolenza al suolo enorme. I sistemi possono avanzare oltre 30 nodi. Decollo e atterraggio nella zona di inflow sono pericolosi anche a 20-30 km di distanza dalla cella.",
+   "regole": [
+    "Vento freddo improvviso = il temporale è vicino: uscire dall'area e atterrare.",
+    "La probabilità prevista di temporali impone il piano di fuga: oltre 30-40 per cento piano obbligatorio, oltre 60 per cento niente cross.",
+    "Dopo il passaggio del sistema è possibile la rinascita: non ripartire per default.",
+    "Mai attraversare davanti al temporale per rientrare: si atterra dove si è."
+   ],
+   "soglie": [
+    "Distanza minima dal Cb: 10-20 km.",
+    "Estensione del gust front: 5-30 km davanti alla cella.",
+    "Velocità di avanzamento dei sistemi: oltre 30 nodi."
+   ],
+   "rischi": [
+    "Collassi dal front: raffica che colpisce la vela in volo o al suolo.",
+    "Trascinamento al suolo dal vento del front.",
+    "Grandine e scariche vicine."
+   ],
+   "decisioni": [
+    "Fuga: direzione opposta all'avanzamento del sistema, poi campo più vicino, mai la casa a tutti i costi.",
+    "A terra con front in arrivo: ala a terra, imbrago bloccato, attendere.",
+    "Probabilità oltre 60 per cento: rinuncia alla giornata, non solo al cross."
+   ],
+   "casi": [
+    "Guida Topmeteo 2026 (Thunderstorms and Flying): gust front estesi 5-30 km; decollo e atterraggio nella zona di inflow pericolosi anche a 20-30 km di distanza.",
+    "XC Magazine (Gust fronts from afar): sistemi che avanzano oltre 30 nodi, discendenze esterne come gust front."
+   ],
+   "errori": [
+    "Correre il gust front verso il campo di casa.",
+    "Volare sottovento al temporale per l'ultima risalita.",
+    "Partire senza campi di fuga identificati."
+   ]
+  },
+  {
+   "n": 17,
+   "t": "Meteorologia alpina (Foehn e Stau)",
+   "concetti": "Lo Stau è la situazione di lato sopravvento: nubi e pioggia sul versante investito. Il Foehn è la controparte sottovento: vento caldo e secco discendente, forte in quota, che può irrompere di colpo nelle valli (breakthrough). Segni: muro di nubi sulla cresta, lenticole, cielo blu profondo e visibilità lunga.",
+   "regole": [
+    "Lenticole = vento forte in quota + onda: rotor sotto. Sono allarme, non scenografia.",
+    "Muro di nubi a monte della cresta: Foehn in arrivo sulla valle.",
+    "Decollo calmo di mattina su giornata di Foehn previsto: trappola classica, il breakthrough può arrivare senza preavviso.",
+    "Giornate di Foehn: solo siti riparati con uscita rapida e vento di quota tollerabile."
+   ],
+   "soglie": [
+    "Vento di quota trasversale oltre 30 km/h sulla cresta: attenzione al breakthrough.",
+    "Vento di quota oltre 40-50 km/h (esempio: sud sulle Alpi settentrionali): Foehn probabile nelle valli."
+   ],
+   "rischi": [
+    "Breakthrough: da calma totale a raffiche di 40-60 km/h in minuti, al decollo, in volo o all'atterraggio.",
+    "Rotor sotto le lenticole.",
+    "Decolli spazzati dal rientro del flusso."
+   ],
+   "decisioni": [
+    "Segni di Foehn in aumento: prudenza estrema o rinuncia.",
+    "Vento di quota tollerabile e sito riparato: volo corto con sorveglianza continua.",
+    "Breakthrough iniziato: atterraggio immediato nel primo campo adatto."
+   ],
+   "casi": [
+    "MeteoSwiss (Foehn nord e sud): meccanismo e segni documentati.",
+    "Corsi meteo per volo libero (esempio: Xacademy P3 Meteorology): il breakthrough puo irrompere di colpo riempiendo la valle di raffiche; è il meccanismo degli incidenti da calma improvissa."
+   ],
+   "errori": [
+    "Volare la mattina di Foehn previsto perche ora è calmo.",
+    "Ignorare le lenticole come segnale."
+   ]
+  },
+  {
+   "n": 18,
+   "t": "Veleggiata",
+   "concetti": "La veleggiata è il lift dinamico del pendio: il vento che investe il versante si devia verso l'alto e sostiene la vela. Dipende da intensità, perpendicolarità e pendenza del versante, e si somma alla termica. È il volo più rilassato e il più insidioso: la calma del dinamico produce il falso senso di sicurezza.",
+   "regole": [
+    "Vento perpendicolare: lift massimo; diagonale: lift ridotto e deriva laterale.",
+    "MAI basso sottovento alla cresta: rotor.",
+    "Regola del cerchio: tutti girano nella stessa direzione sopra il pendio.",
+    "L'orlo della cresta sono shear: passare alto, non limare il bordo.",
+    "Il rinforzo pomeridiano chiude la finestra: monitorare e rientrare prima."
+   ],
+   "soglie": [
+    "Veleggiata minima: circa 15-18 km/h perpendicolari.",
+    "Veleggiata ideale: 18-30 km/h.",
+    "Oltre 35-40 km/h: penetrazione insufficiente, NON VOLABILE.",
+    "Lift netto per restare: almeno 0,5-1 m/s."
+   ],
+   "rischi": [
+    "Rinforzo pomeridiano oltre le soglie: rientro impossibile.",
+    "Turbolenza meccanica sul bordo della cresta.",
+    "Vento che gira: lift degradato e pendio che smette di sostenere."
+   ],
+   "decisioni": [
+    "15-25 km/h perpendicolari: veleggiata ottima.",
+    "Oltre 30-35 km/h: veleggiata pericolosa, valutare rinuncia.",
+    "Sera: rientrare prima che il lift muoia nella transizione."
+   ],
+   "casi": [
+    "Pattern ricorrente in forum e schemi di incidente: rinforzi pomeridiani che costringono ad atterraggi sottovento forzati o a campi di fortuna."
+   ],
+   "errori": [
+    "Volare basso sull'orlo della cresta.",
+    "Non monitorare il rinforzo della brezza.",
+    "Rientrare basso sottovento al campo."
+   ]
+  },
+  {
+   "n": 19,
+   "t": "Cross Country",
+   "concetti": "Il cross è navigazione tra termiche, strade di cumuli e convergenze, gestita a margini. La domanda continua è una sola: posso attraversare, e dove atterro se non salgo? Si vola solo dove si vede un campo atterrabile: questa regola vale più di ogni previsione.",
+   "regole": [
+    "Controvento prima, sottovento poi: si compra quota nella parte difficile della giornata.",
+    "Seguire le strade allineate col vento: sono l'autostrada.",
+    "La convergenza è un ascensore: termiche più concentrate e più forti (XC Magazine).",
+    "MAI volare dove non puoi atterrare.",
+    "Margine per attraversare le valli: glide teorico più margine vento.",
+    "Orologio mentale: sovrasviluppo previsto, turnaround fisso (esempio: ore 14:00)."
+   ],
+   "soglie": [
+    "Cross tipico: base oltre 2000-2500 m (o oltre 800 m sopra il terreno), vento medio fino a 20-25 km/h, lift netto oltre 1,5-2 m/s.",
+    "Ampiezza termica forte e cielo ordinato: requisiti di partenza."
+   ],
+   "rischi": [
+    "Sottovento forte sulla rotta: glide che non arriva.",
+    "Base che cala: spazio che si chiude.",
+    "Temporali sulla rotta: la via di casa sparisce.",
+    "Ore: la finestra convettiva si chiude e il terreno resta lungo."
+   ],
+   "decisioni": [
+    "La rinuncia intelligente è una vittoria: atterrare presto e completo batte l'atterraggio forzato.",
+    "Fuga dai temporali pianificata PRIMA di partire, con campi alternativi mappati.",
+    "Attraversamento sottovento: solo con quota doppia rispetto al margine normale."
+   ],
+   "casi": [
+    "FAA Glider Handbook, capitolo 11: convergenza e strade aumentano la velocità del cross; principio condiviso col parapendio.",
+    "Paragliding Forum, Wallis e Prealpi 2026: il rinforzo del vento previsto cambia il piano della giornata."
+   ],
+   "errori": [
+    "Solo ancora un po': obiettivo fisso oltre il margine.",
+    "Attraversare senza margine vento.",
+    "Rotta pianificata senza il vento in quota in mente."
+   ]
+  },
+  {
+   "n": 20,
+   "t": "Sicurezza e gestione del rischio",
+   "concetti": "Il rischio è probabilità per gravità; il margine è lo spazio lasciato per l'errore. La catena d'errori (FAA ADM) si costruisce con piccole deviazioni accettate in successione. I killer psicologici sono noti: FOMO, fissazione dell'obiettivo, pressione sociale, normalizzazione della devianza. La sicurezza si gestisce rompendo la catena al primo anello.",
+   "regole": [
+    "Ferree: mai in nube; mai basso sottovento; mai senza quota di fuga; mai decollare con dubbio.",
+    "Ala giusta per il giorno: EN-A o EN-B nei giorni forti.",
+    "Condizioni cambiate: piano rivisto. La previsione della mattina non è un contratto.",
+    "Se qualcosa ti sembra sbagliato, è sbagliato: l'intuizione del pilota allenato è un dato."
+   ],
+   "soglie": [
+    "Quota per le decisioni: 300 m sul terreno sono meglio di 150.",
+    "Deviazioni consecutive ammesse dalla catena di sicurezza: ZERO.",
+    "In dubbio: margine raddoppiato."
+   ],
+   "rischi": [
+    "Complacency dopo giorni facili: le soglie si erodono una alla volta.",
+    "Allenamento insufficiente dopo pausa: le manovre vanno riscoperte in SIV."
+   ],
+   "decisioni": [
+    "La decisione più importante del pilota: NON volare.",
+    "La seconda: atterrare presto quando qualcosa non torna.",
+    "Pressione sociale rilevata: dichiararla ad alta voce rompe la catena."
+   ],
+   "casi": [
+    "Riassunti USHGA: la maggior parte degli incidenti è condizioni al limite più errori concatenati, non un singolo evento estremo.",
+    "Schulze 2002 (PubMed): lesioni correlate a convezione, turbolenza e fasi di decollo-atterraggio.",
+    "FAA ADM capitolo 13: catena d'errori e fattori psicologici, framework di riferimento per il giudizio in volo."
+   ],
+   "errori": [
+    "Seguire il gruppo oltre il proprio margine.",
+    "Obiettivo fisso che sopravvive al peggioramento.",
+    "Ritenere i margini una valuta spendibile."
+   ]
+  }
+ ]
+}

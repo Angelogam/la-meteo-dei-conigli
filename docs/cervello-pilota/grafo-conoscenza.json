@@ -1,0 +1,511 @@
+{
+ "meta": {
+  "nome": "Grafo di conoscenza del pilota di parapendio",
+  "progetto": "la-meteo-dei-conigli — cervello-pilota",
+  "fase": 2,
+  "fonte": "docs/cervello-pilota (01-CONCETTI, 02-REGOLE, 03-SOGLIE, 04-RISCHI)",
+  "uso": "gli agenti (Fase 4) percorrono questi archi per spiegare le catene causali"
+ },
+ "nodi": [
+  {
+   "id": "vento_forte",
+   "tipo": "meteo",
+   "titolo": "Vento forte (suolo/quota)",
+   "kb": "01-CONCETTI §15/§16"
+  },
+  {
+   "id": "vento_quota",
+   "tipo": "meteo",
+   "titolo": "Vento in quota / valicante / Foehn",
+   "kb": "01-CONCETTI §16"
+  },
+  {
+   "id": "shear",
+   "tipo": "meteo",
+   "titolo": "Shear (taglio del vento)",
+   "kb": "01-CONCETTI §11"
+  },
+  {
+   "id": "rotor",
+   "tipo": "meteo",
+   "titolo": "Rotor",
+   "kb": "01-CONCETTI §10"
+  },
+  {
+   "id": "onde",
+   "tipo": "meteo",
+   "titolo": "Onde di montagna / lenticolari",
+   "kb": "01-CONCETTI §10"
+  },
+  {
+   "id": "venturi",
+   "tipo": "meteo",
+   "titolo": "Effetto Venturi (valle stretta)",
+   "kb": "01-CONCETTI §9"
+  },
+  {
+   "id": "termiche",
+   "tipo": "meteo",
+   "titolo": "Termiche (rateo)",
+   "kb": "01-CONCETTI §3"
+  },
+  {
+   "id": "base",
+   "tipo": "meteo",
+   "titolo": "Base cumuli (LCL)",
+   "kb": "01-CONCETTI §3"
+  },
+  {
+   "id": "inversione",
+   "tipo": "meteo",
+   "titolo": "Inversione termica (tetto reale)",
+   "kb": "01-CONCETTI §12"
+  },
+  {
+   "id": "od",
+   "tipo": "meteo",
+   "titolo": "Sovrasviluppo (OD)",
+   "kb": "01-CONCETTI §13"
+  },
+  {
+   "id": "cb",
+   "tipo": "meteo",
+   "titolo": "Cumulonembo",
+   "kb": "01-CONCETTI §14"
+  },
+  {
+   "id": "fronte_raf",
+   "tipo": "meteo",
+   "titolo": "Fronte di raffiche (30-60 km/h)",
+   "kb": "01-CONCETTI §14"
+  },
+  {
+   "id": "cape",
+   "tipo": "meteo",
+   "titolo": "CAPE / instabilità profonda",
+   "kb": "03-SOGLIE"
+  },
+  {
+   "id": "brezza_valle",
+   "tipo": "meteo",
+   "titolo": "Brezza di valle (giorno)",
+   "kb": "01-CONCETTI §7"
+  },
+  {
+   "id": "brezza_monte",
+   "tipo": "meteo",
+   "titolo": "Brezza di monte (notte)",
+   "kb": "01-CONCETTI §8"
+  },
+  {
+   "id": "girare_brezza",
+   "tipo": "meteo",
+   "titolo": "Girare della brezza nel pomeriggio",
+   "kb": "04-RISCHI R7"
+  },
+  {
+   "id": "turbolenza",
+   "tipo": "meteo",
+   "titolo": "Turbolenza / aria mossa",
+   "kb": "01-CONCETTI §11"
+  },
+  {
+   "id": "esposizione",
+   "tipo": "sito",
+   "titolo": "Relazione vento-esposizione",
+   "kb": "01-CONCETTI §15"
+  },
+  {
+   "id": "decollo",
+   "tipo": "sito",
+   "titolo": "Decollo (lancio)",
+   "kb": "01-CONCETTI §1"
+  },
+  {
+   "id": "atterraggi",
+   "tipo": "sito",
+   "titolo": "Atterraggi raggiungibili",
+   "kb": "01-CONCETTI §2"
+  },
+  {
+   "id": "cresta",
+   "tipo": "sito",
+   "titolo": "Cresta / pendio",
+   "kb": "01-CONCETTI §4"
+  },
+  {
+   "id": "raf_spread",
+   "tipo": "misura",
+   "titolo": "Spread raffiche (max − media)",
+   "kb": "03-SOGLIE"
+  },
+  {
+   "id": "raffiche",
+   "tipo": "misura",
+   "titolo": "Raffiche al suolo",
+   "kb": "03-SOGLIE"
+  },
+  {
+   "id": "rateo",
+   "tipo": "misura",
+   "titolo": "Rateo massimo",
+   "kb": "03-SOGLIE"
+  },
+  {
+   "id": "soglia",
+   "tipo": "misura",
+   "titolo": "Soglia (base − decollo)",
+   "kb": "03-SOGLIE"
+  },
+  {
+   "id": "rischio_decollo",
+   "tipo": "rischio",
+   "titolo": "Rischio decollo",
+   "kb": "04-RISCHI R1"
+  },
+  {
+   "id": "rischio_rotor",
+   "tipo": "rischio",
+   "titolo": "Rischio rotor cresta",
+   "kb": "04-RISCHI R2"
+  },
+  {
+   "id": "rischio_venturi",
+   "tipo": "rischio",
+   "titolo": "Rischio canalone",
+   "kb": "04-RISCHI R3"
+  },
+  {
+   "id": "rischio_cb",
+   "tipo": "rischio",
+   "titolo": "Rischio temporale",
+   "kb": "04-RISCHI R5"
+  },
+  {
+   "id": "rischio_deriva",
+   "tipo": "rischio",
+   "titolo": "Deriva / rientro impossibile",
+   "kb": "04-RISCHI R8"
+  },
+  {
+   "id": "volabilita_rid",
+   "tipo": "rischio",
+   "titolo": "Volabilità ridotta",
+   "kb": "04-RISCHI R6"
+  },
+  {
+   "id": "cross_scarso",
+   "tipo": "rischio",
+   "titolo": "Cross scarso",
+   "kb": "04-RISCHI R6"
+  },
+  {
+   "id": "resta_terra",
+   "tipo": "decisione",
+   "titolo": "RESTA A TERRA",
+   "kb": "05-DECISIONI P1"
+  },
+  {
+   "id": "cautela",
+   "tipo": "decisione",
+   "titolo": "POSSIBILE CON CAUTELA",
+   "kb": "05-DECISIONI P1"
+  },
+  {
+   "id": "si_vola",
+   "tipo": "decisione",
+   "titolo": "SI VOLA",
+   "kb": "05-DECISIONI P1"
+  },
+  {
+   "id": "volo_locale",
+   "tipo": "decisione",
+   "titolo": "Suggerimento: volo locale",
+   "kb": "05-DECISIONI P3"
+  },
+  {
+   "id": "allerta_od",
+   "tipo": "decisione",
+   "titolo": "Allerta OD / atterraggio preventivo",
+   "kb": "05-DECISIONI P5"
+  },
+  {
+   "id": "finestra",
+   "tipo": "decisione",
+   "titolo": "Finestra 12-15",
+   "kb": "05-DECISIONI P2"
+  },
+  {
+   "id": "controvirata",
+   "tipo": "decisione",
+   "titolo": "Virate SEMPRE controvento",
+   "kb": "02-REGOLE C5"
+  },
+  {
+   "id": "allargare",
+   "tipo": "decisione",
+   "titolo": "Allargare davanti al canalone",
+   "kb": "02-REGOLE C6"
+  }
+ ],
+ "archi": [
+  {
+   "da": "vento_forte",
+   "a": "turbolenza",
+   "relazione": "CAUSA",
+   "nota": "flusso disturbato da ostacoli e termiche"
+  },
+  {
+   "da": "turbolenza",
+   "a": "rischio_decollo",
+   "relazione": "AUMENTA",
+   "nota": "gonfiaggio e lancio imprevedibili"
+  },
+  {
+   "da": "rischio_decollo",
+   "a": "volabilita_rid",
+   "relazione": "PRODUCE",
+   "nota": "meno finestre di lancio sicure"
+  },
+  {
+   "da": "raf_spread",
+   "a": "turbolenza",
+   "relazione": "SEGNALE",
+   "nota": "spread > 10-15 km/h = aria disordinata"
+  },
+  {
+   "da": "raffiche",
+   "a": "raf_spread",
+   "relazione": "MISURA_CON",
+   "nota": "confronto max − media"
+  },
+  {
+   "da": "vento_forte",
+   "a": "rischio_decollo",
+   "relazione": "BLOCCA",
+   "nota": "> 25-30 km/h o raffiche > 35-40"
+  },
+  {
+   "da": "esposizione",
+   "a": "decollo",
+   "relazione": "CONDIZIONA",
+   "nota": "frontale ok, coda vietata"
+  },
+  {
+   "da": "vento_quota",
+   "a": "rotor",
+   "relazione": "ATTIVA",
+   "nota": "flusso valicante sopra la cresta"
+  },
+  {
+   "da": "rotor",
+   "a": "rischio_rotor",
+   "relazione": "PRODUCE",
+   "nota": "ingovernabilità oltre la cresta"
+  },
+  {
+   "da": "onde",
+   "a": "rotor",
+   "relazione": "ALIMENTA",
+   "nota": "rotori forti e fissi sotto l'onda"
+  },
+  {
+   "da": "vento_quota",
+   "a": "onde",
+   "relazione": "ATTIVA",
+   "nota": "flusso > 25-30 km/h sopra la cresta"
+  },
+  {
+   "da": "rischio_rotor",
+   "a": "resta_terra",
+   "relazione": "VETA",
+   "nota": "SafetyAgent: no lancio con rotore evidente"
+  },
+  {
+   "da": "venturi",
+   "a": "rischio_venturi",
+   "relazione": "PRODUCE",
+   "nota": "accelerazione + depressione (400 m+ sopra i bordi)"
+  },
+  {
+   "da": "vento_quota",
+   "a": "venturi",
+   "relazione": "RAFFORZA",
+   "nota": "valle stretta allineata col flusso"
+  },
+  {
+   "da": "rischio_venturi",
+   "a": "allargare",
+   "relazione": "SUGGERISCE",
+   "nota": "mai attraversare in linea"
+  },
+  {
+   "da": "shear",
+   "a": "turbolenza",
+   "relazione": "PRODUCE",
+   "nota": "delta > 20-25 km/h fra livelli"
+  },
+  {
+   "da": "shear",
+   "a": "termiche",
+   "relazione": "SBRINDOLA",
+   "nota": "colonne sbrindolate, rateo reale << teorico"
+  },
+  {
+   "da": "termiche",
+   "a": "rateo",
+   "relazione": "DETERMINA",
+   "nota": "spread+CAPE+copertura → m/s"
+  },
+  {
+   "da": "rateo",
+   "a": "soglia",
+   "relazione": "DETERMINA",
+   "nota": "giudizio: locale / allungabile / cross"
+  },
+  {
+   "da": "base",
+   "a": "soglia",
+   "relazione": "DETERMINA",
+   "nota": "soglia = base − quota decollo"
+  },
+  {
+   "da": "inversione",
+   "a": "base",
+   "relazione": "PLAFONA",
+   "nota": "tetto reale = min(LCL, inversione)"
+  },
+  {
+   "da": "inversione",
+   "a": "cross_scarso",
+   "relazione": "CAUSA",
+   "nota": "ascendenze corte, margini zero"
+  },
+  {
+   "da": "soglia",
+   "a": "cross_scarso",
+   "relazione": "SEGNALE",
+   "nota": "< 900 m: cross non paga"
+  },
+  {
+   "da": "cross_scarso",
+   "a": "volo_locale",
+   "relazione": "SUGGERISCE",
+   "nota": "volo locale o scorribila"
+  },
+  {
+   "da": "cape",
+   "a": "od",
+   "relazione": "ALIMENTA",
+   "nota": "instabilità profonda"
+  },
+  {
+   "da": "od",
+   "a": "cb",
+   "relazione": "PRODUCE",
+   "nota": "cumuli che si incollano → Cb"
+  },
+  {
+   "da": "cb",
+   "a": "fronte_raf",
+   "relazione": "PRODUCE",
+   "nota": "flanc discendente che corre 30-60 km/h"
+  },
+  {
+   "da": "cb",
+   "a": "rischio_cb",
+   "relazione": "PRODUCE",
+   "nota": "risucchio, grandine, fulmini"
+  },
+  {
+   "da": "rischio_cb",
+   "a": "allerta_od",
+   "relazione": "SUGGERISCE",
+   "nota": "atterraggio preventivo se cella < 10-15 km"
+  },
+  {
+   "da": "rischio_cb",
+   "a": "resta_terra",
+   "relazione": "VETA",
+   "nota": "SafetyAgent: WMO 95/96/99, CAPE>1500+pioggia"
+  },
+  {
+   "da": "od",
+   "a": "allerta_od",
+   "relazione": "SEGNALE",
+   "nota": "torretti, scurimento, incollatura"
+  },
+  {
+   "da": "brezza_valle",
+   "a": "girare_brezza",
+   "relazione": "DETERMINA",
+   "nota": "pomeriggio: valle su"
+  },
+  {
+   "da": "brezza_monte",
+   "a": "inversione",
+   "relazione": "ALIMENTA",
+   "nota": "aria fredda stagnante a fondo valle"
+  },
+  {
+   "da": "girare_brezza",
+   "a": "atterraggi",
+   "relazione": "RICALCOLA",
+   "nota": "campo controvento alle 11 → sottovento alle 15"
+  },
+  {
+   "da": "vento_quota",
+   "a": "rischio_deriva",
+   "relazione": "AUMENTA",
+   "nota": "contrarie > 25-30 km/h sulla rotta"
+  },
+  {
+   "da": "atterraggi",
+   "a": "rischio_deriva",
+   "relazione": "MITIGA",
+   "nota": "si vola solo dove si vede un campo"
+  },
+  {
+   "da": "rischio_deriva",
+   "a": "cautela",
+   "relazione": "INDUCE",
+   "nota": "ricalcolare glide e obiettivi"
+  },
+  {
+   "da": "termiche",
+   "a": "finestra",
+   "relazione": "DETERMINA",
+   "nota": "picco convettivo 12-15"
+  },
+  {
+   "da": "finestra",
+   "a": "si_vola",
+   "relazione": "APRE",
+   "nota": "cielo ordinato + indice alto"
+  },
+  {
+   "da": "cresta",
+   "a": "controvirata",
+   "relazione": "COMANDA",
+   "nota": "virare a favore = finire sottvento"
+  },
+  {
+   "da": "esposizione",
+   "a": "si_vola",
+   "relazione": "SOSTIENE",
+   "nota": "frontale + termiche valide = SI VOLA"
+  },
+  {
+   "da": "vento_forte",
+   "a": "cautela",
+   "relazione": "SPINGE_VERSO",
+   "nota": "al limite superiore: cautela dichiarata"
+  },
+  {
+   "da": "raf_spread",
+   "a": "cautela",
+   "relazione": "SPINGE_VERSO",
+   "nota": "aria disordinata anche con media bassa"
+  }
+ ]
+}
