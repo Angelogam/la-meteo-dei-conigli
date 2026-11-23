@@ -55,6 +55,9 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
               }`}
             >
               <div className="w-full h-24 bg-slate-800/60 rounded-md relative overflow-hidden">
+                <span className="absolute inset-x-0 top-0 z-10 text-center text-[9px] font-bold font-mono text-slate-200">
+                  {d.termiche.rateo > 0 ? d.termiche.rateo.toFixed(1).replace(".", ",") : ""}
+                </span>
                 <div
                   className="absolute bottom-0 left-0 right-0 rounded-t-sm transition-all"
                   style={{
@@ -70,6 +73,14 @@ const GraficoTermiche = ({ hourly, oraCorrente }: GraficoTermicheProps) => {
             </button>
           );
         })}
+      </div>
+
+      {/* legenda compatta: colore = significato (revisione critica 23/11, punto 5) */}
+      <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[10px] font-semibold text-slate-400">
+        <span className="flex items-center gap-1"><i className="inline-block size-2 rounded-sm" style={{ background: "#34d399" }} /> forte · ≥ 1,5 m/s</span>
+        <span className="flex items-center gap-1"><i className="inline-block size-2 rounded-sm" style={{ background: "#fbbf24" }} /> discreta · ≥ 0,5</span>
+        <span className="flex items-center gap-1"><i className="inline-block size-2 rounded-sm" style={{ background: "#f87171" }} /> debole</span>
+        <span>barre = ascendenza media (m/s) · tocca una barra per base e top</span>
       </div>
 
       {selectedHour !== null && (

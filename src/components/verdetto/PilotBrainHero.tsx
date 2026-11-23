@@ -41,6 +41,15 @@ const TONO_DOT: Record<Tono, string> = {
   critico: "bg-nogo",
 };
 
+// Italiano per l'utente finale (revisione critica 23/11): niente sigle come
+// "TRN", niente "fonti REALE" — si dice con le parole di un pilota.
+const FONTE_LABEL: Record<string, string> = {
+  REALE: "dato reale",
+  DERIVATO: "stima dal modello",
+  STIMATO: "stima",
+  "DA VERIFICARE": "da verificare sul posto",
+};
+
 const AREA_LABEL: Record<MotivoCardData["area"], string> = {
   vento: "Vento",
   termiche: "Termiche",
@@ -52,11 +61,6 @@ const AREA_LABEL: Record<MotivoCardData["area"], string> = {
 function formatoIndice(indice: number | null): string {
   if (indice === null || Number.isNaN(indice)) return "—";
   return indice.toLocaleString("it-IT", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-}
-
-function etaLabel(etaMinuti: number): string {
-  if (etaMinuti <= 0) return "AGG. ORA";
-  return `AGG. ${etaMinuti} MIN`;
 }
 
 interface PilotBrainHeroProps {
@@ -94,25 +98,26 @@ export default function PilotBrainHero({ verdetto, onChecklist, onBriefing, clas
                 ? "font-semibold text-attesa"
                 : "text-strumento-secondo"
             }
-            title={etaFuoriSoglia ? "Dati oltre i 30 minuti: rivaluta" : undefined}
+            title={etaFuoriSoglia ? "Dati oltre i 30 minuti: rivaluta prima di decollare" : undefined}
           >
-            {etaLabel(verdetto.etaMinuti)} · {verdetto.aggiornatoAlle}
+            Aggiornato alle {verdetto.aggiornatoAlle}
+            {etaFuoriSoglia ? ` · dati di ${verdetto.etaMinuti} min` : ""}
           </span>
-          <span className="rounded-full border border-strumento-bordo px-2 py-0.5 uppercase text-strumento-secondo">
-            fonti {verdetto.fonte}
+          <span className="rounded-full border border-strumento-bordo px-2 py-0.5 text-strumento-secondo">
+            {FONTE_LABEL[verdetto.fonte] ?? verdetto.fonte}
           </span>
         </div>
       </div>
 
-      <div className="p-4 sm:p-5">
+      <div className="p-3 sm:p-4">
         {/* risposta 1 — banda verdetto: il colore È il verdetto */}
         <div
           role="status"
           aria-live="polite"
-          className={`rounded-2xl border-2 ${s.band} p-4 sm:p-5`}
+          className={`rounded-2xl border-2 ${s.band} p-3.5 sm:p-4`}
         >
           <div className="flex items-end justify-between gap-4">
-            <div className={`font-display text-6xl font-bold leading-none sm:text-7xl ${s.value}`}>
+            <div className={`font-display text-5xl font-bold leading-none sm:text-6xl ${s.value}`}>
               {verdetto.esito}
             </div>
             <div className="text-right">
@@ -126,13 +131,13 @@ export default function PilotBrainHero({ verdetto, onChecklist, onBriefing, clas
         </div>
 
         {/* risposte 2, 3, 4 — una riga ciascuna, touch target >= 64 px */}
-        <ul className="mt-3 grid gap-2">
+        <ul className="mt-2.5 grid gap-1.5">
           <li className="flex min-h-16 items-center justify-between gap-3 rounded-2xl border border-strumento-bordo bg-strumento-panel px-4 py-3">
             <div className="min-w-0">
               <div className="text-[11px] font-semibold uppercase tracking-widest text-strumento-secondo">
                 2 · Quando decollo?
               </div>
-              <div className="font-display text-3xl font-bold leading-tight">{verdetto.decollo.slot}</div>
+              <div className="font-display text-2xl font-bold leading-tight sm:text-3xl">{verdetto.decollo.slot}</div>
               <div className="mt-0.5 flex flex-wrap items-center gap-2 text-sm text-strumento-secondo">
                 <span>{verdetto.decollo.fase}</span>
                 {verdetto.decollo.piccoVietato && (
@@ -150,12 +155,21 @@ export default function PilotBrainHero({ verdetto, onChecklist, onBriefing, clas
               <div className="text-[11px] font-semibold uppercase tracking-widest text-strumento-secondo">
                 3 · Quando devo scendere?
               </div>
-              <div className="font-display text-3xl font-bold leading-tight text-attesa">
-                TRN {verdetto.discesa.turnaround}
+              <div className="font-display text-2xl font-bold leading-tight text-attesa sm:text-3xl">
+                {verdetto.discesa.turnaround && verdetto.discesa.turnaround !== "—"
+                  ? `ENTRO LE ${verdetto.discesa.turnaround}`
+                  : "—"}
               </div>
               <div className="mt-0.5 text-sm text-strumento-secondo">
-                Turnaround · ombra in valle {verdetto.discesa.ombra} · grilletti attivi{" "}
-                {verdetto.discesa.grillettiAttivi}
+                Inizia la discesa
+                {verdetto.discesa.ombra && verdetto.discesa.ombra !== "—"
+                  ? ` · ombra in valle alle ${verdetto.discesa.ombra}`
+                  : ""}
+                {verdetto.discesa.grillettiAttivi > 0
+                  ? ` · ${verdetto.discesa.grillettiAttivi} ${
+                      verdetto.discesa.grillettiAttivi === 1 ? "punto di attenzione" : "punti di attenzione"
+                    } per l'atterraggio`
+                  : " · nessun allarme per l'atterraggio"}
               </div>
             </div>
             <ChevronRight aria-hidden className="shrink-0 size-5 text-strumento-secondo" />
@@ -166,7 +180,7 @@ export default function PilotBrainHero({ verdetto, onChecklist, onBriefing, clas
               <div className="text-[11px] font-semibold uppercase tracking-widest text-strumento-secondo">
                 4 · Posso fare cross?
               </div>
-              <div className={`font-display text-3xl font-bold leading-tight ${crossValue}`}>
+              <div className={`font-display text-2xl font-bold leading-tight sm:text-3xl ${crossValue}`}>
                 {verdetto.cross.testo}
               </div>
               <div className="mt-0.5 text-sm text-strumento-secondo">{verdetto.cross.dettaglio}</div>
@@ -225,7 +239,7 @@ export default function PilotBrainHero({ verdetto, onChecklist, onBriefing, clas
                     {AREA_LABEL[m.area]}
                   </span>
                   <span className="ml-auto font-mono text-[10px] uppercase text-strumento-secondo">
-                    {m.idKB ? `${m.idKB} · ` : ""}{m.stato}
+                    {m.idKB ? `${m.idKB} · ` : ""}{FONTE_LABEL[m.stato] ?? m.stato}
                   </span>
                 </div>
                 <p className="mt-1 text-sm font-semibold text-strumento-testo">{m.frase}</p>

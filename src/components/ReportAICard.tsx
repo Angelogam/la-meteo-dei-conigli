@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Download, FileImage, FileText, Sparkles, Wind, CloudSun, ShieldAlert, ArrowRight, MessageCircle, Loader2, Check, CalendarDays } from "lucide-react";
-import { generateForecast, type ForecastAnalysis } from "@/utils/ForecastAnalyzer";
+import { generateForecast, generaReportBreve, type ForecastAnalysis } from "@/utils/ForecastAnalyzer";
 import { generateReportMeteo } from "@/utils/generateReportMeteo";
 import {
   combineLocandinaPages,
@@ -39,12 +39,16 @@ interface ReportAICardProps {
     sunset?: string | Date | null;
     uvIndexMax?: number | null;
   }>;
+  /** Il giorno scelto a livello di pagina: la scheda lo segue — una sola
+      scelta di giorno in tutta la home (revisione critica 23/11, punto 8). */
+  selectedDay?: number;
+  onSelectDay?: (dayIdx: number) => void;
   onGenerate?: (analysis: ForecastAnalysis) => void;
 }
 
 type BusyKind = "make" | "jpg" | "png" | "pdf" | "wa" | null;
 
-export default function ReportAICard({ siteName, elevation, province, lat, lon, current, hourly, rawData, daily = [], onGenerate }: ReportAICardProps) {
+export default function ReportAICard({ siteName, elevation, province, lat, lon, current, hourly, rawData, daily = [], selectedDay, onSelectDay, onGenerate }: ReportAICardProps) {
   const [analysis, setAnalysis] = useState<ForecastAnalysis | null>(null);
   const [generated, setGenerated] = useState(false);
   const [busy, setBusy] = useState<BusyKind>(null);
@@ -87,6 +91,18 @@ export default function ReportAICard({ siteName, elevation, province, lat, lon, 
     [siteName, current, dayHourly, hourly, daily, giorno],
   );
   const active = analysis ?? computed;
+
+  /* Sintesi compatta (VERDETTO / MOTIVO / ATTENZIONE / AZIONE CONSIGLIATA):
+     massimo 4-5 righe, frasi da pilota — revisione critica 23/11, punto 3. */
+  const breve = useMemo(() => generaReportBreve(active), [active]);
+
+  /* Il selettore giorno della scheda segue il giorno scelto in alto nella
+     pagina: una sola scelta, niente stati disaccoppiati (revisione critica 23/11). */
+  useEffect(() => {
+    if (selectedDay != null && selectedDay !== giorno) setGiorno(selectedDay);
+    // sync solo dal parent verso la scheda: il click qui sotto notifica onSelectDay
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDay]);
 
   useEffect(() => {
     setAnalysis(null);
@@ -404,7 +420,7 @@ export default function ReportAICard({ siteName, elevation, province, lat, lon, 
                 type="button"
                 data-testid={`locandina-giorno-${g}`}
                 aria-pressed={sel}
-                onClick={() => setGiorno(g)}
+                onClick={() => { setGiorno(g); onSelectDay?.(g); }}
                 style={{
                   flex: 1,
                   display: "flex",
@@ -481,12 +497,27 @@ export default function ReportAICard({ siteName, elevation, province, lat, lon, 
         </div>
 
         <div style={{ padding: "12px 14px", borderRadius: 12, background: "#ffffff", border: "1px solid rgba(25,48,41,0.14)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700, color: "#193029", marginBottom: 8 }}>
-            <Sparkles size={15} /> REPORT AI
+          <div style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 700, color: "#193029", marginBottom: 10 }}>
+            <Sparkles size={15} /> SINTESI PILOTA
           </div>
-          <p style={{ margin: 0, lineHeight: 1.6, fontSize: 13, color: "#2A332E" }}>
-            {active.report}
-          </p>
+          <div style={{ display: "grid", gap: 8, fontSize: 13, lineHeight: 1.45, color: "#1F2A26" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "132px 1fr", gap: 8 }}>
+              <span style={{ fontSize: 10, fontWeight: 900, letterSpacing: 1.2, color: active.semaforo === "GO" ? "#1D8F5F" : active.semaforo === "ATTENZIONE" ? "#C2620A" : "#B91C1C" }}>VERDETTO</span>
+              <strong>{breve.verdetto}</strong>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "132px 1fr", gap: 8 }}>
+              <span style={{ fontSize: 10, fontWeight: 900, letterSpacing: 1.2, color: "#5C6B63" }}>MOTIVO</span>
+              <span>{breve.motivo}</span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "132px 1fr", gap: 8 }}>
+              <span style={{ fontSize: 10, fontWeight: 900, letterSpacing: 1.2, color: "#C2620A" }}>ATTENZIONE</span>
+              <span>{breve.attenzione}</span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "132px 1fr", gap: 8 }}>
+              <span style={{ fontSize: 10, fontWeight: 900, letterSpacing: 1.2, color: "#1D8F5F" }}>AZIONE CONSIGLIATA</span>
+              <span>{breve.azione}</span>
+            </div>
+          </div>
         </div>
 
         {(previewFront || previewBack) && (

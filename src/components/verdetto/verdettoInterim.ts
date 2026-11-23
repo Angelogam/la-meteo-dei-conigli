@@ -83,7 +83,7 @@ function verdettoDatiInsufficienti(input: InputVerdetto, ora: Date): PilotBrainV
     aggiornatoAlle: input.lastUpdate ? hhmm(input.lastUpdate) : hhmm(ora),
     etaMinuti: input.lastUpdate ? Math.round((ora.getTime() - input.lastUpdate.getTime()) / 60000) : SOGLIA_ETA_MIN + 1,
     fonte: "DA VERIFICARE",
-    decollo: { slot: "DA VALUTARE", fase: "In attesa di dati completi", stato: "DA VERIFICARE" },
+    decollo: { slot: "In valutazione", fase: "In attesa di dati completi", stato: "DA VERIFICARE" },
     discesa: { turnaround: "—", ombra: estraiHHMM(input.sunset) ?? "—", grillettiAttivi: 0, stato: "DA VERIFICARE" },
     cross: { traversabile: null, testo: "ANCORA NO", dettaglio: "In attesa di dati completi", stato: "DA VERIFICARE" },
     motivi: [
@@ -167,7 +167,7 @@ export function calcolaVerdettoInterim(input: InputVerdetto): PilotBrainVerdetto
 
   // Risposta 2 — finestra migliore dal modello già in dashboard
   const { slot, da } = calcolaSlot(hourly, orientation, ora);
-  const slotLabel = slot ?? (esito === "NO-GO" ? "NESSUNA OGGI" : "IN APERTURA · VAL. ORE 13:00");
+  const slotLabel = slot ?? (esito === "NO-GO" ? "Nessuna finestra oggi" : "Valutazione alle 13:00");
   const fase =
     isMontoso && da !== null && da >= 11 && da < 13
       ? "Fase di lavoro della facciata"

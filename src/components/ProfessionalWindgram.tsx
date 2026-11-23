@@ -107,6 +107,15 @@ function getStabilityColor(deltaT: number | null | undefined): string {
   return stopRgb(STABILITY_STOPS[STABILITY_STOPS.length - 1].c);
 }
 
+/* Profilo vento verticale — colore = significato (revisione critica 23/11, punto 6):
+   verde = vento buono, ambra = attenzione, rosso = livello critico. */
+function coloreVento(kmh: number | null | undefined): string {
+  if (kmh == null || !Number.isFinite(kmh)) return "transparent";
+  if (kmh > 25) return "#ef4444";
+  if (kmh >= 15) return "#f59e0b";
+  return "#22c55e";
+}
+
 /* Legenda numerica come Alpium: barra continua + tick di ΔT/100 m */
 const STABILITY_GRADIENT = `linear-gradient(90deg, ${STABILITY_STOPS.map((s) => {
   const pct = (((s.v + 0.3) / 1.5) * 100).toFixed(1);
@@ -637,6 +646,48 @@ export default function ProfessionalWindgram({
 
               <rect x={margin.left} y={margin.top} width={plotW} height={plotH} fill="none" stroke="#8c9bad" strokeWidth="1" />
 
+              {/* PROFILO VENTO VERTICALE (revisione critica 23/11, punto 6): per ogni
+                  ora, una striscia a sinistra della colonna con il vento a ogni
+                  quota — verde fino a 15 km/h, ambra 15-25, rosso oltre 25
+                  (critico, bordo scuro). Il colore del segmento è il peggiore dei
+                  due livelli che lo delimitano: la striscia si legge in 2 secondi. */}
+              <g clipPath="url(#plotClip)">
+                {hourlyData.map((calc, i) => {
+                  const levels = (calc.levelWinds ?? [])
+                    .filter((w) => w.alt != null && w.speed != null && Number.isFinite(w.alt) && Number.isFinite(w.speed))
+                    .map((w) => ({ alt: w.alt as number, speed: w.speed as number }))
+                    .sort((a, b) => a.alt - b.alt);
+                  if (levels.length < 2) return null;
+                  const cellWp = plotW / HOURS.length;
+                  const xStrip = getXFromHourIdx(i) - cellWp / 2 + 3;
+                  const wStrip = 6;
+                  return (
+                    <g key={`vprof-${i}`}>
+                      {levels.slice(0, -1).map((lv, k) => {
+                        const up = levels[k + 1];
+                        const yTop = getYFromAlt(up.alt);
+                        const yBot = getYFromAlt(lv.alt);
+                        if (yBot - yTop < 3) return null;
+                        const kmh = Math.max(lv.speed, up.speed);
+                        return (
+                          <rect
+                            key={`vseg-${i}-${k}`}
+                            x={xStrip}
+                            y={yTop}
+                            width={wStrip}
+                            height={yBot - yTop}
+                            fill={coloreVento(kmh)}
+                            opacity={0.92}
+                            stroke={kmh > 25 ? "#7f1d1d" : "none"}
+                            strokeWidth={kmh > 25 ? 1 : 0}
+                          />
+                        );
+                      })}
+                    </g>
+                  );
+                })}
+              </g>
+
               {/* Livelli di Pressione — curve alle GEOPOTENZIALI reali del modello:
                   la quota di ogni linea cambia con l'ora, come sulle sezioni di Alpium.
                   Niente più quote fisse: 600 hPa non è più "a 4000 m" a caso. */}
@@ -909,6 +960,15 @@ export default function ProfessionalWindgram({
               {STABILITY_TICKS.map((t) => (
                 <span key={t}>{t.toFixed(2)}</span>
               ))}
+            </div>
+          </div>
+          {/* Legenda del profilo vento verticale (revisione critica 23/11, punto 6) */}
+          <div className="mt-2 w-full max-w-3xl mx-auto px-2">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-bold text-slate-700">
+              <span className="text-slate-900 font-extrabold">Profilo vento per quota:</span>
+              <span className="flex items-center gap-1.5"><i className="inline-block size-3 rounded-sm" style={{ background: "#22c55e" }} /> buono fino a 15 km/h</span>
+              <span className="flex items-center gap-1.5"><i className="inline-block size-3 rounded-sm" style={{ background: "#f59e0b" }} /> attenzione 15-25</span>
+              <span className="flex items-center gap-1.5"><i className="inline-block size-3 rounded-sm" style={{ background: "#ef4444" }} /> critico oltre 25</span>
             </div>
           </div>
         </div>

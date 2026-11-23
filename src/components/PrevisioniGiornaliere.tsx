@@ -3,8 +3,7 @@
 import { useRef, useEffect, useState } from "react";
 import type { HourData } from "@/types/meteo";
 import type { MeteoCurrent, MeteoDaily, MeteoHourly } from "@/services/openMeteoService";
-import { ArrowUp, Cloud, CloudRain, Thermometer, Zap, Sun, Wind } from "lucide-react";
-import AeroCard from "./AeroCard";
+import { CloudRain, Sun, Wind } from "lucide-react";
 import MeteoconIcon from "./MeteoconIcon";
 
 interface PrevisioniGiornaliereProps {
@@ -146,23 +145,11 @@ export default function PrevisioniGiornaliere({
   const humidity = current?.humidity ?? null;
   const pressure = current?.surfacePressure ?? null;
   const visibility = current?.visibility ?? null;
-  const cape = current?.cape ?? null;
   const uvIndex = current?.uvIndex ?? null;
 
-  // Thermal rate: calcolato solo se spread è disponibile
-  const thermalRate = spread !== null
-    ? cape !== null
-      ? Math.max(0.1, Math.min(3, spread * 0.15 + (cape > 0 ? cape / 5000 : 0)))
-      : Math.max(0.1, Math.min(3, spread * 0.15))
-    : null;
-  // Cloud base: calcolata solo se spread è disponibile
-  const cloudBase = spread !== null ? site.altitude + Math.round(spread * 125) : null;
-  // Freezing level: usa dato API quando disponibile, altrimenti N/D
-  const zeroCLevel = current?.freezingLevel ?? null;
-  // Top termica: richiede sia cape che thermalRate che cloudBase
-  const topThermal = (cape !== null && thermalRate !== null && cloudBase !== null)
-    ? Math.round(cloudBase + thermalRate * 2000)
-    : null;
+  /* Nota (revisione critica 23/11, punto 8): le sei "AeroCard" di questa sezione
+     sono state tolte dalla home — ripetevano rateo, base, top e zero termico che
+     vivono nelle schede TERMICHE e nel windgram. La home resta una sintesi. */
 
   const daily = enrichedDaily[selectedDay] ?? enrichedDaily[0];
   const selectedDayHours = hoursForForecastDay(forecastHours, selectedDay);
@@ -318,6 +305,23 @@ export default function PrevisioniGiornaliere({
           <span className="flight-section-marker" aria-hidden="true" />
           <div><h2 className="flight-section-heading">Previsioni per i prossimi tre giorni</h2><p className="flight-section-subtitle">Scegli un giorno per aggiornare il briefing e le analisi.</p></div>
         </div>
+        {/* Selettore giorni grande e sempre visibile (revisione critica 23/11, punto 4):
+            resta appiccicato in alto mentre scorri, pulsanti molto grandi,
+            selezione inequivocabile. */}
+        <div className="day-picker-big" role="group" aria-label="Scegli il giorno del briefing">
+          {tabs.map((tabName, idx) => (
+            <button
+              key={idx}
+              type="button"
+              aria-pressed={selectedDay === idx}
+              onClick={() => onSelectDay(idx)}
+              className={"day-picker-big-btn" + (selectedDay === idx ? " is-selected" : "")}
+            >
+              <span className="day-picker-big-label">{tabName.toUpperCase()}</span>
+              <span className="day-picker-big-date">{dateLabels[idx] ?? ""}</span>
+            </button>
+          ))}
+        </div>
         <div className="forecast-days-grid grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
           {tabs.map((tabName, idx) => {
             const d = enrichedDaily[idx];
@@ -394,78 +398,6 @@ export default function PrevisioniGiornaliere({
           <a href="https://open-meteo.com/" target="_blank" rel="noopener noreferrer">Open-Meteo</a>
           <a href={`https://www.windy.com/it/-Webcam/webcams?${site.lat},${site.lon},11`} target="_blank" rel="noopener noreferrer">Webcam su Windy</a>
           <span className="forecast-source-note">Previsioni modellistiche, non misure in loco.</span>
-        </div>
-      </div>
-
-      {/* ═══════════════════════════════════════════════════════════ */}
-      {/* AEROCARDS — 6 parametri di volo                           */}
-      {/* ═══════════════════════════════════════════════════════════ */}
-      <div className="flight-section aerology-section">
-        <div className="flight-section-heading-row">
-          <span className="flight-section-marker is-green" aria-hidden="true" />
-          <div><h2 className="flight-section-heading">Parametri aerologici</h2><p className="flight-section-subtitle">Indicatori stimati: leggili insieme alle condizioni reali sul posto.</p></div>
-        </div>
-        <div className="flight-parameter-grid grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2">
-          <AeroCard
-            icon={<ArrowUp className="w-5 h-5" />}
-            title="Rateo Termico"
-            value={thermalRate !== null ? `${thermalRate.toFixed(1)} m/s` : "N/D"}
-            subtitle={thermalRate !== null ? (thermalRate >= 1.5 ? "Termiche forti" : thermalRate >= 0.8 ? "Termiche discrete" : "Termiche deboli") : "Dato non disponibile"}
-            accent="purple"
-            barValue={thermalRate ?? undefined}
-            barMax={3}
-            detail={<div className="text-[10px] text-slate-400">Ascendenza media</div>}
-          />
-          <AeroCard
-            icon={<Cloud className="w-5 h-5" />}
-            title="Base Cumuli"
-            value={cloudBase !== null ? `${cloudBase.toLocaleString()} m` : "N/D"}
-            subtitle={cloudBase !== null ? `+${cloudBase - site.altitude}m sopra campo` : "Dato non disponibile"}
-            accent="sky"
-            barValue={cloudBase ?? undefined}
-            barMax={4000}
-            detail={<div className="text-[10px] text-slate-400">Quota inizio nubi</div>}
-          />
-          <AeroCard
-            icon={<Thermometer className="w-5 h-5" />}
-            title="Zero Termico"
-            value={zeroCLevel !== null ? `${zeroCLevel.toLocaleString()} m` : "N/D"}
-            subtitle={zeroCLevel !== null ? `+${zeroCLevel - site.altitude}m dal suolo` : "Dato non disponibile"}
-            accent="violet"
-            barValue={zeroCLevel ?? 0}
-            barMax={5000}
-            detail={<div className="text-[10px] text-slate-400">Confine neve/pioggia</div>}
-          />
-          <AeroCard
-            icon={<Zap className="w-5 h-5" />}
-            title="CAPE"
-            value={cape !== null ? `${Math.round(cape)} J/kg` : "N/D"}
-            subtitle={cape !== null ? (cape > 1000 ? "Instabilità alta" : cape > 300 ? "Moderata" : "Stabile") : "Dato non disponibile"}
-            accent="amber"
-            barValue={cape !== null ? cape : undefined}
-            barMax={2000}
-            detail={<div className="text-[10px] text-slate-400">Energia termica</div>}
-          />
-          <AeroCard
-            icon={<ArrowUp className="w-5 h-5" />}
-            title="Top Termica"
-            value={topThermal !== null ? `${topThermal.toLocaleString()} m` : "N/D"}
-            subtitle={topThermal !== null ? `+${topThermal - site.altitude}m dal suolo` : "Dato non disponibile"}
-            accent="emerald"
-            barValue={topThermal !== null ? topThermal : undefined}
-            barMax={6000}
-            detail={<div className="text-[10px] text-slate-400">Massima quota</div>}
-          />
-          <AeroCard
-            icon={<Sun className="w-5 h-5" />}
-            title="UV Indice"
-            value={uvIndex !== null ? `${Math.round(uvIndex)}` : "N/D"}
-            subtitle={uvIndex !== null ? (uvIndex > 8 ? "Estremo" : uvIndex > 6 ? "Molto alto" : uvIndex > 3 ? "Alto" : "Basso") : "Dato non disponibile"}
-            accent="rose"
-            barValue={uvIndex !== null ? uvIndex : undefined}
-            barMax={11}
-            detail={<div className="text-[10px] text-slate-400">Protezione solare</div>}
-          />
         </div>
       </div>
 

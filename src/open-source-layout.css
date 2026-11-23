@@ -2543,3 +2543,78 @@ body {
   .flight-launch-sidebar .dxc-rows { gap: .32rem; padding: 0 .55rem .6rem; }
   .flight-launch-sidebar .dxc-card { padding: .5rem .55rem; }
 }
+
+/* ─── Revisione critica 23/11 ───────────────────────────────────────────
+   Punto 4: selettore giorni grande, sempre visibile (sticky). Punto 10:
+   card giorno meno alte e più dense. ─────────────────────────────────── */
+.day-picker-big {
+  position: sticky;
+  top: 8px;
+  z-index: 40;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .5rem;
+  margin-bottom: .9rem;
+  padding: .35rem;
+  border-radius: 18px;
+  background: rgba(10, 20, 28, .92);
+  border: 1px solid rgba(164, 196, 209, .28);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 10px 26px rgba(0,0,0,.35);
+}
+.day-picker-big-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .1rem;
+  min-height: 58px;
+  border-radius: 13px;
+  border: 1px solid rgba(164, 196, 209, .25);
+  background: linear-gradient(160deg, #16293a 0%, #10212d 100%);
+  color: #cfe3ec;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform .15s ease, border-color .15s ease, background .15s ease, box-shadow .15s ease;
+}
+.day-picker-big-btn:hover {
+  border-color: rgba(159, 211, 227, .55);
+  transform: translateY(-1px);
+}
+.day-picker-big-btn:focus-visible {
+  outline: 3px solid rgba(114, 215, 224, .8);
+  outline-offset: 2px;
+}
+.day-picker-big-label {
+  font-size: clamp(1rem, 1.4vw + .6rem, 1.35rem);
+  letter-spacing: .06em;
+}
+.day-picker-big-date {
+  font-size: .72rem;
+  font-weight: 600;
+  color: #8fb3c2;
+  text-transform: capitalize;
+}
+.day-picker-big-btn.is-selected {
+  background: linear-gradient(135deg, #14532d 0%, #16a34a 78%, #22c55e 100%);
+  border-color: rgba(74, 222, 128, .85);
+  color: #fff;
+  box-shadow: 0 8px 22px rgba(34, 197, 94, .35), inset 0 1px 0 rgba(255,255,255,.25);
+}
+.day-picker-big-btn.is-selected .day-picker-big-date { color: rgba(255,255,255,.85); }
+
+/* card giorno: meno altezza, più densità */
+.forecast-day-card-premium {
+  min-height: 340px;
+  gap: .55rem;
+  padding: .85rem !important;
+  border-radius: 18px !important;
+}
+.forecast-day-card-premium .forecast-day-metrics { gap: .4rem; }
+
+@media (max-width: 640px) {
+  .day-picker-big { top: 6px; gap: .35rem; }
+  .day-picker-big-btn { min-height: 54px; }
+  .day-picker-big-label { font-size: 1rem; }
+  .forecast-day-card-premium { min-height: 296px; }
+}

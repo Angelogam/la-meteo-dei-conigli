@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { Suspense, lazy, useMemo } from "react";
 import { Activity, FileDown, FileText, Home, Mountain, Thermometer, Wind } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -12,17 +12,19 @@ import { calcolaVerdettoInterim } from "@/components/verdetto/verdettoInterim";
 import UpdateTimer from "@/components/UpdateTimer";
 import SponsorStrip from "@/components/SponsorStrip";
 import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
-import WebcamNearby from "@/components/WebcamNearby";
 import TabNav from "@/components/TabNav";
-import ReportGiornata from "@/components/ReportGiornata";
-import VentiInterpolatiTab from "@/components/VentiInterpolatiTab";
-import TermicheTab from "@/components/TermicheTab";
-import AnalisiMeteo from "@/components/AnalisiMeteo";
-import ReportVolo from "@/components/ReportVolo";
-import CartinaMeteo from "@/components/CartinaMeteo";
-import Cartina3D from "@/components/cartina3d/Cartina3D";
-import DiagnosticaPanel from "@/components/DiagnosticaPanel";
-import ReportAICard from "@/components/ReportAICard";
+/* Revisione critica 23/11 (punto 9): le sezioni sotto la piega si caricano
+   al bisogno — lazy loading + rendering on demand. */
+const WebcamNearby = lazy(() => import("@/components/WebcamNearby"));
+const CartinaMeteo = lazy(() => import("@/components/CartinaMeteo"));
+const Cartina3D = lazy(() => import("@/components/cartina3d/Cartina3D"));
+const VentiInterpolatiTab = lazy(() => import("@/components/VentiInterpolatiTab"));
+const TermicheTab = lazy(() => import("@/components/TermicheTab"));
+const AnalisiMeteo = lazy(() => import("@/components/AnalisiMeteo"));
+const ReportVolo = lazy(() => import("@/components/ReportVolo"));
+const ReportAICard = lazy(() => import("@/components/ReportAICard"));
+const ServiziDecollo = lazy(() => import("@/components/ServiziDecollo"));
+const DiagnosticaPanel = lazy(() => import("@/components/DiagnosticaPanel"));
 import type { HourData } from "@/types/meteo";
 import type { MeteoCurrent } from "@/services/openMeteoService";
 import { generateForecast } from "@/utils/ForecastAnalyzer";
@@ -34,6 +36,15 @@ import { useThreeSourceWeather } from "@/hooks/useThreeSourceWeather";
 function formatClock(value?: string): string | undefined {
   if (!value) return undefined;
   return value.includes("T") ? value.slice(11, 16) : value.slice(0, 5);
+}
+
+/* Placeholder leggero mentre la sezione lazy si carica */
+function SezioneInCarico() {
+  return (
+    <div className="rounded-2xl border border-slate-700/50 bg-slate-800/30 px-4 py-7 text-center text-sm text-slate-400">
+      Carico la sezione…
+    </div>
+  );
 }
 
 export default function Index() {
@@ -194,15 +205,8 @@ export default function Index() {
 
         <div className="flight-page-column">
           <main className="app-main flight-page flex-1 w-full min-w-0 max-w-none mx-auto px-3 sm:px-4 xl:px-6 py-4 space-y-4">
-            {/* LIVELLO 1 — LA DECISIONE: primo blocco della dashboard (le 4 risposte nel primo viewport) */}
-            {verdetto && (
-              <PilotBrainHero
-                verdetto={verdetto}
-                onChecklist={() => document.getElementById("flight-site-list")?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                onBriefing={() => document.getElementById("details-section")?.scrollIntoView({ behavior: "smooth", block: "start" })}
-              />
-            )}
-
+            {/* 1 · TITOLO E SINTESI RAPIDA — l'hero fotografica resta l'ingresso
+                (revisione critica 23/11 punto 1: il Pilot Brain NON è la schermata principale) */}
             <HeroFotografico
               siteName={site?.site_name}
               elevation={site?.elevation_m}
@@ -215,7 +219,7 @@ export default function Index() {
 
             <SponsorStrip />
 
-
+            {/* 2 · SINTESI RAPIDA DEL DECOLLO ATTIVO */}
             {site && (
               <section id="overview" className="overview-section">
                 <SiteHeader
@@ -240,6 +244,38 @@ export default function Index() {
               </section>
             )}
 
+            {/* 3 · PILOT BRAIN BRIEFING — il verdetto, sotto la sintesi */}
+            {verdetto && (
+              <PilotBrainHero
+                verdetto={verdetto}
+                onChecklist={() => document.getElementById("flight-site-list")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                onBriefing={() => document.getElementById("details-section")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+              />
+            )}
+
+            {/* 4 · MAPPA INTERATTIVA DEI DECOLLI */}
+            {site && (
+              <div className="flight-subsection-heading" aria-label="Mappa interattiva dei decolli">
+                <div>
+                  <span>MAPPA INTERATTIVA</span>
+                  <h2>Decolli d'Italia</h2>
+                </div>
+                <small>Tocca un decollo per aggiornare tutta la pagina</small>
+              </div>
+            )}
+            {site && (
+              <Suspense fallback={<SezioneInCarico />}>
+                <CartinaMeteo
+                  decolli={mergedDecolli}
+                  selectedId={selectedId}
+                  syncDay={selectedDay}
+                  syncHour={selectedHour}
+                  onSelect={(item) => { setSelectedId(item.id); setSelectedHour(new Date().getHours()); }}
+                />
+              </Suspense>
+            )}
+
+            {/* 5 · PREVISIONI DEI PROSSIMI GIORNI */}
             {site && (
               <section className="forecast-section flight-forecast-module min-w-0">
                 <PrevisioniGiornaliere
@@ -255,20 +291,29 @@ export default function Index() {
               </section>
             )}
 
+            {/* 6 · WEBCAM E SERVIZI ATTORNO AL DECOLLO */}
             {site && (
-              <WebcamNearby
-                siteId={site.id}
-                siteName={site.site_name}
-                latitude={site.lat}
-                longitude={site.lon}
-              />
+              <Suspense fallback={<SezioneInCarico />}>
+                <WebcamNearby
+                  siteId={site.id}
+                  siteName={site.site_name}
+                  latitude={site.lat}
+                  longitude={site.lon}
+                />
+              </Suspense>
+            )}
+            {site && (
+              <Suspense fallback={null}>
+                <ServiziDecollo nome={site.site_name} lat={site.lat} lon={site.lon} />
+              </Suspense>
             )}
 
+            {/* 7 · LIVELLO 3 — STRUMENTI AVANZATI */}
             {site && (
               <div className="flight-subsection-heading" aria-label="Strumenti avanzati">
                 <div>
                   <span>LIVELLO 3 · STRUMENTI AVANZATI</span>
-                  <h2>Cartine, vento in quota, report AI</h2>
+                  <h2>Terrain 3D, vento in quota, report e analisi</h2>
                 </div>
                 <small>Approfondimento dopo la decisione</small>
               </div>
@@ -277,20 +322,16 @@ export default function Index() {
             {site && (
               <div className="flight-top-dashboard-grid">
                 <div className="flight-primary-column">
-                  <CartinaMeteo
-                    decolli={mergedDecolli}
-                    selectedId={selectedId}
-                    syncDay={selectedDay}
-                    syncHour={selectedHour}
-                    onSelect={(item) => { setSelectedId(item.id); setSelectedHour(new Date().getHours()); }}
-                  />
-                  <Cartina3D
-                    decolli={mergedDecolli}
-                    selectedId={selectedId}
-                    hour={selectedHour}
-                    day={selectedDay}
-                    onSelect={(item) => { setSelectedId(item.id); setSelectedHour(new Date().getHours()); }}
-                  />
+                  <Suspense fallback={<SezioneInCarico />}>
+                    <Cartina3D
+                      decolli={mergedDecolli}
+                      selectedId={selectedId}
+                      hour={selectedHour}
+                      day={selectedDay}
+                      onSelect={(item) => { setSelectedId(item.id); setSelectedHour(new Date().getHours()); }}
+                    />
+                  </Suspense>
+                  <Suspense fallback={<SezioneInCarico />}>
               <section id="windgram-section" className="launch-windgram-top min-w-0" aria-label="Windgram aerologico del decollo selezionato">
                 <VentiInterpolatiTab
                   lat={site.lat}
@@ -304,6 +345,7 @@ export default function Index() {
                   rawData={rawApiResponse}
                 />
               </section>
+                  </Suspense>
             <div className="dashboard-layout flight-panels-grid">
               <div className="flight-desk-main dashboard-content min-w-0">
                 {site && (
@@ -315,7 +357,7 @@ export default function Index() {
 
                     <section className="flight-tab-content min-w-0" aria-live="polite">
                       {activeTab === "meteo" && site && (
-                        <>
+                        <Suspense fallback={<SezioneInCarico />}>
                           <ReportVolo
                             inline
                             open
@@ -328,22 +370,10 @@ export default function Index() {
                             onSelect={(d) => { setSelectedId(d.id); }}
                             decolli={mergedDecolli}
                           />
-                          <details className="rv-export-details">
-                            <summary>Report esportabile · le 2 pagine A4 (PDF · PNG · WhatsApp)</summary>
-                            <ReportGiornata
-                              siteName={site.site_name}
-                              elevation={site.elevation_m}
-                              lat={site.lat}
-                              lon={site.lon}
-                              current={currentData}
-                              hourly={hourlyData}
-                              rawData={rawApiResponse}
-                              daily={enrichedDaily}
-                              selectedDay={selectedDay}
-                              onSelectDay={setSelectedDay}
-                            />
-                          </details>
-                        </>
+                        </Suspense>
+                        /* Il doppio report esportabile è stato tolto da questa
+                           scheda (revisione critica 23/11, punto 8): l'unico
+                           prodotto esportabile sta in Analisi (ReportAICard). */
                       )}
                       {activeTab === "venti" && (
                         <div className="launch-windgram-shortcut" role="status">
@@ -358,7 +388,9 @@ export default function Index() {
                         </div>
                       )}
                       {activeTab === "termiche" && (
-                        <TermicheTab currentData={currentData} dayData={filteredDayData} site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.site_name }} selectedDay={selectedDay} />
+                        <Suspense fallback={<SezioneInCarico />}>
+                          <TermicheTab currentData={currentData} dayData={filteredDayData} site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.site_name }} selectedDay={selectedDay} />
+                        </Suspense>
                       )}
                       {activeTab === "analisi" && (
                         <div className="analisi-tab-layout">
@@ -377,20 +409,26 @@ export default function Index() {
                               </button>
                             </div>
                             {site && (
-                              <ReportAICard
-                                siteName={site.site_name}
-                                elevation={site.elevation_m}
-                                lat={site.lat}
-                                lon={site.lon}
-                                current={currentData}
-                                hourly={hourlyData}
-                                rawData={rawApiResponse}
-                                daily={enrichedDaily}
-                              />
+                              <Suspense fallback={<SezioneInCarico />}>
+                                <ReportAICard
+                                  siteName={site.site_name}
+                                  elevation={site.elevation_m}
+                                  lat={site.lat}
+                                  lon={site.lon}
+                                  current={currentData}
+                                  hourly={hourlyData}
+                                  rawData={rawApiResponse}
+                                  daily={enrichedDaily}
+                                  selectedDay={selectedDay}
+                                  onSelectDay={setSelectedDay}
+                                />
+                              </Suspense>
                             )}
                           </aside>
                           <div className="analisi-main">
-                            <AnalisiMeteo currentData={currentData} dayData={filteredDayData} site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.site_name, exposure: site.orientation }} cape={currentData?.cape} liftedIndex={currentData?.liftedIndex} cin={currentData?.cin} rawData={rawApiResponse} />
+                            <Suspense fallback={<SezioneInCarico />}>
+                              <AnalisiMeteo currentData={currentData} dayData={filteredDayData} site={{ alt: site.elevation_m, lat: site.lat, lon: site.lon, name: site.site_name, exposure: site.orientation }} cape={currentData?.cape} liftedIndex={currentData?.liftedIndex} cin={currentData?.cin} rawData={rawApiResponse} />
+                            </Suspense>
                           </div>
                         </div>
                       )}
@@ -435,7 +473,9 @@ export default function Index() {
           <Footer />
         </div>
       </div>
-      <DiagnosticaPanel />
+      <Suspense fallback={null}>
+        <DiagnosticaPanel />
+      </Suspense>
     </div>
   );
 }

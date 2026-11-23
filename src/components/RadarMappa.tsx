@@ -39,6 +39,9 @@ export default function RadarMappa({ lat, lon, nome, quota }: { lat: number; lon
   const centerRef = useRef({ x: lonToWorld(lon, 9), y: latToWorld(lat, 9), z: 9 });
   const dragRef = useRef<{ x: number; y: number } | null>(null);
   const [stato, setStato] = useState<"load" | "ok" | "err">("load");
+  /* una volta accertato che la carta non si può disegnare a questo livello di
+     zoom si resta in "err": la card mostra solo il velo opaco (mai tile rotte) */
+  const mappaFermataRef = useRef(false);
   const [playing, setPlaying] = useState(true);
   const [, setTick] = useState(0);
   const redrawRef = useRef<() => void>(() => {});
@@ -63,14 +66,29 @@ export default function RadarMappa({ lat, lon, nome, quota }: { lat: number; lon
         if (cx) {
           cx.drawImage(im, 0, 0);
           const d = cx.getImageData(0, 0, cv.width, cv.height).data;
-          let gray = 0, white = 0, n = 0;
+          let gray = 0, white = 0, light = 0, n = 0, opachi = 0, sumL = 0, sumL2 = 0;
           for (let i = 0; i < d.length; i += 16) {
             n++;
             const r = d[i], g = d[i + 1], b = d[i + 2], a2 = d[i + 3];
-            if (a2 > 45 && r > 60 && r < 210 && Math.abs(r - g) < 28 && Math.abs(g - b) < 40 && Math.abs(r - b) < 40) gray++;
-            if (a2 > 45 && r > 225 && g > 225 && b > 225) white++;
+            if (a2 <= 45) continue; // trasparente: pixel non significativo
+            opachi++;
+            const l = 0.299 * r + 0.587 * g + 0.114 * b;
+            sumL += l; sumL2 += l * l;
+            if (r > 60 && r < 210 && Math.abs(r - g) < 28 && Math.abs(g - b) < 40 && Math.abs(r - b) < 40) gray++;
+            if (r > 225 && g > 225 && b > 225) white++;
+            /* zona morta della vecchia euristica: i pannelli di errore di Esri
+               ("Zoom Level Not Supported") hanno fondo grigio CHIARO (~#e0e0e0)
+               che scappava sia alla soglia grigio (<210) sia a quella bianco
+               (>225). Fascia 185-245 con croma basso = pannello di errore. */
+            if (r > 185 && r < 245 && Math.abs(r - g) < 22 && Math.abs(g - b) < 22 && Math.abs(r - b) < 22) light++;
           }
-          const isClean = !(white / n > 0.02 || (gray / n > 0.3 && white / n > 0.008));
+          const mediaL = opachi ? sumL / opachi : 0;
+          const stdL = opachi ? Math.sqrt(Math.max(0, sumL2 / opachi - mediaL * mediaL)) : 0;
+          /* tile piatta e chiara = sfondo uniforme con poco testo: le tile vere
+             di mappa hanno varianza alta, l'oceano scuro resta fuori perché
+             mediaL è basso. Le tile radar (quasi trasparenti) non ci entrano. */
+          const piatto = opachi / n > 0.9 && stdL < 14 && mediaL > 150;
+          const isClean = !(white / n > 0.02 || light / n > 0.5 || (gray / n > 0.3 && white / n > 0.008) || piatto);
           (im as HTMLImageElement & { clean?: boolean }).clean = isClean;
           if (!isClean) {
             console.log("[radar] tile di errore scartata:", src.slice(0, 80));
@@ -109,6 +127,10 @@ export default function RadarMappa({ lat, lon, nome, quota }: { lat: number; lon
     const x0 = Math.floor(left / TILE), x1 = Math.floor((left + w) / TILE);
     const y0 = Math.floor(top / TILE), y1 = Math.floor((top + h) / TILE);
     let pending = 0;
+    /* se TUTTE le tile della basemap sono pannelli di errore (es. zoom non
+       supportato dal provider) la carta è inutilizzabile: si nasconde il
+       componente — regola: mai un componente rotto visibile al pilota */
+    let bmTotale = 0, bmRotte = 0, bmInAttesa = 0;
 
     // basemap scura (via proxy stessa origine: in ambiente sandbox i proxy di
     // rete possono iniettare pagine di blocco nelle risposte tile esterne —
@@ -130,8 +152,24 @@ export default function RadarMappa({ lat, lon, nome, quota }: { lat: number; lon
           const fb = imgCache.current.get(urlB);
           if (fb && fb.complete && fb.naturalWidth > 0 && (fb as HTMLImageElement & { clean?: boolean }).clean !== false) drawn = fb;
         }
-        if (drawn && (drawn as HTMLImageElement & { clean?: boolean }).clean !== false) ctx.drawImage(drawn, dx, dy, TILE, TILE); else pending++;
+        const slotOk = !!drawn && (drawn as HTMLImageElement & { clean?: boolean }).clean !== false;
+        bmTotale++;
+        if (slotOk) {
+          ctx.drawImage(drawn as HTMLImageElement, dx, dy, TILE, TILE);
+        } else {
+          pending++;
+          const imH = im as HTMLImageElement & { clean?: boolean };
+          if (im && im.complete && im.naturalWidth > 0 && imH.clean === false) bmRotte++;
+          else bmInAttesa++;
+        }
       }
+    }
+    if (
+      bmTotale > 0 && bmRotte === bmTotale && bmInAttesa === 0 &&
+      framesRef.current.length > 0 && !mappaFermataRef.current
+    ) {
+      mappaFermataRef.current = true;
+      setStato("err");
     }
     // radar del frame corrente
     const frames = framesRef.current;
@@ -246,7 +284,9 @@ framesRef.current = [...past, ...now];
 
   const zoomBy = (d: number) => {
     const c = centerRef.current;
-    const nz = Math.max(6, Math.min(11, c.z + d));
+    /* cap a 10: è il livello massimo che il radar RainViewer supporta — oltre
+       le tile vengono rifiutate e la carta si spezzerebbe */
+    const nz = Math.max(6, Math.min(10, c.z + d));
     if (nz === c.z) return;
     c.x = (c.x / (TILE * 2 ** c.z)) * (TILE * 2 ** nz);
     c.y = (c.y / (TILE * 2 ** c.z)) * (TILE * 2 ** nz);
@@ -284,7 +324,11 @@ framesRef.current = [...past, ...now];
           <button type="button" onClick={() => zoomBy(-1)} title="Zoom indietro" aria-label="Zoom indietro">−</button>
         </div>
         {stato === "load" && <div className="radar-veil">Radar in caricamento…</div>}
-        {stato === "err" && <div className="radar-veil">Radar momentaneamente non disponibile — riprova più tardi</div>}
+        {stato === "err" && (
+          <div className="radar-veil" style={{ background: "rgba(10, 16, 24, 0.96)" }}>
+            Radar momentaneamente non disponibile — riprova più tardi
+          </div>
+        )}
         {stato === "ok" && (
           <>
             <button

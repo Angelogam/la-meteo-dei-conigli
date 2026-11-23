@@ -5,8 +5,8 @@ import { HourData } from "@/types/meteo";
 import type { MeteoCurrent } from "@/services/openMeteoService";
 import { calcolaTermiche } from "@/utils/termiche";
 import { Wind, Cloud, Droplets, TrendingUp, AlertTriangle, MapPin, Calendar } from "lucide-react";
-import TermicheDayFlight, { type TDayHour } from "@/components/TermicheDayFlight";
-import "./termiche-day.css";
+import type { TDayHour } from "@/components/TermicheDayFlight";
+import GraficoTermiche from "@/components/GraficoTermiche";
 
 interface TermicheTabProps {
   currentData: HourData | MeteoCurrent | null;
@@ -66,6 +66,26 @@ export default function TermicheTab({ dayData, site, selectedDay = 0 }: Termiche
     return vals.length > 0 ? (vals.reduce((a, b) => a + b, 0) / vals.length) : 0;
   }, [fasce]);
 
+  /* Dati per il grafico leggibile (revisione critica 23/11, punto 5): barre per
+     ora con rateo scritto sopra, colori coerenti con la tabella — verde forte,
+     ambra discreta, rossa debole. Il grafico animato di prima comunicava poco. */
+  const graficoOre = useMemo(
+    () =>
+      fasce.map((o) => ({
+        hour: o.hour,
+        termiche: {
+          rateo: o.rateo,
+          forza: o.rateo,
+          base: o.base,
+          top: o.top,
+          label: o.rateo >= 1.5 ? "Forte" : o.rateo >= 0.5 ? "Discreta" : "Debole",
+          colore: o.rateo >= 1.5 ? "#34d399" : o.rateo >= 0.5 ? "#fbbf24" : "#f87171",
+          gradienteReale: 0,
+        },
+      })),
+    [fasce],
+  );
+
   if (fasce.length === 0) {
     return (
       <div className="bg-slate-800/30 border border-slate-700/50 rounded-2xl p-8 text-center">
@@ -113,19 +133,13 @@ export default function TermicheTab({ dayData, site, selectedDay = 0 }: Termiche
         </div>
       </div>
 
-      <TermicheDayFlight
-        key={selectedDay}
-        hours={fasce}
-        siteAlt={site.alt}
-        siteName={site.name}
-        selectedDay={selectedDay}
-      />
+      <GraficoTermiche hourly={graficoOre} oraCorrente={new Date().getHours()} />
 
       <div className="bg-slate-800/30 border border-slate-700/50 rounded-2xl overflow-hidden">
         <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-700/30">
           <TrendingUp className="w-4 h-4 text-orange-400" />
           <span className="text-sm font-bold text-slate-200">Dettaglio orario termiche</span>
-          <span className="text-[11px] text-slate-500 ml-auto hidden sm:inline">i valori del grafico animato, riga per riga</span>
+          <span className="text-[11px] text-slate-500 ml-auto hidden sm:inline">i valori del grafico, riga per riga</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-[13px]">

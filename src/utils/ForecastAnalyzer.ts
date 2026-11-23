@@ -33,6 +33,43 @@ export interface ForecastAnalysis {
   semaforo: "GO" | "ATTENZIONE" | "NO GO";
 }
 
+export interface ReportBreve {
+  verdetto: string;
+  motivo: string;
+  attenzione: string;
+  azione: string;
+}
+
+/** Sintesi in 4 righe per l'utente finale (revisione critica 23/11, punto 3):
+ *  VERDETTO / MOTIVO / ATTENZIONE / AZIONE CONSIGLIATA — frasi di pilota,
+ *  niente periodoni da rapporto automatico. */
+export function generaReportBreve(a: ForecastAnalysis): ReportBreve {
+  const p = a.probabilities;
+  const verdetto = `${a.semaforo} · indice ${a.verdictScore}/10 · volabile ${p.flyable}%`;
+
+  let motivo: string;
+  if (p.storm >= 40) motivo = "Rischio temporali: la convettiva chiude il pomeriggio.";
+  else if (p.rain >= 55) motivo = "Pioggia e nuvolosità spessa ammortizzano le termiche.";
+  else if (p.wind < 50) motivo = "Vento irregolare o troppo forte sulla montagna.";
+  else if (p.thermal >= 60 && p.wind >= 60) motivo = "Termiche buone e vento gestibile sul decollo.";
+  else motivo = "Condizioni medie: nessun fattore decisivo, tutto si decide al decollo.";
+
+  let attenzione: string;
+  if (p.storm >= 40) attenzione = "Guarda il radar prima di lanciarti e stacca presto.";
+  else if (p.wind < 65) attenzione = "Raffiche in aumento col picco termico: verifica a terra.";
+  else if (p.rain >= 45) attenzione = "Rovesci possibili: tieni d'occhio il radar pioggia.";
+  else attenzione = "Nessun allarme: resta attento alle raffiche al rientro.";
+
+  const azione =
+    a.semaforo === "GO"
+      ? "Decolla nella finestra migliore e rientra prima del picco di vento."
+      : a.semaforo === "ATTENZIONE"
+        ? "Valuta ora per ora al decollo e tieni pronto il rientro."
+        : "Resta a terra: meglio rimandare che rischiarla.";
+
+  return { verdetto, motivo, attenzione, azione };
+}
+
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
 
 const avg = (items: Array<number | null | undefined>) => {
