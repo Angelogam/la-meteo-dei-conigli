@@ -167,7 +167,7 @@ export function calcolaVerdettoInterim(input: InputVerdetto): PilotBrainVerdetto
 
   // Risposta 2 — finestra migliore dal modello già in dashboard
   const { slot, da } = calcolaSlot(hourly, orientation, ora);
-  const slotLabel = slot ?? (esito === "NO-GO" ? "Nessuna finestra oggi" : "Valutazione alle 13:00");
+  const slotLabel = slot ?? (esito === "NO-GO" ? "FINESTRA NON FAVOREVOLE" : "Valutazione alle 13:00");
   const fase =
     isMontoso && da !== null && da >= 11 && da < 13
       ? "Fase di lavoro della facciata"
@@ -185,10 +185,10 @@ export function calcolaVerdettoInterim(input: InputVerdetto): PilotBrainVerdetto
     current.weatherCode !== null && CODICI_TEMPORALE.includes(current.weatherCode),
   ].filter(Boolean).length;
 
-  // Risposta 4 — margine base nubi vs quota decollo (ABT-09)
+  // Risposta 4 — margine base nubi vs quota decollo (valicabili, soglia KB 300 m)
   const margineBase = Math.round(vol.baseNubiM - elevation);
   const crossTraversabile = margineBase >= MARGINE_BASE_MIN_M ? true : margineBase > 0 ? null : false;
-  const crossTesto = crossTraversabile === true ? "SÌ, CON MARGINE" : crossTraversabile === null ? "ANCORA NO" : "NO";
+  const crossTesto = crossTraversabile === true ? "SÌ, CON MARGINE" : crossTraversabile === null ? "ANCORA NO · BASE BASSA" : "VALICHI CHIUSE";
 
   // Su questa linea l'utility restituisce GIÀ la scala pilota (10 = volo ideale,
   // 1 = pericoloso — "SCALA PILOTA unica in tutta l'app"): nessuna inversione.
@@ -202,7 +202,6 @@ export function calcolaVerdettoInterim(input: InputVerdetto): PilotBrainVerdetto
       frase: `Vento ${vento.label.toLowerCase()} ${Math.round(current.windSpeed)} km/h da ${cardinale(current.windDir)}.`,
       dati: `${Math.round(current.windSpeed)} km/h · raffiche ${Math.round(raffiche)} · scarto ${Math.round(scarto)} km/h`,
       stato: "REALE",
-      ...(isMontoso ? { idKB: "GO-01" } : {}),
     },
     {
       area: "termiche",
@@ -210,7 +209,6 @@ export function calcolaVerdettoInterim(input: InputVerdetto): PilotBrainVerdetto
       frase: `Rateo termico stimato ${vol.rateoTermicoMs.toFixed(1).replace(".", ",")} m/s.`,
       dati: `base nubi ${Math.round(vol.baseNubiM)} m · cape ${current.cape !== null ? Math.round(current.cape) + " J/kg" : "—"} · ${vol.label.toLowerCase()}`,
       stato: "DERIVATO",
-      ...(isMontoso ? { idKB: "BRF-02" } : {}),
     },
     {
       area: "sicurezza",
@@ -228,7 +226,6 @@ export function calcolaVerdettoInterim(input: InputVerdetto): PilotBrainVerdetto
             : "Nessun veto: raffiche e scarto entro i limiti KB.",
       dati: `raffiche ${Math.round(raffiche)} km/h · scarto ${Math.round(scarto)} km/h · limite ${SOGLIA_RAFFICHE_KMH}`,
       stato: "REALE",
-      ...(isMontoso && raffiche > SOGLIA_RAFFICHE_KMH ? { idKB: "SEG-01" } : {}),
     },
     {
       area: "finestra",
@@ -236,7 +233,6 @@ export function calcolaVerdettoInterim(input: InputVerdetto): PilotBrainVerdetto
       frase: slot ? `Slot migliore: ${slot}.` : "Nessuna corsia di 2 ore favorevoli oggi.",
       dati: `finestra derivata dal modello Open-Meteo${isMontoso ? " · picco vietato 13:30–15:00" : ""}`,
       stato: "DERIVATO",
-      ...(isMontoso ? { idKB: "BRF-01" } : {}),
     },
     {
       area: "atterraggio",
@@ -247,7 +243,6 @@ export function calcolaVerdettoInterim(input: InputVerdetto): PilotBrainVerdetto
           : "Nessun grilletto di atterraggio attivo.",
       dati: `ombra in valle ${ombra} · turnaround ${turnaround}`,
       stato: "DERIVATO",
-      ...(isMontoso ? { idKB: "LAND-07" } : {}),
     },
   ];
 
@@ -268,21 +263,18 @@ export function calcolaVerdettoInterim(input: InputVerdetto): PilotBrainVerdetto
       fase,
       ...(isMontoso ? { piccoVietato: "13:30–15:00" as const } : {}),
       stato: "DERIVATO",
-      ...(isMontoso ? { idKB: "BRF-01" } : {}),
     },
     discesa: {
       turnaround,
       ombra,
       grillettiAttivi: grilletti,
       stato: "DERIVATO",
-      ...(isMontoso ? { idKB: "LAND-07" } : {}),
     },
     cross: {
       traversabile: crossTraversabile,
       testo: crossTesto,
       dettaglio: `Base nubi ${Math.round(vol.baseNubiM)} m vs decollo ${elevation} m · margine ${margineBase} m`,
       stato: "DERIVATO",
-      ...(isMontoso ? { idKB: "ABT-09" } : {}),
     },
     motivi,
   };

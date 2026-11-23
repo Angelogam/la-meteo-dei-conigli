@@ -31,6 +31,7 @@ const QUOTA = parseInt(arg("quota", "1350"), 10);
 const SLUG = arg("slug", "locandina-premium-" + SITO.toLowerCase().replace(/\s+/g, "-"));
 const GIORNO = parseInt(arg("giorno", "0"), 10);
 const DATA_FILE = arg("data", null);
+const FOTO = path.join(ROOT, "public", arg("foto", "hero-parapendio-alpi-v2.jpg"));
 
 const clamp = (v, min, max) => Math.min(Math.max(v, min), max);
 const altDaPressione = (hpa) => Math.round(44330 * (1 - Math.pow(hpa / 1013.25, 0.1903)));
@@ -145,7 +146,17 @@ function calcola(h, quota) {
       riga: `Vento medio ${Math.round(ventoAvg)} km/h${dirMedia != null ? " da " + dirLettera(dirMedia) : ""} · raffiche fino a ${Math.round(gustMax)} km/h · ${cloudAvg > 60 ? "cielo coperto" : cloudAvg > 30 ? "nuvolosità media" : "cielo aperto"}`,
       volabile,
     },
-    finestra: { slot, fase: slot ? "Finestra consigliata dalle previsioni del giorno" : "Nessuna corsia di 2 ore senza veti", vietato: piccoVietato },
+    finestra: {
+      slot,
+      fase: slot ? "Finestra consigliata dalle previsioni del giorno" : "Nessuna corsia di 2 ore senza veti",
+      vietato: piccoVietato,
+      /* timeline oraria: un segmento per ora (verde/ambra/rosso) */
+      ore: ore.map((o) => {
+        const ok = libera(o);
+        return { ora: o.ora, stato: !ok ? "no" : (o.rateo ?? 0) >= 0.8 && (o.raffiche ?? 0) <= 20 ? "go" : "attenzione" };
+      }),
+    },
+    foto: fs.existsSync(FOTO) ? FOTO : null,
     termiche: { ore: conDato.map((o) => ({ ora: o.ora, rateo: o.rateo ?? 0 })), base: baseNubi, picco: piccoRateo },
     cross, avvisi,
     windgram: livelli.length >= 2 ? { ora: best.ora, livelli } : null,
@@ -163,9 +174,20 @@ function esempio() {
     sito: SITO, quota: QUOTA, dataLabel: new Date().toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long", year: "numeric" }).replace(/^./, (c) => c.toUpperCase()),
     demo: true, aggiornato: new Date().toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }),
     voto: { score: 6, esito: "ATTESA", esitoLabel: "DA VALUTARE", riga: "Vento medio 9 km/h da NO · raffiche fino a 21 km/h · nuvolosità media", volabile: 66 },
-    finestra: { slot: "10:00 – 12:00", fase: "Esempio di finestra consigliata dal modello", vietato: "13:00–15:00" },
+    finestra: {
+      slot: "10:00 – 12:00",
+      fase: "Esempio di finestra consigliata dal modello",
+      vietato: "13:00–15:00",
+      ore: [
+        { ora: 8, stato: "attenzione" }, { ora: 9, stato: "attenzione" },
+        { ora: 10, stato: "go" }, { ora: 11, stato: "go" }, { ora: 12, stato: "go" },
+        { ora: 13, stato: "no" }, { ora: 14, stato: "no" }, { ora: 15, stato: "no" },
+        { ora: 16, stato: "attenzione" }, { ora: 17, stato: "attenzione" }, { ora: 18, stato: "no" },
+      ],
+    },
     termiche: { ore, base: 2350, picco: 1.7 },
     cross: { traversabile: true, testo: "SÌ, CON MARGINE", dettaglio: "Base cumuli 2.350 m vs decollo 1.350 m · margine 1.000 m sopra le selle" },
+    foto: fs.existsSync(FOTO) ? FOTO : null,
     avvisi: [
       { tono: "attenzione", testo: "Raffiche fino a 21 km/h col picco termico: verifica a terra prima di lanciarti." },
       { tono: "attenzione", testo: "Picco pomeridiano con impulsi: rientra entro le 13:00." },

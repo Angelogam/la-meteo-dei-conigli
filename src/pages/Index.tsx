@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, lazy, useMemo } from "react";
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import { Activity, FileDown, FileText, Home, Mountain, Thermometer, Wind } from "lucide-react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -43,6 +43,40 @@ function SezioneInCarico() {
   return (
     <div className="rounded-2xl border border-slate-700/50 bg-slate-800/30 px-4 py-7 text-center text-sm text-slate-400">
       Carico la sezione…
+    </div>
+  );
+}
+
+/* Rendering on demand REALE (revisione critica 23/11, FAIL#7): la sezione pesante
+   si monta solo quando si avvicina al viewport — è lì che parte il download del
+   suo chunk (React.lazy). Niente più «tutte montate all'avvio». */
+function SezioneAlBisogno({ children, altezzaMinima = 340 }: { children: React.ReactNode; altezzaMinima?: number }) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const [vicino, setVicino] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || vicino) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setVicino(true);
+          io.disconnect();
+        }
+      },
+      { rootMargin: "600px 0px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [vicino]);
+  return (
+    <div ref={ref} style={vicino ? undefined : { minHeight: altezzaMinima }}>
+      {vicino ? (
+        children
+      ) : (
+        <div className="flex items-center justify-center rounded-2xl border border-slate-700/40 bg-slate-800/20 px-4 text-sm text-slate-500" style={{ minHeight: altezzaMinima }}>
+          Sezione pronta: si carica quando scorri fino a qui
+        </div>
+      )}
     </div>
   );
 }
@@ -152,9 +186,17 @@ export default function Index() {
       zero: zero != null ? Math.round(zero) : null,
       volabile: forecast.probabilities.flyable,
       gust: gustMax != null ? `${Math.round(gustMax)} km/h` : undefined,
-      verdict: forecast.semaforo,
+      /* UN SOLO GIUDIZIO (revisione critica 23/11 FAIL#5/#9): l'hero mostra il
+         verdetto del Pilot Brain — non una seconda valutazione parallela. */
+      verdict: verdetto
+        ? verdetto.esito === "GO"
+          ? "GO"
+          : verdetto.esito === "ATTESA"
+            ? "ATTENZIONE"
+            : "NO GO"
+        : forecast.semaforo,
     };
-  }, [site, currentData, hourlyData, enrichedDaily, selectedDay]);
+  }, [site, currentData, hourlyData, enrichedDaily, selectedDay, verdetto]);
 
 
   return (
@@ -244,7 +286,25 @@ export default function Index() {
               </section>
             )}
 
-            {/* 3 · PILOT BRAIN BRIEFING — il verdetto, sotto la sintesi */}
+            {/* 2b · BARRA TEMPORALE — i giorni dominano la navigazione
+                (revisione critica 23/11 FAIL#4): resta appiccicata in alto per
+                tutta la pagina, sempre visibile mentre scorri. */}
+            <div className="day-picker-big day-picker-page" role="group" aria-label="Scegli il giorno del briefing">
+              {(["OGGI", "DOMANI", "DOPODOMANI", "+3", "+4"] as const).map((tabName, idx) => (
+                <button
+                  key={tabName}
+                  type="button"
+                  aria-pressed={selectedDay === idx}
+                  onClick={() => setSelectedDay(idx)}
+                  className={"day-picker-big-btn" + (selectedDay === idx ? " is-selected" : "")}
+                >
+                  <span className="day-picker-big-label">{tabName}</span>
+                  <span className="day-picker-big-date">{dateLabels[idx] ?? ""}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* 3 · PILOT BRAIN BRIEFING — le risposte operative, sotto la decisione */}
             {verdetto && (
               <PilotBrainHero
                 verdetto={verdetto}
@@ -265,13 +325,15 @@ export default function Index() {
             )}
             {site && (
               <Suspense fallback={<SezioneInCarico />}>
-                <CartinaMeteo
-                  decolli={mergedDecolli}
-                  selectedId={selectedId}
-                  syncDay={selectedDay}
-                  syncHour={selectedHour}
-                  onSelect={(item) => { setSelectedId(item.id); setSelectedHour(new Date().getHours()); }}
-                />
+                <SezioneAlBisogno>
+                  <CartinaMeteo
+                    decolli={mergedDecolli}
+                    selectedId={selectedId}
+                    syncDay={selectedDay}
+                    syncHour={selectedHour}
+                    onSelect={(item) => { setSelectedId(item.id); setSelectedHour(new Date().getHours()); }}
+                  />
+                </SezioneAlBisogno>
               </Suspense>
             )}
 
@@ -294,17 +356,21 @@ export default function Index() {
             {/* 6 · WEBCAM E SERVIZI ATTORNO AL DECOLLO */}
             {site && (
               <Suspense fallback={<SezioneInCarico />}>
-                <WebcamNearby
-                  siteId={site.id}
-                  siteName={site.site_name}
-                  latitude={site.lat}
-                  longitude={site.lon}
-                />
+                <SezioneAlBisogno>
+                  <WebcamNearby
+                    siteId={site.id}
+                    siteName={site.site_name}
+                    latitude={site.lat}
+                    longitude={site.lon}
+                  />
+                </SezioneAlBisogno>
               </Suspense>
             )}
             {site && (
               <Suspense fallback={null}>
-                <ServiziDecollo nome={site.site_name} lat={site.lat} lon={site.lon} />
+                <SezioneAlBisogno altezzaMinima={120}>
+                  <ServiziDecollo nome={site.site_name} lat={site.lat} lon={site.lon} />
+                </SezioneAlBisogno>
               </Suspense>
             )}
 
@@ -323,15 +389,18 @@ export default function Index() {
               <div className="flight-top-dashboard-grid">
                 <div className="flight-primary-column">
                   <Suspense fallback={<SezioneInCarico />}>
-                    <Cartina3D
-                      decolli={mergedDecolli}
-                      selectedId={selectedId}
-                      hour={selectedHour}
-                      day={selectedDay}
-                      onSelect={(item) => { setSelectedId(item.id); setSelectedHour(new Date().getHours()); }}
-                    />
+                    <SezioneAlBisogno>
+                      <Cartina3D
+                        decolli={mergedDecolli}
+                        selectedId={selectedId}
+                        hour={selectedHour}
+                        day={selectedDay}
+                        onSelect={(item) => { setSelectedId(item.id); setSelectedHour(new Date().getHours()); }}
+                      />
+                    </SezioneAlBisogno>
                   </Suspense>
                   <Suspense fallback={<SezioneInCarico />}>
+              <SezioneAlBisogno>
               <section id="windgram-section" className="launch-windgram-top min-w-0" aria-label="Windgram aerologico del decollo selezionato">
                 <VentiInterpolatiTab
                   lat={site.lat}
@@ -345,6 +414,7 @@ export default function Index() {
                   rawData={rawApiResponse}
                 />
               </section>
+              </SezioneAlBisogno>
                   </Suspense>
             <div className="dashboard-layout flight-panels-grid">
               <div className="flight-desk-main dashboard-content min-w-0">

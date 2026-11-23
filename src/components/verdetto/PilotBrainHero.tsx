@@ -110,24 +110,20 @@ export default function PilotBrainHero({ verdetto, onChecklist, onBriefing, clas
       </div>
 
       <div className="p-3 sm:p-4">
-        {/* risposta 1 — banda verdetto: il colore È il verdetto */}
+        {/* riga verdetto compatta: la DECISIONE grande è nell'hero sopra (un solo
+            giudizio in pagina — revisione critica 23/11 FAIL#5/#9); qui solo il
+            contesto che serve per leggere le risposte operative */}
         <div
           role="status"
           aria-live="polite"
-          className={`rounded-2xl border-2 ${s.band} p-3.5 sm:p-4`}
+          className={`flex items-center gap-3 rounded-xl border ${s.band} px-3.5 py-2.5`}
         >
-          <div className="flex items-end justify-between gap-4">
-            <div className={`font-display text-5xl font-bold leading-none sm:text-6xl ${s.value}`}>
-              {verdetto.esito}
-            </div>
-            <div className="text-right">
-              <div className="text-[11px] uppercase tracking-widest text-strumento-secondo">Indice</div>
-              <div className="font-display text-3xl font-bold leading-none sm:text-4xl">
-                {formatoIndice(verdetto.indice)}
-              </div>
-            </div>
+          <span aria-hidden className={`size-3 shrink-0 rounded-full ${s.dot}`} />
+          <div className="min-w-0 flex-1 text-sm font-semibold sm:text-base">
+            <span className={s.value}>{verdetto.esito}</span>
+            <span className="text-strumento-secondo"> · indice {formatoIndice(verdetto.indice)}/10</span>
+            <span className="hidden sm:inline text-strumento-testo/85"> — {verdetto.unaRiga}</span>
           </div>
-          <p className="mt-2 text-sm text-strumento-testo/90 sm:text-base">{verdetto.unaRiga}</p>
         </div>
 
         {/* risposte 2, 3, 4 — una riga ciascuna, touch target >= 64 px */}
@@ -239,7 +235,7 @@ export default function PilotBrainHero({ verdetto, onChecklist, onBriefing, clas
                     {AREA_LABEL[m.area]}
                   </span>
                   <span className="ml-auto font-mono text-[10px] uppercase text-strumento-secondo">
-                    {m.idKB ? `${m.idKB} · ` : ""}{FONTE_LABEL[m.stato] ?? m.stato}
+                    {FONTE_LABEL[m.stato] ?? m.stato}
                   </span>
                 </div>
                 <p className="mt-1 text-sm font-semibold text-strumento-testo">{m.frase}</p>

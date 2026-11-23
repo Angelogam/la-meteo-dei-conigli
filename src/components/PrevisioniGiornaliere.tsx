@@ -131,7 +131,7 @@ export default function PrevisioniGiornaliere({
   selectedDay,
   onSelectDay,
 }: PrevisioniGiornaliereProps) {
-  const tabs = ["Oggi", "Domani", "Dopodomani"];
+  const tabs = ["Oggi", "Domani", "Dopodomani", "+3", "+4"];
 
   // HourData e MeteoCurrent espongono campi parzialmente diversi: li leggiamo tutti come opzionali.
   const current = currentData as (Partial<HourData> & Partial<MeteoCurrent>) | null;
@@ -303,25 +303,10 @@ export default function PrevisioniGiornaliere({
       <div className="flight-section forecast-days-section order-1">
         <div className="flight-section-heading-row">
           <span className="flight-section-marker" aria-hidden="true" />
-          <div><h2 className="flight-section-heading">Previsioni per i prossimi tre giorni</h2><p className="flight-section-subtitle">Scegli un giorno per aggiornare il briefing e le analisi.</p></div>
+          <div><h2 className="flight-section-heading">Previsioni per i prossimi cinque giorni</h2><p className="flight-section-subtitle">Scegli un giorno nella barra in alto per aggiornare briefing e analisi.</p></div>
         </div>
-        {/* Selettore giorni grande e sempre visibile (revisione critica 23/11, punto 4):
-            resta appiccicato in alto mentre scorri, pulsanti molto grandi,
-            selezione inequivocabile. */}
-        <div className="day-picker-big" role="group" aria-label="Scegli il giorno del briefing">
-          {tabs.map((tabName, idx) => (
-            <button
-              key={idx}
-              type="button"
-              aria-pressed={selectedDay === idx}
-              onClick={() => onSelectDay(idx)}
-              className={"day-picker-big-btn" + (selectedDay === idx ? " is-selected" : "")}
-            >
-              <span className="day-picker-big-label">{tabName.toUpperCase()}</span>
-              <span className="day-picker-big-date">{dateLabels[idx] ?? ""}</span>
-            </button>
-          ))}
-        </div>
+        {/* La barra dei giorni vive ora in cima alla pagina (Index.tsx) e resta
+            sticky su tutto lo scroll — revisione critica 23/11 FAIL#4. */}
         <div className="forecast-days-grid grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
           {tabs.map((tabName, idx) => {
             const d = enrichedDaily[idx];

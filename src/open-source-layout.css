@@ -2618,3 +2618,13 @@ body {
   .day-picker-big-label { font-size: 1rem; }
   .forecast-day-card-premium { min-height: 296px; }
 }
+
+/* FAIL#4: la barra temporale di pagina ha 5 pulsanti su una riga sola */
+.day-picker-page {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+}
+@media (max-width: 640px) {
+  .day-picker-page { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; }
+  .day-picker-page .day-picker-big-btn { min-height: 52px; }
+  .day-picker-page .day-picker-big-label { font-size: .95rem; }
+}

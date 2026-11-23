@@ -880,7 +880,13 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect, syncDay, s
     pane.appendChild(canvas);
     canvasRef.current = canvas;
 
-    /* Basi cartografiche gratuite senza API key (CARTO ora marca i tile "API KEY REQUIRED"). */
+    /* Basi cartografiche gratuite senza API key (CARTO ora marca i tile "API KEY REQUIRED").
+       TILE_TRASPARENTE: le tile di errore dei provider (es. il pannello grigio
+       «Zoom Level Not Supported» di Esri quando la zona/zoom eccede i LOD del
+       servizio) vengono sostituite da un pixel trasparente — mai testo tecnico
+       a video (revisione critica 23/11, FAIL#3). */
+    const TILE_TRASPARENTE =
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==";
     const bases: Record<BaseId, { layers: { url: string; attr: string; sub?: string[]; max: number; className?: string }[] }> = {
       scuro: {
         layers: [
@@ -925,10 +931,18 @@ export default function CartinaMeteo({ decolli, selectedId, onSelect, syncDay, s
         attribution: primary.attr,
         subdomains: primary.sub ?? "abc",
         maxZoom: primary.max,
+        errorTileUrl: TILE_TRASPARENTE,
         className: primary.className,
       });
       baseOverlayRef.current[id as BaseId] = overlay
-        ? L.tileLayer(overlay.url, { maxZoom: overlay.max, className: overlay.className })
+        ? L.tileLayer(overlay.url, {
+            maxZoom: overlay.max,
+            /* l'hillshade Esri in molte zone cessa i LOD prima del nominale:
+               oltre il livello nativo Leaflet ingrandisce l'ultima tile valida */
+            maxNativeZoom: Math.min(overlay.max, 13),
+            errorTileUrl: TILE_TRASPARENTE,
+            className: overlay.className,
+          })
         : null;
     }
 

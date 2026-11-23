@@ -622,7 +622,7 @@ export async function getAllMeteoDecolliDiretto(): Promise<Map<string, MeteoDeco
     url.searchParams.set("hourly", BATCH_HOURLY);
     url.searchParams.set("daily", BATCH_DAILY);
     url.searchParams.set("timezone", "Europe/Rome");
-    url.searchParams.set("forecast_days", "3");
+    url.searchParams.set("forecast_days", "5");
     return fetch(url.toString(), { headers: { accept: "application/json" } });
   }));
   for (const r of responses) {

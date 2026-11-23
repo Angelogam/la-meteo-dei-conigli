@@ -539,6 +539,35 @@ export default function ProfessionalWindgram({
     );
   }
 
+  /* LETTURA IN 3 SECONDI (revisione critica 23/11 FAIL#6): le tre cose che il
+     pilota deve capire senza leggere la griglia — quota utile (fino a dove le
+     termiche portano), quota critica (da dove il vento supera 25 km/h) e shear
+     tra suolo e 1.500 m. Calcolate dal profilo già presente, nessun nuovo dato. */
+  const lettura = useMemo(() => {
+    let critica: number | null = null;
+    let utile: number | null = null;
+    let shearMax = 0;
+    for (const h of hourlyData) {
+      const lv = (h.levelWinds ?? [])
+        .filter((w) => w.alt != null && w.speed != null && Number.isFinite(w.alt) && Number.isFinite(w.speed))
+        .map((w) => ({ alt: w.alt as number, speed: w.speed as number }));
+      for (const w of lv) if (w.speed > 25 && (critica === null || w.alt < critica)) critica = w.alt;
+      if (h.thermalTop != null && Number.isFinite(h.thermalTop) && (h.thermalAvg ?? 0) >= 0.5) {
+        if (utile === null || (h.thermalTop as number) > utile) utile = h.thermalTop as number;
+      }
+      const suolo = lv.length ? lv[0] : null;
+      const quota1500 = lv.find((w) => Math.abs(w.alt - 1500) < 300) ?? null;
+      if (suolo && quota1500) shearMax = Math.max(shearMax, Math.abs(quota1500.speed - suolo.speed));
+    }
+    const shear =
+      shearMax <= 10
+        ? { t: "debole", c: "border-emerald-300 bg-emerald-100 text-emerald-800" }
+        : shearMax <= 20
+          ? { t: "moderato", c: "border-amber-300 bg-amber-100 text-amber-800" }
+          : { t: "forte", c: "border-rose-300 bg-rose-100 text-rose-800" };
+    return { critica, utile, shear, shearMax };
+  }, [hourlyData]);
+
   return (
     <div className="alpium-windgram space-y-4 font-sans select-none">
       {warning && (
@@ -572,6 +601,20 @@ export default function ProfessionalWindgram({
               Previsione del modello
             </span>
           </div>
+        </div>
+
+        {/* Lettura in 3 secondi — quota utile / quota critica / shear (FAIL#6) */}
+        <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs font-bold text-slate-700">
+          <span className="rounded-lg border border-slate-300 bg-white px-2 py-1">
+            Quota utile <b className="text-emerald-700">{lettura.utile != null ? `${lettura.utile.toLocaleString("it-IT")} m` : "—"}</b>
+          </span>
+          <span className="rounded-lg border border-slate-300 bg-white px-2 py-1">
+            Quota critica <b className="text-rose-700">{lettura.critica != null ? `${lettura.critica.toLocaleString("it-IT")} m` : "mai oltre 25 km/h"}</b>
+            <span className="ml-1 font-semibold text-slate-500">(vento &gt; 25 km/h)</span>
+          </span>
+          <span className={`rounded-lg border px-2 py-1 ${lettura.shear.c}`}>
+            Shear 0→1.500 m: <b>{lettura.shear.t}</b> <span className="font-mono text-[10px]">{Math.round(lettura.shearMax)} km/h</span>
+          </span>
         </div>
 
         {/* Grafico Aerologico SVG + Canvas */}
@@ -659,8 +702,8 @@ export default function ProfessionalWindgram({
                     .sort((a, b) => a.alt - b.alt);
                   if (levels.length < 2) return null;
                   const cellWp = plotW / HOURS.length;
-                  const xStrip = getXFromHourIdx(i) - cellWp / 2 + 3;
-                  const wStrip = 6;
+                  const xStrip = getXFromHourIdx(i) - cellWp / 2 + 2;
+                  const wStrip = 12;
                   return (
                     <g key={`vprof-${i}`}>
                       {levels.slice(0, -1).map((lv, k) => {

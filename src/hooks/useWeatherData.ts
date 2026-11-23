@@ -262,7 +262,7 @@ export function useWeatherData() {
 
   const dateLabels = useMemo(() => {
     const labels: string[] = [];
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 5; i++) {
       const d = new Date();
       d.setDate(d.getDate() + i);
       const giorni = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];

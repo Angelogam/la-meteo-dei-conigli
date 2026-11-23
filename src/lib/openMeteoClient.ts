@@ -199,7 +199,7 @@ export async function fetchFull(
   hourlyParams: string,
   dailyParams: string,
   currentParams: string,
-  forecastDays: number = 3
+  forecastDays: number = 5
 ): Promise<OpenMeteoRawResponse> {
   const url = buildUrl({
     latitude: lat,

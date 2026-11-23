@@ -39,9 +39,12 @@ export default function RadarMappa({ lat, lon, nome, quota }: { lat: number; lon
   const centerRef = useRef({ x: lonToWorld(lon, 9), y: latToWorld(lat, 9), z: 9 });
   const dragRef = useRef<{ x: number; y: number } | null>(null);
   const [stato, setStato] = useState<"load" | "ok" | "err">("load");
-  /* una volta accertato che la carta non si può disegnare a questo livello di
-     zoom si resta in "err": la card mostra solo il velo opaco (mai tile rotte) */
+  /* una volta accertato che la carta non si può disegnare si resta in "err":
+     il componente SI NASCONDE DEL TUTTO (revisione critica 23/11, FAIL#3 —
+     regola del proprietario: if (radarBroken) hideRadarCard()) */
   const mappaFermataRef = useRef(false);
+  /* diventa true al primo slot di basemap disegnato correttamente */
+  const basemapOkRef = useRef(false);
   const [playing, setPlaying] = useState(true);
   const [, setTick] = useState(0);
   const redrawRef = useRef<() => void>(() => {});
@@ -156,6 +159,7 @@ export default function RadarMappa({ lat, lon, nome, quota }: { lat: number; lon
         bmTotale++;
         if (slotOk) {
           ctx.drawImage(drawn as HTMLImageElement, dx, dy, TILE, TILE);
+          basemapOkRef.current = true;
         } else {
           pending++;
           const imH = im as HTMLImageElement & { clean?: boolean };
@@ -254,6 +258,19 @@ framesRef.current = [...past, ...now];
     return () => { alive = false; };
   }, []);
 
+  /* Rete di sicurezza: se dopo 9 s non è mai arrivata una tile di basemap
+     pulita (caricamenti bloccati, provider che risponde solo con pannelli di
+     errore) il radar si toglie dalla pagina — mai un componente rotto visibile. */
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      if (!basemapOkRef.current && framesRef.current.length > 0 && !mappaFermataRef.current) {
+        mappaFermataRef.current = true;
+        setStato("err");
+      }
+    }, 9000);
+    return () => window.clearTimeout(t);
+  }, [stato]);
+
   // animazione frame
   useEffect(() => {
     if (!playing || stato !== "ok") return;
@@ -299,6 +316,11 @@ framesRef.current = [...past, ...now];
   const isForecast = nPastRef.current > 0 && idxRef.current >= nPastRef.current;
   const minutesLabel = cur ? new Date(cur.time * 1000).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" }) : "";
 
+  /* Regola del proprietario (FAIL#3): if (radarBroken) { hideRadarCard(); }
+     — se la carta/radar non si può renderizzare il componente esce di scena
+     del tutto, senza velo né testo tecnico. */
+  if (stato === "err") return null;
+
   return (
     <div className="radar-box" data-testid="radar-temporali">
       {/* striscia superiore: titolo + legenda intensità come barra gradiente */}
@@ -324,11 +346,6 @@ framesRef.current = [...past, ...now];
           <button type="button" onClick={() => zoomBy(-1)} title="Zoom indietro" aria-label="Zoom indietro">−</button>
         </div>
         {stato === "load" && <div className="radar-veil">Radar in caricamento…</div>}
-        {stato === "err" && (
-          <div className="radar-veil" style={{ background: "rgba(10, 16, 24, 0.96)" }}>
-            Radar momentaneamente non disponibile — riprova più tardi
-          </div>
-        )}
         {stato === "ok" && (
           <>
             <button

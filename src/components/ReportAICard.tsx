@@ -408,8 +408,8 @@ export default function ReportAICard({ siteName, elevation, province, lat, lon, 
 
         {/* --- pulsanti del giorno: la locandina può parlare di oggi, domani o dopodomani --- */}
         <div style={{ display: "flex", gap: 6 }}>
-          {([0, 1, 2] as const).map((g) => {
-            const label = g === 0 ? "OGGI" : g === 1 ? "DOMANI" : "DOPODOMANI";
+          {([0, 1, 2, 3, 4] as const).map((g) => {
+            const label = g === 0 ? "OGGI" : g === 1 ? "DOMANI" : g === 2 ? "DOPODOMANI" : `+${g}`;
             const dt = new Date();
             dt.setDate(dt.getDate() + g);
             const sub = dt.toLocaleDateString("it-IT", { weekday: "short", day: "numeric" });
