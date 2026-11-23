@@ -7,6 +7,8 @@ import { Footer } from "@/components/Footer";
 import DecolliCard from "@/components/DecolliCard";
 import SiteHeader from "@/components/SiteHeader";
 import HeroFotografico from "@/components/HeroFotografico";
+import PilotBrainHero from "@/components/verdetto/PilotBrainHero";
+import { calcolaVerdettoInterim } from "@/components/verdetto/verdettoInterim";
 import UpdateTimer from "@/components/UpdateTimer";
 import SponsorStrip from "@/components/SponsorStrip";
 import PrevisioniGiornaliere from "@/components/PrevisioniGiornaliere";
@@ -81,6 +83,25 @@ export default function Index() {
     const mesi = ["Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno", "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"];
     return `${giorni[d.getDay()]} ${d.getDate()} ${mesi[d.getMonth()]}`;
   }, [selectedDay]);
+
+  // LIVELLO 1 — LA DECISIONE: verdetto dall'unico dato già in dashboard (R3).
+  // Interim: usa le utility decisionali esistenti (calcolaIndiceVolabilità +
+  // validaVentoPerDecollo); la fase F2 (Decision Engine + banca dati in
+  // docs/cervello-pilota/) sostituirà questo adattatore senza toccare il
+  // componente PilotBrainHero.
+  const verdetto = useMemo(
+    () =>
+      calcolaVerdettoInterim({
+        siteName: site?.site_name,
+        elevation: site?.elevation_m,
+        orientation: site?.orientation,
+        current: currentData,
+        hourly: filteredDayData,
+        sunset: enrichedDaily[selectedDay]?.sunset,
+        lastUpdate,
+      }),
+    [site, currentData, filteredDayData, enrichedDaily, selectedDay, lastUpdate],
+  );
 
   /* Dati REALI per il bollettino nella hero (stesse fonti della pagina:
      Open-Meteo corrente + orari del giorno scelto + verdetto di generateForecast). */
@@ -173,6 +194,15 @@ export default function Index() {
 
         <div className="flight-page-column">
           <main className="app-main flight-page flex-1 w-full min-w-0 max-w-none mx-auto px-3 sm:px-4 xl:px-6 py-4 space-y-4">
+            {/* LIVELLO 1 — LA DECISIONE: primo blocco della dashboard (le 4 risposte nel primo viewport) */}
+            {verdetto && (
+              <PilotBrainHero
+                verdetto={verdetto}
+                onChecklist={() => document.getElementById("flight-site-list")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                onBriefing={() => document.getElementById("details-section")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+              />
+            )}
+
             <HeroFotografico
               siteName={site?.site_name}
               elevation={site?.elevation_m}
@@ -232,6 +262,16 @@ export default function Index() {
                 latitude={site.lat}
                 longitude={site.lon}
               />
+            )}
+
+            {site && (
+              <div className="flight-subsection-heading" aria-label="Strumenti avanzati">
+                <div>
+                  <span>LIVELLO 3 · STRUMENTI AVANZATI</span>
+                  <h2>Cartine, vento in quota, report AI</h2>
+                </div>
+                <small>Approfondimento dopo la decisione</small>
+              </div>
             )}
 
             {site && (

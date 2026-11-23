@@ -20,6 +20,19 @@ export default {
     },
     extend: {
       colors: {
+        // palette semantica Pilot Brain (F5): colore = significato, mai decorazione.
+        // GO #22c55e, ATTESA #f59e0b, NO-GO #ef4444 — vedi docs/pilot-brain-ui/PILOT-BRAIN-UX-UI.pdf
+        go: "#22c55e",
+        attesa: "#f59e0b",
+        nogo: "#ef4444",
+        dati: "#7dd3fc",
+        strumento: {
+          bg: "#0B0F14",
+          panel: "#141C26",
+          bordo: "#263342",
+          testo: "#E8EEF5",
+          secondo: "#8FA1B3",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -68,6 +81,12 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+      },
+      fontFamily: {
+        // trio tipografico già caricato in index.html (Barlow Condensed / Manrope / JetBrains Mono)
+        display: ["'Barlow Condensed'", "'Manrope'", "system-ui", "sans-serif"],
+        body: ["'Manrope'", "system-ui", "sans-serif"],
+        mono: ["'JetBrains Mono'", "ui-monospace", "SFMono-Regular", "monospace"],
       },
       keyframes: {
         "accordion-down": {

@@ -8,6 +8,7 @@ import DecolloDettaglio from "@/pages/DecolloDettaglio";
 import ApiTestRunner from "./pages/ApiTestRunner";
 import ApiTest from "@/pages/ApiTest";
 import ApiMegaList from "@/pages/ApiMegaList";
+import PilotBrainPreview from "@/components/verdetto/PilotBrainPreview";
 
 const App = () => {
   return (
@@ -19,6 +20,10 @@ const App = () => {
         <Route path="/test-api" element={<ApiTestRunner />} />
         <Route path="/api-test" element={<ApiTest />} />
         <Route path="/catalogo-api" element={<ApiMegaList />} />
+        {/* F5: preview del Pilot Brain SOLO in dev (le fixture non vanno in produzione) */}
+        {import.meta.env.DEV && (
+          <Route path="/dev/pilot-brain" element={<PilotBrainPreview />} />
+        )}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
