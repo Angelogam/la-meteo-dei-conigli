@@ -10,7 +10,7 @@
  * - isola scura webcam; crediti fonti.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Suspense, lazy } from "react";
 import { Link, useParams } from "react-router-dom";
 import {
   ArrowLeft, Camera, Check, Copy, ExternalLink, Flag, Layers, Mail, MapPin,
@@ -21,6 +21,7 @@ import { DECOLLO_MAP, DECOLLI, AREA_LABELS, type Decollo } from "@/data/decolli"
 import { clubContattoForName, clubPiuVicino } from "@/data/club-contatti";
 import CartinaDecollo from "@/components/CartinaDecollo";
 import WebcamNearby from "@/components/WebcamNearby";
+const ServiziDecollo = lazy(() => import("@/components/ServiziDecollo"));
 import "../decpl-dettaglio.css";
 
 interface MiniMeteo {
@@ -549,6 +550,11 @@ export default function DecolloDettaglio() {
               </div>
               <WebcamNearby siteId={site.id} siteName={site.site_name ?? site.name} latitude={site.lat} longitude={site.lon} compact />
             </section>
+
+            {/* RICETTIVITÀ E SERVIZI — dati reali OpenStreetMap (revisione critica 23/11, punto 11) */}
+            <Suspense fallback={null}>
+              <ServiziDecollo nome={site.site_name ?? site.name} lat={site.lat} lon={site.lon} variante="pagina" />
+            </Suspense>
           </div>
 
           {/* ------- COLONNA LATERALE ------- */}
