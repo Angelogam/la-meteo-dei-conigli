@@ -217,7 +217,7 @@ export async function fetchFull(
         hourly: hourlyParams,
         daily: dailyParams,
         current: currentParams,
-        forecast_days: 3,
+        forecast_days: 5,
         models: DEFAULT_MODELS,
       })
     : undefined;

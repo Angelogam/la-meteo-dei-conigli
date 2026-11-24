@@ -519,30 +519,13 @@ export default function ProfessionalWindgram({
     return Math.round(valid.reduce((acc, value) => acc + value, 0) / valid.length);
   }, [hourlyData, minAlt, maxAlt]);
 
-  if (loading) {
-    return (
-      <div className="bg-slate-100 border border-slate-300 rounded-3xl p-10 flex flex-col items-center justify-center text-slate-700 shadow-sm">
-        <RefreshCw className="w-8 h-8 text-slate-500 animate-spin mb-3" />
-        <span className="text-base font-bold text-slate-800">Caricamento Windgram Aerologico...</span>
-        <span className="text-xs text-slate-500 mt-1">Interrogazione Open-Meteo per {siteName} ({altitude}m)</span>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="bg-rose-50 border border-rose-200 rounded-3xl p-6 text-center text-rose-800">
-        <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-rose-500" />
-        <p className="font-bold text-slate-900">Impossibile caricare i dati del Windgram</p>
-        <p className="text-xs text-slate-600 mt-1">{error}</p>
-      </div>
-    );
-  }
-
   /* LETTURA IN 3 SECONDI (revisione critica 23/11 FAIL#6): le tre cose che il
      pilota deve capire senza leggere la griglia — quota utile (fino a dove le
      termiche portano), quota critica (da dove il vento supera 25 km/h) e shear
-     tra suolo e 1.500 m. Calcolate dal profilo già presente, nessun nuovo dato. */
+     tra suolo e 1.500 m. Calcolate dal profilo già presente, nessun nuovo dato.
+     NB: il useMemo sta PRIMA dei return condizionali — gli hook non possono
+     dipendere dal ramo di rendering (bug #310 del 24/11: con i dati reali
+     l'app crollava arrivando dallo stato di caricamento). */
   const lettura = useMemo(() => {
     let critica: number | null = null;
     let utile: number | null = null;
@@ -568,6 +551,30 @@ export default function ProfessionalWindgram({
     return { critica, utile, shear, shearMax };
   }, [hourlyData]);
 
+  if (loading) {
+    return (
+      <div className="bg-slate-100 border border-slate-300 rounded-3xl p-10 flex flex-col items-center justify-center text-slate-700 shadow-sm">
+        <RefreshCw className="w-8 h-8 text-slate-500 animate-spin mb-3" />
+        <span className="text-base font-bold text-slate-800">Caricamento Windgram Aerologico...</span>
+        <span className="text-xs text-slate-500 mt-1">Interrogazione Open-Meteo per {siteName} ({altitude}m)</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-slate-100 border border-slate-300 rounded-3xl p-6">
+        <p className="font-bold text-slate-900">Profilo del vento non disponibile in questo momento</p>
+        <p className="text-sm text-slate-700 mt-1">
+          I modelli meteo sono sovraccarichi: il profilo torna col prossimo aggiornamento
+          (il sito riprova ogni 15 minuti). La regola che vale comunque: la quota critica è
+          la prima quota dove il vento supera 25 km/h — sopra quella quota il volo locale
+          diventa una lotta, e a quel punto conviene la valle o il primo orbettino.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="alpium-windgram space-y-4 font-sans select-none">
       {warning && (
@@ -590,12 +597,12 @@ export default function ProfessionalWindgram({
               {siteName} &middot; <span className="text-sky-700 font-semibold">{formattedDateTitle}</span>
             </h2>
             <p className="text-[11px] text-slate-600 font-mono mt-0.5">
-              Windgram aerologico &middot; Decollo {Math.round(altitude)} m &middot; Profilo previsto Open-Meteo
+              Profilo del vento in quota &middot; Decollo {Math.round(altitude)} m &middot; modello Open-Meteo
             </p>
           </div>
           <div className="flex items-center gap-2 text-xs font-semibold">
             <span className="px-2.5 py-1 rounded-lg bg-slate-200 text-slate-700 border border-slate-300">
-              Masse d'aria · ΔT/100 m
+              Masse d'aria · gradiente ogni 100 m
             </span>
             <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300">
               Previsione del modello

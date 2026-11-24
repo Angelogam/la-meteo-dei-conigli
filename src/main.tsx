@@ -39,11 +39,11 @@ class RootErrorBoundary extends React.Component<
           <div style={{ maxWidth: 460 }}>
             <div style={{ fontSize: "2.2rem", marginBottom: ".6rem" }}>🐇</div>
             <h1 style={{ fontSize: "1.15rem", fontWeight: 700, margin: "0 0 .5rem", color: "#f4f8ff" }}>
-              Qualcosa è andato storto
+              Qualcosa è andato storto in questa pagina
             </h1>
             <p style={{ fontSize: ".88rem", lineHeight: 1.55, color: "#9db3d2", margin: "0 0 1.2rem" }}>
-              Un modulo della pagina non è riuscito a caricarsi. Ricaricando di solito si sistema:
-              i dati meteo verranno richiesti di nuovo alle fonti.
+              Ricaricando di solito si sistema: i dati meteo verranno richiesti di nuovo alle fonti.
+              Se il problema persiste, il briefing resta consultabile alle righe sopra (sintesi e Pilot Brain).
             </p>
             <button
               type="button"

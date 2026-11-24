@@ -102,6 +102,8 @@ export default function Index() {
     dateLabels,
     loadWeather,
     rawApiResponse,
+    loadingError,
+    isOfflineMode,
   } = useWeatherData();
 
   const {
@@ -174,8 +176,8 @@ export default function Index() {
         : central
           ? w(central.windDir, central.windSpeed, "sul decollo", `modello · ore ${String(central.time.getHours()).padStart(2, "0")}:00`)
           : null,
-      central ? w(central.windDir850, central.windSpeed850, "a 1.500 m", "modello 850 hPa") : null,
-      central ? w(central.windDir700, central.windSpeed700, "a 3.000 m", "modello 700 hPa") : null,
+      central ? w(central.windDir850, central.windSpeed850, "a 1.500 m", "sul modello") : null,
+      central ? w(central.windDir700, central.windSpeed700, "a 3.000 m", "sul modello") : null,
     ];
     const forecast = generateForecast(site.site_name, cur, pool.length ? pool : hourlyData, enrichedDaily[selectedDay] ? [enrichedDaily[selectedDay]] : []);
     return {
@@ -247,6 +249,13 @@ export default function Index() {
 
         <div className="flight-page-column">
           <main className="app-main flight-page flex-1 w-full min-w-0 max-w-none mx-auto px-3 sm:px-4 xl:px-6 py-4 space-y-4">
+            {/* stato dati onesto (24/11): il sito non può sembrare rotto in silenzio */}
+            {(loadingError || isOfflineMode) && (
+              <div role="status" className="rounded-2xl border border-attesa/60 bg-attesa/10 px-4 py-3 text-sm font-semibold text-attesa">
+                {loadingError ?? "Dati in cache — modello non raggiungibile"}
+                {isOfflineMode ? " · il sito riprova da solo ogni 15 minuti." : ""}
+              </div>
+            )}
             {/* 1 · TITOLO E SINTESI RAPIDA — l'hero fotografica resta l'ingresso
                 (revisione critica 23/11 punto 1: il Pilot Brain NON è la schermata principale) */}
             <HeroFotografico
@@ -400,8 +409,11 @@ export default function Index() {
                     </SezioneAlBisogno>
                   </Suspense>
                   <Suspense fallback={<SezioneInCarico />}>
+              {/* l'ancora vive sul wrapper SEMPRE presente: prima del caricamento
+                  on-demand il pulsante «Venti» deve comunque trovare il bersaglio */}
+              <div id="windgram-section" className="scroll-mt-4 min-w-0">
               <SezioneAlBisogno>
-              <section id="windgram-section" className="launch-windgram-top min-w-0" aria-label="Windgram aerologico del decollo selezionato">
+              <section className="launch-windgram-top min-w-0" aria-label="Profilo del vento del decollo selezionato">
                 <VentiInterpolatiTab
                   lat={site.lat}
                   lon={site.lon}
@@ -415,6 +427,7 @@ export default function Index() {
                 />
               </section>
               </SezioneAlBisogno>
+              </div>
                   </Suspense>
             <div className="dashboard-layout flight-panels-grid">
               <div className="flight-desk-main dashboard-content min-w-0">
@@ -449,8 +462,8 @@ export default function Index() {
                         <div className="launch-windgram-shortcut" role="status">
                           <Wind aria-hidden="true" />
                           <div>
-                            <strong>Il windgram aerologico è già in alto</strong>
-                            <p>Il profilo verticale e le masse d’aria colorate corrispondono al decollo selezionato nella tua API.</p>
+                            <strong>Il profilo del vento è già in alto</strong>
+                            <p>Il profilo verticale e le masse d’aria colorate corrispondono al decollo selezionato.</p>
                           </div>
                           <button type="button" onClick={() => document.getElementById("windgram-section")?.scrollIntoView({ behavior: "smooth", block: "start" })}>
                             Vai al windgram

@@ -47,8 +47,8 @@ export default function VentiInterpolatiTab({
           <Wind className="h-5 w-5" />
         </span>
         <div className="min-w-0">
-          <p className="alpium-launch-kicker">SOUNDING · PROFILO VERTICALE · VOLO LIBERO</p>
-          <h2>{siteName || "Decollo selezionato"} · Windgram aerologico</h2>
+          <p className="alpium-launch-kicker">RADIOSONDAGGIO · PROFILO VERTICALE · VOLO LIBERO</p>
+          <h2>{siteName || "Decollo selezionato"} · Profilo del vento in quota</h2>
           <p>
             <MapPin className="inline h-3.5 w-3.5" aria-hidden="true" /> {Math.round(lat * 10000) / 10000}, {Math.round(lon * 10000) / 10000}
             <span className="mx-2">·</span>

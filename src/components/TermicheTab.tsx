@@ -88,9 +88,14 @@ export default function TermicheTab({ dayData, site, selectedDay = 0 }: Termiche
 
   if (fasce.length === 0) {
     return (
-      <div className="bg-slate-800/30 border border-slate-700/50 rounded-2xl p-8 text-center">
-        <AlertTriangle className="w-10 h-10 text-slate-500 mx-auto mb-3" />
-        <p className="text-slate-400">Nessun dato termico disponibile per oggi.</p>
+      <div className="bg-slate-800/30 border border-slate-700/50 rounded-2xl p-6 text-slate-300">
+        <p className="text-base font-bold text-slate-100">Le termiche di oggi non sono ancora calcolate.</p>
+        <p className="mt-1.5 text-sm">
+          Serve il profilo completo del modello (temperatura e punto di rugiada per ogni quota): arriva
+          col prossimo aggiornamento, ogni 15 minuti. Nel frattempo la regola pratica del pilota:
+          ascendenza utile da +0,5 m/s, ottima da +1,5 m/s; la base dei cumuli dice fino a dove
+          conviene salire, e se è più bassa del decollo si vola solo in pianura o si resta a terra.
+        </p>
       </div>
     );
   }

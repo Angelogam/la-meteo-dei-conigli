@@ -105,11 +105,16 @@ export function useWeatherData() {
       }
     } catch (error) {
       console.warn("API non disponibile:", error);
-      setLoadingError("Dati offline (API non raggiungibile)");
 
       // Usa ultimo dato reale cached se disponibile, altrimenti lascia dati vuoti
       const cached = getLastValidData();
-      if (cached && (cached.hourly.length > 0 || cached.current !== null)) {
+      const cacheOk = cached && (cached.hourly.length > 0 || cached.current !== null);
+      setLoadingError(
+        cacheOk
+          ? "Modello meteo non raggiungibile: sta girando l'ultimo dato valido"
+          : "I modelli meteo non rispondono in questo momento (limite del provider): riprova tra qualche minuto",
+      );
+      if (cacheOk) {
         setHourlyData(cached.hourly);
         setDailyData(cached.daily);
         setCurrentData(cached.current);

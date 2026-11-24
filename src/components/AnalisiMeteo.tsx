@@ -103,18 +103,31 @@ export default function AnalisiMeteo({ currentData, dayData, site, cape, liftedI
 
   if (!dayData || dayData.length < 3) {
     return (
-      <div className="text-center py-12 text-slate-400 text-base">
-        <Sun className="w-10 h-10 mx-auto mb-3 text-slate-500" />
-        Dati insufficienti per generare l'analisi per {site?.name || "questo decollo"}.
+      <div className="rounded-2xl border border-slate-700/50 bg-slate-800/30 px-5 py-6 text-slate-300">
+        <p className="text-base font-bold text-slate-100">
+          L'analisi aerologica di {site?.name || "questo decollo"} arriva col prossimo aggiornamento.
+        </p>
+        <p className="mt-1.5 text-sm">
+          In questo momento i modelli meteo non rispondono: il sito riprova da solo ogni 15 minuti
+          e questa scheda si compila appena arrivano le ore del modello (instabilità, base dei cumuli,
+          vento in quota, quote utili).
+        </p>
+        <div className="mt-4 grid gap-1.5 text-sm">
+          <p className="font-semibold text-slate-100">Le soglie che valgono comunque, con qualunque modello:</p>
+          <p>· <b>Raffiche</b> oltre 25 km/h: finestra in chiusura — il limite è sulla raffica, non sulla media.</p>
+          <p>· <b>Scarto vento-raffica</b> oltre 12 km/h: aria mossa, decollo e atterraggio esigenti.</p>
+          <p>· <b>Base dei cumuli</b>: almeno 300 m sopra il decollo per pensare ai valichi, 900 m per il cross.</p>
+          <p>· <b>Vento in quota</b>: se a 1.500 m è il doppio di quello a terra, le termiche entrano inclinate — conta la deriva prima di lanciarti.</p>
+        </div>
       </div>
     );
   }
 
   if (!report) {
     return (
-      <div className="text-center py-12 text-slate-400 text-base">
-        <Sun className="w-10 h-10 mx-auto mb-3 text-slate-500" />
-        Impossibile generare il report meteorologico.
+      <div className="rounded-2xl border border-slate-700/50 bg-slate-800/30 px-5 py-6 text-slate-300">
+        <p className="text-base font-bold text-slate-100">Lettura aerologica non ancora disponibile.</p>
+        <p className="mt-1.5 text-sm">Le ore del modello sono incomplete per questo decollo: riprova tra qualche minuto o scegli un altro giorno.</p>
       </div>
     );
   }
