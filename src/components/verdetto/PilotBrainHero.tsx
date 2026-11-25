@@ -74,9 +74,9 @@ export default function PilotBrainHero({ verdetto, onChecklist, onBriefing, clas
   const s = ESITO_STYLE[verdetto.esito];
   const etaFuoriSoglia = verdetto.etaMinuti > 30;
   const crossValue =
-    verdetto.cross.traversabile === true
+    verdetto.cross?.traversabile === true
       ? "text-go"
-      : verdetto.cross.traversabile === false
+      : verdetto.cross?.traversabile === false
         ? "text-nogo"
         : "text-attesa";
 
@@ -133,12 +133,12 @@ export default function PilotBrainHero({ verdetto, onChecklist, onBriefing, clas
               <div className="text-[11px] font-semibold uppercase tracking-widest text-strumento-secondo">
                 2 · Quando decollo?
               </div>
-              <div className="font-display text-2xl font-bold leading-tight sm:text-3xl">{verdetto.decollo.slot}</div>
+              <div className="font-display text-2xl font-bold leading-tight sm:text-3xl">{verdetto.decolo?.slot ?? "—"}</div>
               <div className="mt-0.5 flex flex-wrap items-center gap-2 text-sm text-strumento-secondo">
-                <span>{verdetto.decollo.fase}</span>
-                {verdetto.decollo.piccoVietato && (
+                <span>{verdetto.decolo?.fase}</span>
+                {verdetto.decolo?.piccoVietato && (
                   <span className="rounded-md border border-attesa px-1.5 py-0.5 font-mono text-[10px] font-semibold uppercase text-attesa">
-                    Vietato {verdetto.decollo.piccoVietato}
+                    Vietato {verdetto.decolo?.piccoVietato}
                   </span>
                 )}
               </div>
@@ -152,18 +152,18 @@ export default function PilotBrainHero({ verdetto, onChecklist, onBriefing, clas
                 3 · Quando devo scendere?
               </div>
               <div className="font-display text-2xl font-bold leading-tight text-attesa sm:text-3xl">
-                {verdetto.discesa.turnaround && verdetto.discesa.turnaround !== "—"
-                  ? `ENTRO LE ${verdetto.discesa.turnaround}`
+                {verdetto.discesa?.turnaround && verdetto.discesa?.turnaround !== "—"
+                  ? `ENTRO LE ${verdetto.discesa?.turnaround}`
                   : "—"}
               </div>
               <div className="mt-0.5 text-sm text-strumento-secondo">
                 Inizia la discesa
-                {verdetto.discesa.ombra && verdetto.discesa.ombra !== "—"
-                  ? ` · ombra in valle alle ${verdetto.discesa.ombra}`
+                {verdetto.discesa?.ombra && verdetto.discesa?.ombra !== "—"
+                  ? ` · ombra in valle alle ${verdetto.discesa?.ombra}`
                   : ""}
-                {verdetto.discesa.grillettiAttivi > 0
-                  ? ` · ${verdetto.discesa.grillettiAttivi} ${
-                      verdetto.discesa.grillettiAttivi === 1 ? "punto di attenzione" : "punti di attenzione"
+                {(verdetto.discesa?.grillettiAttivi ?? 0) > 0
+                  ? ` · ${verdetto.discesa?.grillettiAttivi ?? 0} ${
+                      (verdetto.discesa?.grillettiAttivi ?? 0) === 1 ? "punto di attenzione" : "punti di attenzione"
                     } per l'atterraggio`
                   : " · nessun allarme per l'atterraggio"}
               </div>
@@ -177,9 +177,9 @@ export default function PilotBrainHero({ verdetto, onChecklist, onBriefing, clas
                 4 · Posso fare cross?
               </div>
               <div className={`font-display text-2xl font-bold leading-tight sm:text-3xl ${crossValue}`}>
-                {verdetto.cross.testo}
+                {verdetto.cross?.testo ?? "—"}
               </div>
-              <div className="mt-0.5 text-sm text-strumento-secondo">{verdetto.cross.dettaglio}</div>
+              <div className="mt-0.5 text-sm text-strumento-secondo">{verdetto.cross?.dettaglio ?? ""}</div>
             </div>
             <ChevronRight aria-hidden className="shrink-0 size-5 text-strumento-secondo" />
           </li>
@@ -204,13 +204,13 @@ export default function PilotBrainHero({ verdetto, onChecklist, onBriefing, clas
         </div>
 
         {/* note degli agenti (F4): arrivano già fuse, priorità decisa dal fusore */}
-        {verdetto.noteAgenti && verdetto.noteAgenti.length > 0 && (
+        {verdetto.noteAgenti && verdetto.noteAgenti?.length > 0 && (
           <div className="mt-3 rounded-2xl border border-strumento-bordo bg-strumento-panel px-4 py-3">
             <div className="text-[11px] font-semibold uppercase tracking-widest text-strumento-secondo">
               Note agenti
             </div>
             <ul className="mt-1.5 grid gap-1.5">
-              {verdetto.noteAgenti.map((nota) => (
+              {verdetto.noteAgenti?.map((nota) => (
                 <li key={`${nota.agente}-${nota.testo}`} className="flex items-start gap-2 text-sm">
                   <span aria-hidden className={`mt-1.5 size-2 shrink-0 rounded-full ${TONO_DOT[nota.tono]}`} />
                   <span className="font-semibold text-strumento-secondo">{nota.agente}</span>
@@ -227,7 +227,7 @@ export default function PilotBrainHero({ verdetto, onChecklist, onBriefing, clas
             Perché — in linguaggio pilota
           </div>
           <ul className="mt-2 grid gap-2.5">
-            {verdetto.motivi.map((m) => (
+            {verdetto.motivi?.map((m) => (
               <li key={`${m.idKB ?? m.area}-${m.frase}`} className="border-l-2 border-strumento-bordo pl-3">
                 <div className="flex items-center gap-2">
                   <span aria-hidden className={`size-2 shrink-0 rounded-full ${TONO_DOT[m.tono]}`} />

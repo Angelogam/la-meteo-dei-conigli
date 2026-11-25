@@ -8,6 +8,7 @@ import DecolliCard from "@/components/DecolliCard";
 import SiteHeader from "@/components/SiteHeader";
 import HeroFotografico from "@/components/HeroFotografico";
 import PilotBrainHero from "@/components/verdetto/PilotBrainHero";
+import FlightDecisionBanner from "@/components/FlightDecisionBanner";
 import { calcolaVerdettoInterim } from "@/components/verdetto/verdettoInterim";
 import UpdateTimer from "@/components/UpdateTimer";
 import SponsorStrip from "@/components/SponsorStrip";
@@ -315,11 +316,14 @@ export default function Index() {
 
             {/* 3 · PILOT BRAIN BRIEFING — le risposte operative, sotto la decisione */}
             {verdetto && (
-              <PilotBrainHero
-                verdetto={verdetto}
-                onChecklist={() => document.getElementById("flight-site-list")?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                onBriefing={() => document.getElementById("details-section")?.scrollIntoView({ behavior: "smooth", block: "start" })}
-              />
+              <>
+                <FlightDecisionBanner verdetto={verdetto} className="mb-3 sm:mb-4" />
+                <PilotBrainHero
+                  verdetto={verdetto}
+                  onChecklist={() => document.getElementById("flight-site-list")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                  onBriefing={() => document.getElementById("details-section")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                />
+              </>
             )}
 
             {/* 4 · MAPPA INTERATTIVA DEI DECOLLI */}
