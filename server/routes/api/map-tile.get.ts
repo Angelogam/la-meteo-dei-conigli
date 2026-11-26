@@ -25,6 +25,7 @@ export default defineHandler(async (event) => {
   const z = String(q.z ?? "");
   const x = String(q.x ?? "");
   const y = String(q.y ?? "");
+  const isEsri = String(q.prov ?? "carto") === "esri";
 
   const zn = Number(z), xn = Number(x), yn = Number(y);
   if (!Number.isInteger(zn) || zn < 0 || zn > 13 || !Number.isInteger(xn) || xn < 0 || xn >= 2 ** zn || !Number.isInteger(yn) || yn < 0 || yn >= 2 ** zn) {
@@ -34,10 +35,14 @@ export default defineHandler(async (event) => {
   let url: string;
   let cache: string;
   if (frame) {
-    if (!/^\d{10}$/.test(frame)) throw createError({ statusCode: 400, statusMessage: "frame radar non valido" });
-    url = `${RADAR_CACHE_URL}/${frame}/256/${zn}/${xn}/${yn}/2/1_1.png`;
+    /* 26/11: RainViewer ha ritirato gli URL col timestamp grezzo (410 Gone /
+       tile di errore «Zoom Level Not Supported») — i frame si riferiscono ora
+       con l'hash contenuto nel `path` dell'API (es. /v2/radar/98290113fa46).
+       Si accetta solo l'hash alfanumerico minuscolo, mai un percorso libero. */
+    if (!/^[a-f0-9]{8,32}$/.test(frame)) throw createError({ statusCode: 400, statusMessage: "frame radar non valido" });
+    url = `${RADAR_CACHE_URL}/v2/radar/${frame}/256/${zn}/${xn}/${yn}/2/1_1.png`;
     cache = "public, max-age=300";
-  } else if (String(q.prov ?? "carto") === "esri") {
+  } else if (isEsri) {
     // Esri usa l'ordine z/y/x e serve JPEG
     url = `${ESRI_URL}/${zn}/${yn}/${xn}`;
     cache = "public, max-age=3600";
@@ -53,6 +58,16 @@ export default defineHandler(async (event) => {
     const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
     try {
       const r = await fetch(url, { signal: ctrl.signal, headers: { "User-Agent": UA } });
+      /* Esri a volte risponde 200 con l'immagine di errore «Zoom Level Not
+         Supported» (PNG con trasparenza) quando l'egress è limitato: le tile
+         valide del Dark Gray Base sono SEMPRE JPEG (verificato z8–z16, burst
+         paralleli inclusi). Una PNG da Esri = tile di errore: non va mai
+         servita né messa in cache (browser/CDN la terrebbero ferma 1 ora) →
+         si scarta qui, si riprova e se persiste si risponde 502 così il
+         client degrada con lo slot scuro invece di disegnare l'errore. */
+      if (isEsri && (r.headers.get("content-type") ?? "").includes("png")) {
+        throw createError({ statusCode: 502, statusMessage: "tile di errore Esri (png)" });
+      }
       if (!r.ok) {
         throw createError({ statusCode: r.status === 404 ? 404 : 502, statusMessage: "tile non disponibile" });
       }

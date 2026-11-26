@@ -48,8 +48,17 @@ export default function RadarMappa({ lat, lon, nome, quota }: { lat: number; lon
   const [playing, setPlaying] = useState(true);
   const [, setTick] = useState(0);
   const redrawRef = useRef<() => void>(() => {});
+  /* cache-buster STABILE per il fallback Esri: se fosse ricalcolato a ogni
+     draw genererebbe URL sempre nuovi (refetch e memoria senza fine) */
+  const nocacheRef = useRef(Date.now());
 
-  const loadImg = useCallback((src: string, onReady: () => void, fallbackSrc?: string): HTMLImageElement | null => {
+  /* richiedeOpaca: le tile di BASMAP (Esri scura) sono sempre opache al
+     100% — se arrivano con trasparenza è una tile di errore (Esri a volte
+     risponde 200 con i riquadri «Zoom Level Not Supported» su fondo
+     trasparente: pochi pixel opachi, così tutte le soglie cromatiche seguenti
+     restano sotto soglia e la tile finiva disegnata). Scartata subito →
+     fallback sul secondo provider. Le tile RADAR (alpha reale) non la usano. */
+  const loadImg = useCallback((src: string, onReady: () => void, fallbackSrc?: string, richiedeOpaca = false): HTMLImageElement | null => {
     const cache = imgCache.current;
     let im = cache.get(src);
     if (im) return im.complete && im.naturalWidth > 0 ? im : null;
@@ -91,11 +100,16 @@ export default function RadarMappa({ lat, lon, nome, quota }: { lat: number; lon
              di mappa hanno varianza alta, l'oceano scuro resta fuori perché
              mediaL è basso. Le tile radar (quasi trasparenti) non ci entrano. */
           const piatto = opachi / n > 0.9 && stdL < 14 && mediaL > 150;
-          const isClean = !(white / n > 0.02 || light / n > 0.5 || (gray / n > 0.3 && white / n > 0.008) || piatto);
+          /* basemap con buchi trasparenti = tile di errore (vedi richiedeOpaca):
+             è il caso dei riquadri scuri «Zoom Level Not Supported» di Esri */
+          const nonOpaca = richiedeOpaca && opachi / n < 0.95;
+          const isClean = !(white / n > 0.02 || light / n > 0.5 || (gray / n > 0.3 && white / n > 0.008) || piatto || nonOpaca);
           (im as HTMLImageElement & { clean?: boolean }).clean = isClean;
           if (!isClean) {
             console.log("[radar] tile di errore scartata:", src.slice(0, 80));
-            if (fallbackSrc) { loadImg(fallbackSrc, onReady); return; }
+            /* chi ha un fallback è una chiamata basemap: anche la riserva deve
+               essere opaca al 100% (richiedeOpaca) */
+            if (fallbackSrc) { loadImg(fallbackSrc, onReady, undefined, true); return; }
           }
         } else (im as HTMLImageElement & { clean?: boolean }).clean = true;
       } catch { (im as HTMLImageElement & { clean?: boolean }).clean = true; }
@@ -143,11 +157,17 @@ export default function RadarMappa({ lat, lon, nome, quota }: { lat: number; lon
         const wx = ((tx % (2 ** z)) + 2 ** z) % (2 ** z);
         const wy = Math.max(0, Math.min(2 ** z - 1, ty));
         const dx = Math.round(tx * TILE - left), dy = Math.round(ty * TILE - top);
-        // Esri primaria (funziona dall'egress del server), Carto di riserva
-        // (da browser residenziale: Carto blocca gli IP datacenter con placeholder)
+        // Esri primaria (verificata valida dall'egress del server 26/11; le
+        // sue tile di errore — trasparenti o chiare — sono scartate qui sotto
+        // e lato server via content-type). Riserva: la STESSA Esri con
+        // nocache stabile per mount — l'errore Esri è intermittente per
+        // periodo/IP: un nuovo fetch passa da un'altra invocazione serverless
+        // (altro egress) e aggira cache browser/CDN dove la tile di errore
+        // può stare ferma 1 ora. Carto è stata tolta dalla catena: da egress
+        // server ora risponde «API KEY REQUIRED» (placeholder, mai disegnarlo).
         const urlA = `/api/map-tile?prov=esri&z=${z}&x=${wx}&y=${wy}`;
-        const urlB = `/api/map-tile?prov=carto&z=${z}&x=${wx}&y=${wy}`;
-        const im = loadImg(urlA, () => { if (pending === 0) redrawRef.current(); }, urlB);
+        const urlB = `${urlA}&nocache=${nocacheRef.current}`;
+        const im = loadImg(urlA, () => { if (pending === 0) redrawRef.current(); }, urlB, true);
         // se la primaria è una tile di errore si disegna la riserva (già in cache
         // dopo il primo caricamento) invece di lasciare il buco scuro
         let drawn: HTMLImageElement | null = im;
@@ -184,10 +204,19 @@ export default function RadarMappa({ lat, lon, nome, quota }: { lat: number; lon
           const wx = ((tx % (2 ** z)) + 2 ** z) % (2 ** z);
           const wy = Math.max(0, Math.min(2 ** z - 1, ty));
           const dx = Math.round(tx * TILE - left), dy = Math.round(ty * TILE - top);
-          const zz = z > 10 ? 10 : z;
+          /* cap a 7 (26/11): RainViewer ora serve le tile radar SOLO fino allo
+             zoom 7 — da z=8 in su risponde 200 con l'immagine di errore
+             «Zoom Level Not Supported» (era il bug visto dal proprietario: le
+             tile di errore del RADAR, non della basemap, coprivano la carta).
+             Oltre il 7 si chiede la tile z7 e si ingrandisce (upscale). */
+          const zz = z > 7 ? 7 : z;
           const scale = 2 ** (z - zz);
           const rx = Math.floor(wx / scale), ry = Math.floor(wy / scale);
-          const im = loadImg(`/api/map-tile?frame=${f.time}&z=${zz}&x=${rx}&y=${ry}`, () => { if (pending === 0) redrawRef.current(); });
+          /* il frame si riferisce col PATH con hash dell'API (es.
+             /v2/radar/98290113fa46): gli URL col timestamp grezzo sono stati
+             ritirati da RainViewer (410 Gone / tile di errore) */
+          const frameHash = f.path.split("/").pop() ?? "";
+          const im = loadImg(`/api/map-tile?frame=${frameHash}&z=${zz}&x=${rx}&y=${ry}`, () => { if (pending === 0) redrawRef.current(); });
           if (im && (im as HTMLImageElement & { clean?: boolean }).clean !== false) {
             ctx.imageSmoothingEnabled = true;
             ctx.globalAlpha = 0.8;
@@ -301,8 +330,8 @@ framesRef.current = [...past, ...now];
 
   const zoomBy = (d: number) => {
     const c = centerRef.current;
-    /* cap a 10: è il livello massimo che il radar RainViewer supporta — oltre
-       le tile vengono rifiutate e la carta si spezzerebbe */
+    /* cap a 10: livello massimo utile della basemap Esri — il radar viene
+       comunque servito a z7 e ingrandito (limite RainViewer 26/11) */
     const nz = Math.max(6, Math.min(10, c.z + d));
     if (nz === c.z) return;
     c.x = (c.x / (TILE * 2 ** c.z)) * (TILE * 2 ** nz);
