@@ -175,7 +175,7 @@ export default function Index() {
       selectedDay === 0 && cur
         ? w(cur.windDir, cur.windSpeed, "sul decollo", "ora corrente")
         : central
-          ? w(central.windDir850, central.windSpeed850, "a 1.500 m", "sul modello")
+          ? w(central.windDir, central.windSpeed, "sul decollo", `modello · ore ${String(central.time.getHours()).padStart(2, "0")}:00`)
           : null,
       central ? w(central.windDir850, central.windSpeed850, "a 1.500 m", "sul modello") : null,
       central ? w(central.windDir700, central.windSpeed700, "a 3.000 m", "sul modello") : null,
