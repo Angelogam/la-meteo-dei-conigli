@@ -175,7 +175,7 @@ export default function Index() {
       selectedDay === 0 && cur
         ? w(cur.windDir, cur.windSpeed, "sul decollo", "ora corrente")
         : central
-          ? w(central.windDir, central.windSpeed, "sul decollo", `modello · ore ${String(central.time.getHours()).padStart(2, "0")}:00`)
+          ? w(central.windDir850, central.windSpeed850, "a 1.500 m", "sul modello")
           : null,
       central ? w(central.windDir850, central.windSpeed850, "a 1.500 m", "sul modello") : null,
       central ? w(central.windDir700, central.windSpeed700, "a 3.000 m", "sul modello") : null,
@@ -245,7 +245,7 @@ export default function Index() {
             {site && <small>{site.elevation_m.toLocaleString("it-IT")} m s.l.m.</small>}
             <span className="flight-live-indicator"><i /> Dati meteo</span>
           </div>
-          <div className="flight-nav-motto">Il cielo non è il limite.<br />È solo l’inizio.</div>
+          <div className="flight-nav-motto">Il cielo non è il limite.<br />È solo l'inizio.</div>
         </aside>
 
         <div className="flight-page-column">
@@ -314,19 +314,10 @@ export default function Index() {
               ))}
             </div>
 
-            {/* 3 · PILOT BRAIN BRIEFING — le risposte operative, sotto la decisione */}
-            {verdetto && (
-              <>
-                <FlightDecisionBanner verdetto={verdetto} className="mb-3 sm:mb-4" />
-                <PilotBrainHero
-                  verdetto={verdetto}
-                  onChecklist={() => document.getElementById("flight-site-list")?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                  onBriefing={() => document.getElementById("details-section")?.scrollIntoView({ behavior: "smooth", block: "start" })}
-                />
-              </>
-            )}
-
-            {/* 4 · MAPPA INTERATTIVA DEI DECOLLI */}
+            {/* 3 · MAPPA INTERATTIVA DEI DECOLLI — la finestra Pilot Brain vive
+                ora DENTRO la scheda «Report» della finestra «Report della
+                giornata» (commando del proprietario 26/11): sotto i titoli
+                resta solo la mappa. */}
             {site && (
               <div className="flight-subsection-heading" aria-label="Mappa interattiva dei decolli">
                 <div>
@@ -444,23 +435,38 @@ export default function Index() {
 
                     <section className="flight-tab-content min-w-0" aria-live="polite">
                       {activeTab === "meteo" && site && (
-                        <Suspense fallback={<SezioneInCarico />}>
-                          <ReportVolo
-                            inline
-                            open
-                            onClose={() => setActiveTab("meteo")}
-                            item={site}
-                            selectedDay={selectedDay}
-                            onSelectDay={setSelectedDay}
-                            selectedHour={selectedHour}
-                            onHourSelect={setSelectedHour}
-                            onSelect={(d) => { setSelectedId(d.id); }}
-                            decolli={mergedDecolli}
-                          />
-                        </Suspense>
-                        /* Il doppio report esportabile è stato tolto da questa
-                           scheda (revisione critica 23/11, punto 8): l'unico
-                           prodotto esportabile sta in Analisi (ReportAICard). */
+                        <>
+                          {/* PILOT BRAIN BRIEFING dentro la finestra Report della
+                              giornata: decisione in 4 risposte + briefing completo
+                              PRIMA del poster del report (commando 26/11) */}
+                          {verdetto && (
+                            <>
+                              <FlightDecisionBanner verdetto={verdetto} className="mb-3 sm:mb-4" />
+                              <PilotBrainHero
+                                verdetto={verdetto}
+                                onChecklist={() => document.getElementById("flight-site-list")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                                onBriefing={() => document.getElementById("details-section")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                              />
+                            </>
+                          )}
+                          <Suspense fallback={<SezioneInCarico />}>
+                            <ReportVolo
+                              inline
+                              open
+                              onClose={() => setActiveTab("meteo")}
+                              item={site}
+                              selectedDay={selectedDay}
+                              onSelectDay={setSelectedDay}
+                              selectedHour={selectedHour}
+                              onHourSelect={setSelectedHour}
+                              onSelect={(d) => { setSelectedId(d.id); }}
+                              decolli={mergedDecolli}
+                            />
+                          </Suspense>
+                          {/* Il doppio report esportabile è stato tolto da questa
+                             scheda (revisione critica 23/11, punto 8): l'unico
+                             prodotto esportabile sta in Analisi (ReportAICard). */}
+                        </>
                       )}
                       {activeTab === "venti" && (
                         <div className="launch-windgram-shortcut" role="status">
